@@ -15,30 +15,11 @@
 
 - [1. Resumen Ejecutivo](#1-resumen-ejecutivo)
 - [2. Definición del Problema](#2-definición-del-problema)
-  - [2.1 Situación Actual](#21-situación-actual)
-  - [2.2 El Dilema Privacidad vs. Protección](#22-el-dilema-privacidad-vs-protección)
 - [3. Visión y Principios de Diseño](#3-visión-y-principios-de-diseño)
-  - [3.1 Privacidad por Diseño](#31-privacidad-por-diseño-privacy-by-design)
-  - [3.2 Descentralización](#32-descentralización)
-  - [3.3 Estándar Abierto](#33-estándar-abierto)
-  - [3.4 Minimalismo de Datos](#34-minimalismo-de-datos)
 - [4. Arquitectura del Protocolo](#4-arquitectura-del-protocolo)
-  - [4.1 Actores del Sistema](#41-actores-del-sistema)
-  - [4.2 Modelo de Puerta de Entrada](#42-modelo-de-puerta-de-entrada-verification-gate)
-  - [4.3 Estructura del Token](#43-estructura-del-token-aavp)
-  - [4.4 Rotación de Tokens](#44-rotación-de-tokens)
 - [5. Modelo de Confianza Descentralizado](#5-modelo-de-confianza-descentralizado)
-  - [5.1 Confianza sin Autoridad Central](#51-confianza-sin-autoridad-central)
-  - [5.2 Mecanismos de Confianza](#52-mecanismos-de-confianza)
-  - [5.3 Analogía con DMARC/DKIM](#53-analogía-con-dmarcdkim)
 - [6. Fundamentos Criptográficos](#6-fundamentos-criptográficos)
-  - [6.1 Firmas Ciegas](#61-firmas-ciegas-blind-signatures)
-  - [6.2 Pruebas de Conocimiento Cero](#62-pruebas-de-conocimiento-cero-zkp)
-  - [6.3 Prevención de Fingerprinting](#63-prevención-de-fingerprinting)
 - [7. Flujo Operativo Detallado](#7-flujo-operativo-detallado)
-  - [7.1 Configuración Inicial](#71-configuración-inicial-una-sola-vez)
-  - [7.2 Acceso a una Plataforma](#72-acceso-a-una-plataforma-cada-sesión)
-  - [7.3 Desactivación del Control Parental](#73-desactivación-del-control-parental)
 - [8. Modelo de Amenazas](#8-modelo-de-amenazas)
 - [9. Estrategia de Adopción](#9-estrategia-de-adopción)
 - [10. Comparativa con Soluciones Existentes](#10-comparativa-con-soluciones-existentes)
@@ -55,20 +36,19 @@ La protección de menores en el entorno digital se enfrenta a lo que parece un d
 Este documento presenta el **Anonymous Age Verification Protocol (AAVP)**, un protocolo abierto, descentralizado y respetuoso con la privacidad que permite a las plataformas digitales adaptar su contenido y funcionalidades según la franja de edad del usuario, sin recopilar datos personales identificables y sin posibilidad de rastreo inverso.
 
 AAVP se apoya en tres pilares:
+
 ```mermaid
-mindmap
-  root((AAVP))
-    Privacidad por Diseno
-      Ningun dato personal abandona el dispositivo
-      Garantia matematica no politica de privacidad
-    Descentralizacion
-      Sin autoridad central
-      Sin punto unico de fallo
-      Sin captura regulatoria
-    Estandar Abierto
-      Implementacion libre
-      Sin licencias ni permisos
-      Barrera exclusivamente tecnica
+graph TD
+    AAVP((AAVP))
+    AAVP --> A[Privacidad por Diseno]
+    AAVP --> B[Descentralizacion]
+    AAVP --> C[Estandar Abierto]
+    A --> A1[Datos en dispositivo]
+    A --> A2[Garantia matematica]
+    B --> B1[Sin autoridad central]
+    B --> B2[Sin punto unico de fallo]
+    C --> C1[Implementacion libre]
+    C --> C2[Sin licencias]
 ```
 
 Los bloques de construcción criptográficos necesarios —firmas ciegas, pruebas de conocimiento cero, almacenamiento seguro en hardware— existen y están probados. Lo que falta es la voluntad de articularlos en un estándar común. Este white paper es un primer paso hacia esa articulación.
@@ -80,21 +60,14 @@ Los bloques de construcción criptográficos necesarios —firmas ciegas, prueba
 ### 2.1 Situación Actual
 
 Las redes sociales y plataformas digitales se enfrentan a una presión regulatoria creciente para verificar la edad de sus usuarios. Las soluciones desplegadas hasta la fecha presentan deficiencias significativas:
-```mermaid
-quadrantChart
-    title Soluciones actuales de verificacion de edad
-    x-axis Baja Privacidad --> Alta Privacidad
-    y-axis Baja Fiabilidad --> Alta Fiabilidad
-    quadrant-1 Objetivo ideal
-    quadrant-2 Fiable pero invasivo
-    quadrant-3 Ni fiable ni privado
-    quadrant-4 Privado pero inutil
-    DNI-Pasaporte: [0.15, 0.85]
-    Biometria-facial: [0.12, 0.55]
-    Tarjeta-de-credito: [0.30, 0.50]
-    Autodeclaracion: [0.90, 0.08]
-    AAVP: [0.88, 0.82]
-```
+
+| Solucion | Privacidad | Fiabilidad | Problema principal |
+|----------|:----------:|:----------:|:-------------------|
+| DNI / Pasaporte | Muy baja | Alta | Bases de datos de documentos sensibles |
+| Biometria facial | Muy baja | Media | Datos RGPD categoria especial, sesgos |
+| Tarjeta de credito | Baja | Media | Vincula identidad financiera |
+| Autodeclaracion | Alta | Nula | Trivialmente eludible |
+| **AAVP** | **Alta** | **Alta** | Requiere adopcion del estandar |
 
 - **Verificación por documento de identidad.** El usuario sube una copia de su DNI o pasaporte. Esto crea bases de datos de documentos sensibles que se convierten en objetivos de alto valor para atacantes. Las filtraciones de este tipo de datos —ya documentadas en múltiples incidentes— tienen consecuencias especialmente graves porque un documento de identidad no puede «revocarse» como una contraseña.
 
@@ -149,24 +122,14 @@ Cada dato adicional es un vector potencial de fingerprinting y debe justificarse
 ### 4.1 Actores del Sistema
 
 AAVP define tres actores con roles diferenciados. El diseño garantiza que ninguno de ellos necesita confiar ciegamente en los otros: la verificabilidad criptográfica sustituye a la confianza institucional.
-```mermaid
-graph TB
-    subgraph Dispositivo
-        DA[Device Agent - Control parental]
-    end
-    subgraph Implementador_
-        IM[Implementador - Empresa de control parental]
-    end
-    subgraph Plataforma
-        VG[Verification Gate - Puerta de entrada]
-        APP[Aplicacion Web - Contenido filtrado]
-    end
 
-    DA -- "1. Solicita firma ciega" --> IM
-    IM -- "2. Devuelve firma ciega" --> DA
-    DA -- "3. Presenta token firmado" --> VG
-    VG -. "4. Valida firma vs clave publica" .-> IM
-    VG -- "5. Establece sesion con flag de edad" --> APP
+```mermaid
+graph LR
+    DA[Device Agent] -->|firma ciega| IM[Implementador]
+    IM -->|firma| DA
+    DA -->|token| VG[Verification Gate]
+    VG -.->|valida clave| IM
+    VG -->|sesion| APP[Plataforma]
 ```
 
 | Actor | Descripción | Responsabilidad |
@@ -181,35 +144,32 @@ Un enfoque ingenuo enviaría la credencial de edad en cada petición HTTP, expon
 
 > [!TIP]
 > **Idea clave:** El token de edad nunca convive con el tráfico regular de la aplicación. Es un canal separado, un handshake puntual. Después, la información «este usuario es menor» es un flag interno de la plataforma, completamente desacoplado del token original.
+
 ```mermaid
 sequenceDiagram
     participant U as Usuario
     participant DA as Device Agent
-    participant VG as Verification Gate
+    participant VG as Verif. Gate
     participant APP as Plataforma
 
-    U->>APP: Abre la aplicacion
-    APP-->>DA: Senal AAVP soportado
+    U->>APP: Abre app
+    APP-->>DA: AAVP soportado
 
-    rect rgb(219, 234, 254)
-        Note over DA,VG: Handshake de verificacion - canal TLS dedicado
-        DA->>DA: Genera token efimero y firma ciega
-        DA->>VG: Presenta token firmado
-        VG->>VG: Valida firma y TTL
-        VG-->>DA: Verificacion OK
-    end
+    Note over DA,VG: Handshake TLS
+    DA->>DA: Genera token
+    DA->>VG: Token firmado
+    VG->>VG: Valida firma
+    VG-->>DA: OK
 
-    VG->>APP: Establece sesion con flag age_bracket
-    APP-->>U: Contenido filtrado segun franja de edad
+    VG->>APP: Sesion + age_bracket
+    APP-->>U: Contenido filtrado
 
-    Note over U,APP: Sesion normal - el token AAVP ya no existe
+    Note over U,APP: Sesion normal
 
-    rect rgb(254, 243, 199)
-        Note over DA,VG: Revalidacion transparente al caducar sesion
-        DA->>DA: Genera NUEVO token con rotacion
-        DA->>VG: Presenta nuevo token
-        VG-->>APP: Renueva sesion
-    end
+    Note over DA,VG: Revalidacion
+    DA->>DA: Nuevo token
+    DA->>VG: Token rotado
+    VG-->>APP: Renueva sesion
 ```
 
 **Ventajas del modelo de puerta de entrada:**
@@ -222,6 +182,7 @@ sequenceDiagram
 ### 4.3 Estructura del Token AAVP
 
 El token es una estructura criptográfica diseñada para ser mínima. Cada campo tiene una justificación específica:
+
 ```mermaid
 classDiagram
     class AAVPToken {
@@ -231,26 +192,16 @@ classDiagram
         +bytes32 nonce
         +bytes implementer_sig
     }
-
     class AgeBracket {
         UNDER_13
         AGE_13_15
         AGE_16_17
         OVER_18
     }
-
-    class DatosExcluidos {
-        identidad_usuario
-        id_dispositivo
-        direccion_IP
-        localizacion
-        version_software
-        sistema_operativo
-    }
-
     AAVPToken --> AgeBracket
-    AAVPToken ..> DatosExcluidos : No contiene
 ```
+
+> **Explícitamente excluido del token:** identidad del usuario, ID de dispositivo, dirección IP, localización, versión de software, sistema operativo.
 
 | Campo | Contenido | Propósito |
 |-------|-----------|-----------|
@@ -265,26 +216,15 @@ Es igualmente importante lo que el token **no contiene**: identidad del usuario,
 ### 4.4 Rotación de Tokens
 
 Incluso sin datos personales, un token estático podría convertirse en un pseudoidentificador persistente si se reutiliza. Por ello, AAVP implementa rotación obligatoria:
+
 ```mermaid
 stateDiagram-v2
-    [*] --> TokenActivo : DA genera token
-    TokenActivo --> Validado : VG verifica firma
-    Validado --> SesionActiva : Plataforma crea sesion
-    SesionActiva --> Caducado : TTL expira entre 1 y 4h
-    Caducado --> TokenActivo : DA genera NUEVO token
-    SesionActiva --> NoVerificado : Control parental desactivado
-
-    state TokenActivo {
-        [*] --> Firmado : Firma ciega del IM
-        Firmado --> Listo : Nonce y ruido temporal
-    }
-
-    note right of Caducado
-        Cada nuevo token es
-        criptograficamente
-        independiente del anterior.
-        No hay correlacion posible.
-    end note
+    [*] --> Generado
+    Generado --> Validado
+    Validado --> Activo
+    Activo --> Caducado : TTL 1-4h
+    Caducado --> Generado : Nuevo token
+    Activo --> Revocado : DA desactivado
 ```
 
 - **Tiempo de vida máximo (TTL):** Cada token tiene una validez configurable, recomendándose entre 1 y 4 horas.
@@ -300,25 +240,28 @@ stateDiagram-v2
 AAVP rechaza explícitamente el modelo de Autoridad de Certificación centralizada. ¿Por qué? Porque la centralización de la certificación crea incentivos perversos: la entidad central adquiere poder de veto sobre quién participa en el ecosistema, se convierte en objetivo prioritario de presión política, y genera un punto único de fallo cuya compromisión invalida todo el sistema.
 
 AAVP adopta un **modelo de confianza distribuida**, inspirado en protocolos como DMARC/DKIM para autenticación de correo electrónico.
+
+**Modelo centralizado (rechazado):**
+
 ```mermaid
 graph LR
-    subgraph Centralizado - RECHAZADO
-        CA[Autoridad Central]
-        IM1a[IM 1] --> CA
-        IM2a[IM 2] --> CA
-        IM3a[IM 3] --> CA
-        CA --> P1a[Plataforma 1]
-        CA --> P2a[Plataforma 2]
-    end
+    IM1[IM 1] --> CA[Autoridad Central]
+    IM2[IM 2] --> CA
+    IM3[IM 3] --> CA
+    CA --> P1[Plataforma 1]
+    CA --> P2[Plataforma 2]
+```
 
-    subgraph AAVP - ADOPTADO
-        IM1b[IM 1] --> P1b[Plataforma 1]
-        IM1b --> P2b[Plataforma 2]
-        IM2b[IM 2] --> P1b
-        IM2b --> P2b
-        IM3b[IM 3] --> P1b
-        IM3b --> P2b
-    end
+**Modelo AAVP (adoptado) — cada plataforma decide en quién confiar:**
+
+```mermaid
+graph LR
+    IM1[IM 1] --> P1[Plataforma 1]
+    IM1 --> P2[Plataforma 2]
+    IM2[IM 2] --> P1
+    IM2 --> P2
+    IM3[IM 3] --> P1
+    IM3 --> P2
 ```
 
 ### 5.2 Mecanismos de Confianza
@@ -338,17 +281,16 @@ Se propone un registro público descentralizado (potencialmente basado en un log
 #### 5.2.4 Confianza por reputación
 
 Las plataformas digitales deciden individualmente en qué Implementadores confían, del mismo modo que los navegadores web deciden en qué CAs confían para TLS. No hay una decisión centralizada, sino múltiples decisiones independientes que tienden a converger.
+
 ```mermaid
 flowchart TD
-    IM[Nuevo Implementador] -->|Publica clave publica| REG[Registro Publico Descentralizado]
-    IM -->|Publica codigo fuente| GH[Codigo Auditable Open Source]
-
-    GH -->|Comunidad audita| AUDIT{Cumple el estandar}
-    AUDIT -->|Si| TRUST[Plataformas incluyen clave en trust store]
-    AUDIT -->|No| REJECT[Plataformas rechazan tokens]
-
-    TRUST -->|Emite tokens fraudulentos| REVOKE[Plataformas retiran confianza]
-    REVOKE --> REJECT
+    A[Nuevo IM] --> B[Publica clave]
+    A --> C[Publica codigo]
+    C --> D{Auditoria}
+    D -->|Cumple| E[Aceptado]
+    D -->|No cumple| F[Rechazado]
+    E -->|Fraude| G[Confianza revocada]
+    G --> F
 ```
 
 ### 5.3 Analogía con DMARC/DKIM
@@ -370,27 +312,22 @@ Para entender intuitivamente cómo funciona este modelo, resulta útil compararl
 ### 6.1 Firmas Ciegas (Blind Signatures)
 
 El mecanismo central de AAVP para desacoplar la identidad del usuario de la señal de edad es el uso de **firmas ciegas**, una técnica propuesta por David Chaum en 1983. La analogía clásica: un sobre con papel carbón. El firmante estampa su firma sobre el sobre cerrado, y la firma se transfiere al documento interior sin que el firmante lo vea.
+
 ```mermaid
 sequenceDiagram
     participant DA as Device Agent
     participant IM as Implementador
 
-    DA->>DA: 1. Genera token con franja de edad
-    DA->>DA: 2. Enmascara token via blinding
+    DA->>DA: Genera token
+    DA->>DA: Enmascara (blind)
 
-    rect rgb(243, 232, 255)
-        DA->>IM: 3. Envia token ENMASCARADO
-        Note over IM: El IM NO puede ver el contenido del token
-        IM->>IM: 4. Firma el token enmascarado
-        IM-->>DA: 5. Devuelve firma
-    end
+    DA->>IM: Token enmascarado
+    Note over IM: No ve el contenido
+    IM->>IM: Firma
+    IM-->>DA: Devuelve firma
 
-    DA->>DA: 6. Desenmascara la firma
-    Note over DA: Resultado: firma valida sobre el token original
-
-    DA->>DA: 7. Token listo para presentar al VG
-
-    Note over DA,IM: El IM nunca supo que token firmo. No puede vincular firma con usuario.
+    DA->>DA: Desenmascara
+    Note over DA: Firma valida sobre token original
 ```
 
 El resultado práctico: el Implementador puede certificar que un token es legítimo (proviene de una instalación real de control parental) sin saber qué token ha firmado. **Ni siquiera el Implementador puede vincular un token con un usuario.**
@@ -398,11 +335,12 @@ El resultado práctico: el Implementador puede certificar que un token es legít
 ### 6.2 Pruebas de Conocimiento Cero (ZKP)
 
 Como alternativa o complemento a las firmas ciegas, AAVP contempla el uso de **pruebas de conocimiento cero** (Zero-Knowledge Proofs). Un ZKP permite demostrar una afirmación —por ejemplo, «mi edad está dentro de la franja X»— sin revelar ningún dato adicional. Esto sería especialmente útil en escenarios donde la verificación inicial de la edad se realiza contra un documento oficial: el ZKP demostraría que la fecha de nacimiento cumple el criterio de franja sin exponer la fecha.
+
 ```mermaid
 flowchart LR
-    DOC[Documento oficial] --> ZKP[Motor ZKP]
-    ZKP --> PROOF[Prueba verificable: Edad en AGE_13_15]
-    ZKP -.->|NO revela| HIDDEN[Fecha exacta / Nombre / Num documento]
+    A[Documento] --> B[Motor ZKP]
+    B --> C[Edad en AGE_13_15]
+    B -.->|NO revela| D[Fecha / Nombre / DNI]
 ```
 
 ### 6.3 Prevención de Fingerprinting
@@ -421,13 +359,14 @@ Cada campo del token está diseñado para minimizar la información que podría 
 ### 7.1 Configuración Inicial (una sola vez)
 
 Este paso lo realizan los padres o tutores y es el único momento en que se requiere intervención humana consciente:
+
 ```mermaid
 flowchart TD
-    P[Padres o Tutores] -->|1. Activan control parental| CP[Sistema de Control Parental]
-    CP -->|2. Genera par de claves| SE[Secure Enclave o TPM]
-    CP -->|3. Conexion unica| IM[Servicio de firma del Implementador]
-    IM -->|4. Capacidad de firma ciega| CP
-    P -->|5. Configura franja de edad| CP
+    A[Padres] -->|1 Activan| B[Control Parental]
+    B -->|2 Genera claves| C[Secure Enclave]
+    B -->|3 Conecta| D[Implementador]
+    D -->|4 Firma ciega| B
+    A -->|5 Configura edad| B
 ```
 
 1. Los padres activan el control parental en el dispositivo del menor.
@@ -457,16 +396,17 @@ Si el control parental se desactiva durante una sesión activa, el Device Agent 
 
 Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 
-| Amenaza | Descripción | Mitigación | Riesgo residual |
-|---------|-------------|------------|-----------------|
-| **Bypass por dispositivo alternativo** | El menor accede desde un dispositivo sin DA instalado. | Política de plataforma para sesiones sin token. | Medio |
-| **Implementador fraudulento** | Un IM emite tokens de adulto a menores. | Auditoría open source, pérdida de reputación, exclusión. | Bajo |
-| **MITM en el handshake** | Interceptar el token durante la validación inicial. | TLS con certificate pinning, ventana temporal mínima. | Muy bajo |
-| **Correlación de tokens** | Vincular tokens sucesivos del mismo usuario. | Rotación, nonces aleatorios, ruido temporal, firmas ciegas. | Muy bajo |
-| **Desactivación del control parental** | El menor desactiva el DA por su cuenta. | Protección a nivel de SO, PIN parental. | Medio |
-| **Fabricación manual de tokens** | Crear tokens válidos sin un DA legítimo. | Firma criptográfica del IM lo hace computacionalmente inviable. | Muy bajo |
+| Amenaza | Mitigacion | Riesgo |
+|---------|------------|--------|
+| **Bypass por dispositivo sin DA** | Politica de plataforma para sesiones sin token | Medio |
+| **Implementador fraudulento** | Auditoria open source, reputacion, exclusion | Bajo |
+| **MITM en handshake** | TLS con certificate pinning, ventana minima | Muy bajo |
+| **Correlacion de tokens** | Rotacion, nonces, ruido temporal, firmas ciegas | Muy bajo |
+| **Menor desactiva DA** | Proteccion a nivel de SO, PIN parental | Medio |
+| **Fabricacion de tokens** | Firma criptografica computacionalmente inviable | Muy bajo |
+
 ```mermaid
-pie title Distribucion de riesgo residual
+pie title Riesgo residual
     "Muy bajo" : 3
     "Bajo" : 1
     "Medio" : 2
@@ -487,33 +427,34 @@ AAVP no pretende ser una solución completa. Es importante ser transparentes:
 ### El Problema del Bootstrapping
 
 Todo protocolo de dos lados enfrenta el clásico dilema del huevo y la gallina. Para superarlo se propone una estrategia en tres fases:
+
 ```mermaid
 gantt
-    title Hoja de ruta de adopcion de AAVP
+    title Hoja de ruta AAVP
     dateFormat YYYY
     axisFormat %Y
 
-    section Fase 1 Especificacion
-    Publicacion del estandar abierto     :a1, 2026, 1y
-    Implementaciones de referencia OSS   :a2, 2026, 1y
-    Pruebas controladas cripto y UX      :a3, 2026, 1y
+    section Fase 1
+    Estandar abierto       :a1, 2026, 1y
+    Referencia OSS         :a2, 2026, 1y
+    Pruebas cripto y UX    :a3, 2026, 1y
 
-    section Fase 2 Adopcion temprana
-    Integracion en SO Apple y Google     :b1, 2027, 2y
-    Controles parentales emiten tokens   :b2, 2027, 1y
-    Plataformas pioneras con VG          :b3, 2027, 2y
+    section Fase 2
+    Integracion en SO      :b1, 2027, 2y
+    Controles parentales   :b2, 2027, 1y
+    Plataformas pioneras   :b3, 2027, 2y
 
-    section Fase 3 Masa critica
-    Impulso regulatorio DSA COPPA AADC   :c1, 2028, 2y
-    Ciclo virtuoso de adopcion           :c2, 2029, 2y
-    Gobernanza comunitaria W3C o IETF    :c3, 2029, 2y
+    section Fase 3
+    Impulso regulatorio    :c1, 2028, 2y
+    Adopcion masiva        :c2, 2029, 2y
+    Gobernanza W3C-IETF    :c3, 2029, 2y
 ```
 
 ### Compatibilidad Regulatoria
 
 AAVP está diseñado para encajar en los marcos regulatorios existentes y emergentes:
 
-| Regulación | Compatibilidad con AAVP |
+| Regulacion | Compatibilidad con AAVP |
 |------------|------------------------|
 | **RGPD / GDPR** | Al no procesar datos personales, AAVP minimiza las obligaciones regulatorias. No se requiere consentimiento específico. |
 | **Digital Services Act (DSA)** | La DSA exige medidas de protección de menores. AAVP proporciona la señal técnica sin crear sistemas de vigilancia. |
@@ -524,13 +465,13 @@ AAVP está diseñado para encajar en los marcos regulatorios existentes y emerge
 
 ## 10. Comparativa con Soluciones Existentes
 
-| Criterio | AAVP | DNI / Pasaporte | Biometria facial | Tarjeta credito | Autodeclaracion |
-|----------|------|-----------------|------------------|-----------------|-----------------|
+| Criterio | AAVP | DNI | Biometria | Tarjeta | Autodeclaracion |
+|----------|:----:|:---:|:---------:|:-------:|:---------------:|
 | **Privacidad** | Alta | Muy baja | Muy baja | Baja | Alta |
 | **Fiabilidad** | Alta | Alta | Media | Media | Nula |
 | **Descentralizado** | Si | No | No | No | Si |
-| **Riesgo de filtracion** | Minimo | Critico | Critico | Alto | Ninguno |
-| **Coste de implementacion** | Medio | Alto | Muy alto | Medio | Bajo |
+| **Riesgo filtracion** | Minimo | Critico | Critico | Alto | Ninguno |
+| **Coste** | Medio | Alto | Muy alto | Medio | Bajo |
 | **RGPD nativo** | Si | No | No | No | Si |
 
 ---
@@ -560,7 +501,7 @@ Los bloques de construcción criptográficos necesarios existen y están probado
 
 ## Glosario
 
-| Término | Definición |
+| Termino | Definicion |
 |---------|-----------|
 | **AAVP** | Anonymous Age Verification Protocol. El protocolo propuesto en este documento. |
 | **Blind Signature** | Técnica criptográfica donde un firmante puede firmar un mensaje sin conocer su contenido. |
@@ -578,6 +519,6 @@ Los bloques de construcción criptográficos necesarios existen y están probado
 
 **AAVP** · Anonymous Age Verification Protocol · v0.1
 
-*Documento de trabajo — Sujeto a revisión*
+*Documento de trabajo — Sujeto a revision*
 
 </div>
