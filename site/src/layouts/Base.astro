@@ -1,0 +1,94 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  currentPage?: string;
+}
+
+const { title, description = 'Protocolo abierto y descentralizado para la verificación anónima de edad en plataformas digitales.', currentPage = '' } = Astro.props;
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        var saved = localStorage.getItem('theme');
+        var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="nav-inner">
+        <a href={`${base}`} class="nav-brand">AAVP</a>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+        <button class="theme-toggle" aria-label="Cambiar tema">
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <button class="nav-toggle" aria-label="Menú" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        </div>
+        <ul class="nav-links">
+          <li><a href={`${base}`} aria-current={currentPage === 'home' ? 'page' : undefined}>Inicio</a></li>
+          <li><a href={`${base}white-paper/`} aria-current={currentPage === 'white-paper' ? 'page' : undefined}>White Paper</a></li>
+          <li><a href={`${base}protocolo/`} aria-current={currentPage === 'protocolo' ? 'page' : undefined}>Protocolo</a></li>
+          <li><a href={`${base}changelog/`} aria-current={currentPage === 'changelog' ? 'page' : undefined}>Changelog</a></li>
+          <li><a href="https://github.com/jorgej-ramos/AAVP" target="_blank" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p><strong>AAVP</strong> &mdash; Anonymous Age Verification Protocol</p>
+        <p><a href="https://github.com/jorgej-ramos/AAVP" target="_blank" rel="noopener">Repositorio en GitHub</a></p>
+      </div>
+    </footer>
+
+    <script is:inline>
+      document.querySelector('.nav-toggle')?.addEventListener('click', function () {
+        var links = document.querySelector('.nav-links');
+        var expanded = this.getAttribute('aria-expanded') === 'true';
+        this.setAttribute('aria-expanded', String(!expanded));
+        links?.classList.toggle('open');
+      });
+
+      document.querySelector('.theme-toggle')?.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

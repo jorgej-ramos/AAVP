@@ -1,0 +1,18 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  currentPage?: string;
+}
+
+const { title, currentPage = '' } = Astro.props;
+---
+
+<Base title={title} currentPage={currentPage}>
+  <div class="doc-container">
+    <article class="markdown-content">
+      <slot />
+    </article>
+  </div>
+</Base>

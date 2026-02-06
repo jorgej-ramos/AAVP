@@ -1,0 +1,38 @@
+---
+import Doc from '../layouts/Doc.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import rehypeMermaid from 'rehype-mermaid';
+
+// Tell Shiki to skip mermaid code blocks so rehype-mermaid can process them.
+// Shiki runs as a rehype plugin BEFORE user rehype plugins in Astro's pipeline,
+// so without this exclusion, mermaid blocks become <pre class="astro-code">
+// elements that rehype-mermaid cannot recognize.
+const processor = await createMarkdownProcessor({
+  syntaxHighlight: {
+    type: 'shiki',
+    excludeLangs: ['mermaid'],
+  },
+  rehypePlugins: [
+    [rehypeMermaid, { strategy: 'img-svg', dark: false }],
+  ],
+});
+
+// Read the markdown file from the repo root
+const mdPath = resolve(process.cwd(), '..', 'README.md');
+const rawContent = readFileSync(mdPath, 'utf-8');
+
+// Fix internal links: PROTOCOL.md -> /AAVP/protocolo/
+const content = rawContent.replace(
+  /\[PROTOCOL\.md\]\(PROTOCOL\.md\)/g,
+  '[PROTOCOL.md](/AAVP/protocolo/)'
+);
+
+// Render markdown to HTML through Astro's pipeline
+const { code: html } = await processor.render(content);
+---
+
+<Doc title="White Paper — AAVP" currentPage="white-paper">
+  <Fragment set:html={html} />
+</Doc>

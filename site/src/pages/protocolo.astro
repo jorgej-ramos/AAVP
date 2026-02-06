@@ -1,0 +1,33 @@
+---
+import Doc from '../layouts/Doc.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import rehypeMermaid from 'rehype-mermaid';
+
+// Tell Shiki to skip mermaid code blocks so rehype-mermaid can process them.
+const processor = await createMarkdownProcessor({
+  syntaxHighlight: {
+    type: 'shiki',
+    excludeLangs: ['mermaid'],
+  },
+  rehypePlugins: [
+    [rehypeMermaid, { strategy: 'img-svg', dark: false }],
+  ],
+});
+
+const mdPath = resolve(process.cwd(), '..', 'PROTOCOL.md');
+const rawContent = readFileSync(mdPath, 'utf-8');
+
+// Fix internal links: README.md -> /AAVP/white-paper/
+const content = rawContent.replace(
+  /\[README\.md\]\(README\.md\)/g,
+  '[README.md](/AAVP/white-paper/)'
+);
+
+const { code: html } = await processor.render(content);
+---
+
+<Doc title="Especificacion Tecnica — AAVP" currentPage="protocolo">
+  <Fragment set:html={html} />
+</Doc>

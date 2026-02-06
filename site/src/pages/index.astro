@@ -1,0 +1,140 @@
+---
+import Base from '../layouts/Base.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const versionPath = resolve(process.cwd(), '..', 'VERSION');
+const version = readFileSync(versionPath, 'utf-8').trim();
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
+---
+
+<Base title="AAVP — Anonymous Age Verification Protocol" currentPage="home">
+
+  <section class="hero">
+    <h1 class="hero-title">AAVP</h1>
+    <p class="hero-subtitle">
+      Protocolo abierto y descentralizado para la verificación anónima de edad en plataformas digitales.
+    </p>
+    <span class="hero-version">v{version} — Borrador</span>
+    <div class="hero-cta">
+      <a href={`${base}white-paper/`} class="btn btn-primary">Leer el White Paper</a>
+      <a href={`${base}protocolo/`} class="btn btn-secondary">Especificación Técnica</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">El problema</h2>
+    <p class="section-subtitle">
+      Las plataformas digitales necesitan saber si un usuario es menor de edad. Las soluciones actuales obligan a elegir entre proteger a los menores y proteger la privacidad.
+    </p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <p class="problem-card-title">Documento de identidad</p>
+        <p class="problem-card-text">Crea bases de datos de documentos sensibles que se convierten en objetivos para atacantes. Un DNI filtrado no puede revocarse.</p>
+      </div>
+      <div class="problem-card">
+        <p class="problem-card-title">Reconocimiento facial</p>
+        <p class="problem-card-text">Recopila datos biométricos — la categoría más protegida por la ley — y presenta sesgos documentados.</p>
+      </div>
+      <div class="problem-card">
+        <p class="problem-card-title">Tarjeta de crédito</p>
+        <p class="problem-card-text">Asocia la identidad financiera del usuario con su actividad en plataformas. Los menores ya pueden tener tarjetas prepago.</p>
+      </div>
+      <div class="problem-card">
+        <p class="problem-card-title">Autodeclaración</p>
+        <p class="problem-card-text">Trivialmente eludible. Ningún menor que desee acceder a un contenido se detiene ante una casilla de verificación.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background: var(--color-surface); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+    <h2 class="section-title">Cómo funciona</h2>
+    <p class="section-subtitle">
+      AAVP transmite una señal fiable de franja de edad sin transmitir ningún dato que identifique al usuario.
+    </p>
+    <div class="steps">
+      <div class="step">
+        <p class="step-title">Genera</p>
+        <p class="step-text">El dispositivo genera una credencial anónima que dice "este usuario tiene entre 13 y 15 años" y nada más.</p>
+      </div>
+      <div class="step">
+        <p class="step-title">Presenta</p>
+        <p class="step-text">Cuando el menor accede a una plataforma compatible, el dispositivo presenta la credencial automáticamente.</p>
+      </div>
+      <div class="step">
+        <p class="step-title">Verifica</p>
+        <p class="step-text">La plataforma verifica que la credencial es legítima y adapta el contenido según la franja de edad.</p>
+      </div>
+      <div class="step">
+        <p class="step-title">Rota</p>
+        <p class="step-text">La credencial se destruye y se regenera cada pocas horas. Nadie puede usarla como identificador persistente.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Principios de diseño</h2>
+    <p class="section-subtitle">
+      Cuatro pilares no negociables. Cualquier implementación que comprometa alguno no es conforme con el protocolo.
+    </p>
+    <div class="principles">
+      <div class="principle">
+        <div class="principle-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="9" width="14" height="9" rx="2" />
+            <path d="M6 9V6a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
+        <p class="principle-title">Privacidad por Diseño</p>
+        <p class="principle-text">Ningún dato personal identificable abandona el dispositivo. Garantía matemática, no política.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="10" cy="5" r="2.5" />
+            <circle cx="4" cy="15" r="2.5" />
+            <circle cx="16" cy="15" r="2.5" />
+            <line x1="10" y1="7.5" x2="4" y2="12.5" />
+            <line x1="10" y1="7.5" x2="16" y2="12.5" />
+          </svg>
+        </div>
+        <p class="principle-title">Descentralización</p>
+        <p class="principle-text">Sin autoridad central. Cada plataforma decide de forma independiente en qué implementadores confía.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 7h12M4 13h12M7 4v12M13 4v12" />
+          </svg>
+        </div>
+        <p class="principle-title">Estándar Abierto</p>
+        <p class="principle-text">Sin licencias, tasas ni permisos. Cualquier organización puede implementar el protocolo.</p>
+      </div>
+      <div class="principle">
+        <div class="principle-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="14" height="14" rx="2" />
+            <line x1="8" y1="7" x2="12" y2="7" />
+          </svg>
+        </div>
+        <p class="principle-title">Minimalismo de Datos</p>
+        <p class="principle-text">Solo franja de edad. Cada campo adicional requiere justificación rigurosa.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="text-align: center; padding-bottom: 5rem;">
+    <h2 class="section-title">Consulta la documentación completa</h2>
+    <p class="section-subtitle">
+      El white paper explica el protocolo de forma accesible. La especificación técnica detalla la arquitectura y la criptografía.
+    </p>
+    <div class="hero-cta">
+      <a href={`${base}white-paper/`} class="btn btn-primary">White Paper</a>
+      <a href={`${base}protocolo/`} class="btn btn-secondary">Especificacion Tecnica</a>
+      <a href="https://github.com/jorgej-ramos/AAVP" class="btn btn-secondary" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </section>
+
+</Base>

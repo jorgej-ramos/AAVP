@@ -1,0 +1,17 @@
+---
+import Doc from '../layouts/Doc.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+
+const processor = await createMarkdownProcessor({});
+
+const mdPath = resolve(process.cwd(), '..', 'CHANGELOG.md');
+const rawContent = readFileSync(mdPath, 'utf-8');
+
+const { code: html } = await processor.render(rawContent);
+---
+
+<Doc title="Changelog — AAVP" currentPage="changelog">
+  <Fragment set:html={html} />
+</Doc>
