@@ -1,0 +1,66 @@
+name: Formal Verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'formal/**'
+      - 'PROTOCOL.md'
+  pull_request:
+    paths:
+      - 'formal/**'
+      - 'PROTOCOL.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run security proofs (unforgeability, executability)
+        run: |
+          docker run --rm -v "${{ github.workspace }}/formal:/data" \
+            infsec/tamarin-prover \
+            --prove /data/aavp.spthy
+
+      - name: Run unlinkability proof (observational equivalence)
+        run: |
+          docker run --rm -v "${{ github.workspace }}/formal:/data" \
+            infsec/tamarin-prover \
+            --diff --prove /data/aavp-unlinkability.spthy
+
+  badge:
+    needs: verify
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && always()
+    permissions:
+      contents: read
+    steps:
+      - name: Determine badge status
+        id: badge
+        run: |
+          if [[ "${{ needs.verify.result }}" == "success" ]]; then
+            echo "message=verified" >> "$GITHUB_OUTPUT"
+            echo "color=brightgreen" >> "$GITHUB_OUTPUT"
+          else
+            echo "message=failed" >> "$GITHUB_OUTPUT"
+            echo "color=red" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update badge via gist
+        if: env.GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        env:
+          GIST_ID: ${{ secrets.FORMAL_VERIFICATION_GIST_ID }}
+        with:
+          auth: ${{ secrets.FORMAL_VERIFICATION_GIST_TOKEN }}
+          gistID: ${{ secrets.FORMAL_VERIFICATION_GIST_ID }}
+          filename: formal-verification.json
+          label: formal
+          message: ${{ steps.badge.outputs.message }}
+          color: ${{ steps.badge.outputs.color }}

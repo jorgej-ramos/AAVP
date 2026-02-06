@@ -1,0 +1,221 @@
+/*
+ * AAVP — Anonymous Age Verification Protocol
+ * Formal verification model for Tamarin Prover
+ *
+ * This model captures the core security properties of AAVP's
+ * partially blind signature scheme (RSAPBSSA-SHA384):
+ *
+ *   - Unforgeability: a verified token implies IM participation
+ *   - Executability:  the protocol can complete (sanity check)
+ *   - Nonce freshness: each token has a unique nonce
+ *   - Metadata binding: the age bracket in a verified token
+ *                       matches what the IM signed
+ *
+ * Abstraction choices:
+ *   - The "message" being signed is abstracted to just the nonce.
+ *     In the real protocol, token_type and token_key_id are also
+ *     part of the signed content, but they are public constants
+ *     and don't affect security properties.
+ *   - The public metadata (info) is modeled as <age_bracket, expires_at>.
+ *   - Key derivation (HKDF) is implicit: the info parameter in
+ *     sign_blind models that the IM derives a signing key per
+ *     (age_bracket, expires_at) combination.
+ *   - The blind signature scheme uses dedicated functions
+ *     (blind, sign_blind, finalize, pbsverify) rather than
+ *     generic sign/verify. This yields a subterm-convergent
+ *     equational theory that Tamarin handles efficiently.
+ *
+ * Protocol roles: DA (Device Agent), IM (Implementador), VG (Verification Gate)
+ *
+ * Run:  tamarin-prover --prove formal/aavp.spthy
+ */
+
+theory AAVP
+begin
+
+/*
+ * Equational theory for Partially Blind Signatures
+ *
+ * Functions:
+ *   pk(sk)                            — public key from secret key
+ *   blind(msg, r)                     — blind a message with factor r
+ *   sign_blind(blinded_msg, info, sk) — IM signs a blinded message with metadata
+ *   finalize(blind_sig, r)            — DA unblinds the blind signature
+ *   pbsverify(sig, msg, info, pk)     — VG verifies the finalized signature
+ *
+ * The single core equation captures the full blind signature property:
+ *   If you blind a message m with factor r, get it signed by IM (who sees
+ *   info but not m), and finalize with r, the result is verifiable against
+ *   m, info, and the IM's public key.
+ *
+ * This equation is subterm-convergent (RHS = constant 'true', strictly
+ * simpler than LHS), ensuring efficient saturation in Tamarin.
+ */
+
+functions:
+  pk/1,
+  blind/2,
+  sign_blind/3,
+  finalize/2,
+  pbsverify/4,
+  true/0
+
+equations:
+  pbsverify(finalize(sign_blind(blind(m, r), info, sk), r), m, info, pk(sk)) = true
+
+
+/* ============================================================
+ * KEY SETUP
+ * ============================================================ */
+
+// IM generates a signing key pair and publishes the public key.
+// The secret key remains in persistent storage (!IMSecretKey).
+rule IM_KeyGen:
+  [ Fr(~sk) ]
+  --[ IMKeyGen(pk(~sk)) ]->
+  [ !IMSecretKey(~sk),
+    !IMPublicKey(pk(~sk)),
+    Out(pk(~sk)) ]
+
+// Key compromise: models an adversary who obtains the IM's secret key.
+// Used to prove that unforgeability holds UNLESS the key is compromised.
+rule IM_KeyReveal:
+  [ !IMSecretKey(sk) ]
+  --[ IMKeyRevealed(pk(sk)) ]->
+  [ Out(sk) ]
+
+
+/* ============================================================
+ * TOKEN ISSUANCE
+ * ============================================================ */
+
+// Step 1: DA generates a fresh nonce and blinding factor.
+// Blinds the nonce and sends it to the IM along with public metadata.
+//
+// In the real protocol:
+//   - age_bracket and expires_at are public metadata (visible to IM)
+//   - nonce is blinded (hidden from IM)
+//   - DA also includes token_type and token_key_id (omitted here: public constants)
+rule DA_RequestSignature:
+  [ Fr(~nonce),
+    Fr(~r),
+    !IMPublicKey(pk_im) ]
+  --[ DARequest(~nonce, $age, $exp) ]->
+  [ DA_WaitSig(~nonce, ~r, $age, $exp, pk_im),
+    Out(<blind(~nonce, ~r), $age, $exp>) ]
+
+// Step 2: IM receives a blinded message and public metadata.
+// Signs the blinded message. The metadata (age, exp) is visible
+// to the IM — this is the "partially blind" aspect.
+//
+// In the real protocol, the IM also verifies that the metadata
+// is coherent with the DA's configuration (access control, not
+// modeled here — it's not a cryptographic property).
+rule IM_BlindSign:
+  [ !IMSecretKey(~sk),
+    In(<blinded_msg, age, exp>) ]
+  --[ IMSigned(<age, exp>) ]->
+  [ Out(sign_blind(blinded_msg, <age, exp>, ~sk)) ]
+
+// Step 3: DA receives the blind signature and finalizes it.
+// finalize(sign_blind(blind(nonce, r), info, sk), r) produces
+// a token that passes pbsverify against (nonce, info, pk(sk)).
+rule DA_FinalizeToken:
+  [ DA_WaitSig(nonce, r, age, exp, pk_im),
+    In(blind_sig) ]
+  --[ DAFinalized(nonce, age, exp) ]->
+  [ DA_HasToken(nonce, age, exp, pk_im, finalize(blind_sig, r)) ]
+
+
+/* ============================================================
+ * TOKEN PRESENTATION AND VERIFICATION
+ * ============================================================ */
+
+// DA presents the complete token to the VG via the network.
+// The token contains: nonce, age_bracket, expires_at, authenticator.
+// (token_type and token_key_id omitted: public routing fields.)
+rule DA_PresentToken:
+  [ DA_HasToken(nonce, age, exp, pk_im, authenticator) ]
+  --[ DAPresented(nonce, age, exp) ]->
+  [ Out(<nonce, age, exp, authenticator>) ]
+
+// VG receives a token, looks up the IM's public key, and verifies
+// the partially blind signature against the public metadata.
+//
+// The Eq restriction forces:
+//   pbsverify(authenticator, nonce, <age, exp>, pk_im) = true
+// which by the equational theory requires:
+//   authenticator = finalize(sign_blind(blind(nonce, r), <age, exp>, sk), r)
+// where pk_im = pk(sk) — i.e., the IM must have signed.
+rule VG_VerifyToken:
+  [ !IMPublicKey(pk_im),
+    In(<nonce, age, exp, authenticator>) ]
+  --[ Eq(pbsverify(authenticator, nonce, <age, exp>, pk_im), true),
+      TokenVerified(nonce, age, exp, pk_im) ]->
+  [ ]
+
+
+/* ============================================================
+ * RESTRICTIONS
+ * ============================================================ */
+
+restriction Equality:
+  "All x y #i. Eq(x, y) @ i ==> x = y"
+
+
+/* ============================================================
+ * LEMMAS
+ * ============================================================ */
+
+// Sanity check: the protocol can execute to completion.
+// Tamarin must find at least one valid trace where a token
+// is successfully verified.
+lemma executability:
+  exists-trace
+  "Ex nonce age exp pk_im #i.
+    TokenVerified(nonce, age, exp, pk_im) @ i"
+
+// Unforgeability: if a token is verified against an honest IM's key,
+// then the IM must have participated in signing (with the same metadata).
+//
+// This captures: an adversary cannot produce a valid token without
+// interacting with the IM's blind signing service.
+lemma unforgeability:
+  all-traces
+  "All nonce age exp pk_im #i.
+    TokenVerified(nonce, age, exp, pk_im) @ i
+    & not(Ex #c. IMKeyRevealed(pk_im) @ c)
+    ==> (Ex #j. IMSigned(<age, exp>) @ j & j < i)"
+
+// Weaker unforgeability: a verified token implies either IM participation
+// or key compromise. This separates the two failure modes.
+lemma unforgeability_or_compromise:
+  all-traces
+  "All nonce age exp pk_im #i.
+    TokenVerified(nonce, age, exp, pk_im) @ i
+    ==> (Ex #j. IMSigned(<age, exp>) @ j & j < i)
+      | (Ex #c. IMKeyRevealed(pk_im) @ c)"
+
+// Nonce freshness: two distinct token issuances always produce
+// different nonces (guaranteed by Fr(~nonce)).
+lemma nonce_uniqueness:
+  all-traces
+  "All nonce age1 exp1 age2 exp2 #i #j.
+    DARequest(nonce, age1, exp1) @ i
+    & DARequest(nonce, age2, exp2) @ j
+    ==> #i = #j"
+
+// Metadata binding: the age_bracket and expires_at in a verified token
+// are exactly the values the IM signed. An adversary cannot alter the
+// metadata after obtaining the blind signature.
+//
+// (This is a corollary of unforgeability — the metadata is bound
+// to the signature via the info parameter.)
+lemma metadata_binding:
+  all-traces
+  "All nonce age exp pk_im #i.
+    TokenVerified(nonce, age, exp, pk_im) @ i
+    & not(Ex #c. IMKeyRevealed(pk_im) @ c)
+    ==> (Ex #j. IMSigned(<age, exp>) @ j)"
+
+end
