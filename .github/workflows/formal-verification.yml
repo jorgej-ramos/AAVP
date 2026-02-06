@@ -24,13 +24,15 @@ jobs:
 
       - name: Run security proofs (unforgeability, executability)
         run: |
-          docker run --rm -v "${{ github.workspace }}/formal:/data" \
+          docker run --rm -e LANG=C.UTF-8 \
+            -v "${{ github.workspace }}/formal:/data" \
             infsec/tamarin-prover \
             --prove /data/aavp.spthy
 
       - name: Run unlinkability proof (observational equivalence)
         run: |
-          docker run --rm -v "${{ github.workspace }}/formal:/data" \
+          docker run --rm -e LANG=C.UTF-8 \
+            -v "${{ github.workspace }}/formal:/data" \
             infsec/tamarin-prover \
             --diff --prove /data/aavp-unlinkability.spthy
 
