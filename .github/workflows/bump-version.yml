@@ -5,8 +5,12 @@ name: Release
 #
 # The workflow extracts the version from the tag name, updates every
 # file that carries a version string (VERSION, README.md, PROTOCOL.md,
-# CHANGELOG.md), commits the changes, and moves the tag so it points
-# to the final commit with all headers already updated.
+# CHANGELOG.md), commits the changes if any, and moves the tag so it
+# points to the final commit with all headers already updated.
+#
+# Idempotent: if a previous run already committed the updates but
+# failed on the tag step, re-pushing the tag will skip the commit
+# and only recreate the tag on HEAD.
 
 on:
   push:
@@ -29,8 +33,8 @@ jobs:
       - name: Extract version from tag
         id: tag
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"       # v0.3.0
-          VERSION="${TAG#v}"                    # 0.3.0
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
           echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -40,23 +44,17 @@ jobs:
           CURRENT=$(head -1 VERSION | tr -d '[:space:]')
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
 
-      - name: Validate version bump
+      - name: Validate version
         env:
           NEW: ${{ steps.tag.outputs.version }}
           OLD: ${{ steps.current.outputs.version }}
         run: |
-          if [[ "$NEW" == "$OLD" ]]; then
-            echo "::error::Tag version ($NEW) is the same as current VERSION ($OLD)."
-            exit 1
-          fi
-
-          # Verify the new version is greater than the current one
+          # Allow equal (idempotent retry) or greater (normal bump)
           printf '%s\n%s' "$OLD" "$NEW" | sort -V | tail -1 | grep -qx "$NEW" || {
-            echo "::error::Tag version ($NEW) is not greater than current VERSION ($OLD)."
+            echo "::error::Tag version ($NEW) is less than current VERSION ($OLD)."
             exit 1
           }
-
-          echo "::notice::Releasing $OLD -> $NEW"
+          echo "::notice::Release $OLD -> $NEW"
 
       - name: Update VERSION file
         run: echo "${{ steps.tag.outputs.version }}" > VERSION
@@ -86,37 +84,51 @@ jobs:
         run: |
           TODAY=$(date +%Y-%m-%d)
 
-          # Stamp [Unreleased] with the new version and create fresh Unreleased
-          sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [${NEW_VERSION}] - ${TODAY}/" \
-            CHANGELOG.md
+          # Only stamp if [Unreleased] has not already been replaced for this version
+          if ! grep -q "^## \[${NEW_VERSION}\]" CHANGELOG.md; then
+            sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [${NEW_VERSION}] - ${TODAY}/" \
+              CHANGELOG.md
 
-          # Update Unreleased comparison link
-          sed -i \
-            "s|\[Unreleased\]: \(.*\)/compare/v.*\.\.\.HEAD|[Unreleased]: \1/compare/v${NEW_VERSION}...HEAD|" \
-            CHANGELOG.md
+            # Update Unreleased comparison link
+            sed -i \
+              "s|\[Unreleased\]: \(.*\)/compare/v.*\.\.\.HEAD|[Unreleased]: \1/compare/v${NEW_VERSION}...HEAD|" \
+              CHANGELOG.md
 
-          # Add new version comparison link
-          sed -i \
-            "/^\[Unreleased\]:.*HEAD$/a [${NEW_VERSION}]: https://github.com/${{ github.repository }}/compare/v${OLD_VERSION}...v${NEW_VERSION}" \
-            CHANGELOG.md
+            # Add new version comparison link if not present
+            if ! grep -q "^\[${NEW_VERSION}\]:" CHANGELOG.md; then
+              sed -i \
+                "/^\[Unreleased\]:.*HEAD$/a [${NEW_VERSION}]: https://github.com/${{ github.repository }}/compare/v${OLD_VERSION}...v${NEW_VERSION}" \
+                CHANGELOG.md
+            fi
+          fi
 
-      - name: Commit changes
+      - name: Commit if there are changes
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add VERSION README.md PROTOCOL.md CHANGELOG.md
-          git commit -m "Release v${{ steps.tag.outputs.version }}"
-          git push origin main
 
-      - name: Move tag to release commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit (previous run already applied updates)."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Release v${{ steps.tag.outputs.version }}"
+            git push origin main
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Move tag to latest main commit
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          # Delete the original tag locally and remotely
-          git tag -d "${TAG}"
-          git push origin ":refs/tags/${TAG}"
+          # Delete local tag (from checkout)
+          git tag -d "${TAG}" 2>/dev/null || true
 
-          # Create annotated tag on the release commit (with updated headers)
+          # Delete remote tag
+          git push origin ":refs/tags/${TAG}" 2>/dev/null || true
+
+          # Recreate annotated tag on HEAD (which has updated headers)
           git tag -a "${TAG}" -m "Release ${TAG}"
           git push origin "${TAG}"
