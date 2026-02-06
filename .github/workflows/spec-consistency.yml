@@ -1,0 +1,72 @@
+name: Spec Consistency
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'PROTOCOL.md'
+      - 'SECURITY-ANALYSIS.md'
+      - 'CLAUDE.md'
+      - 'VERSION'
+      - 'scripts/check-spec-consistency.sh'
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'PROTOCOL.md'
+      - 'SECURITY-ANALYSIS.md'
+      - 'CLAUDE.md'
+      - 'VERSION'
+      - 'scripts/check-spec-consistency.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run spec consistency checks
+        run: bash scripts/check-spec-consistency.sh
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec-consistency-results
+          path: spec-consistency-results.json
+
+  badge:
+    needs: check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && always()
+    permissions:
+      contents: read
+    steps:
+      - name: Determine badge status
+        id: badge
+        run: |
+          if [[ "${{ needs.check.result }}" == "success" ]]; then
+            echo "message=consistent" >> "$GITHUB_OUTPUT"
+            echo "color=brightgreen" >> "$GITHUB_OUTPUT"
+          else
+            echo "message=inconsistent" >> "$GITHUB_OUTPUT"
+            echo "color=red" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update badge via gist
+        if: env.GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        env:
+          GIST_ID: ${{ secrets.SPEC_CONSISTENCY_GIST_ID }}
+        with:
+          auth: ${{ secrets.SPEC_CONSISTENCY_GIST_TOKEN }}
+          gistID: ${{ secrets.SPEC_CONSISTENCY_GIST_ID }}
+          filename: spec-consistency.json
+          label: spec
+          message: ${{ steps.badge.outputs.message }}
+          color: ${{ steps.badge.outputs.color }}
