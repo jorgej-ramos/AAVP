@@ -113,7 +113,8 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          # Delete the original tag (points to pre-update commit)
+          # Delete the original tag locally and remotely
+          git tag -d "${TAG}"
           git push origin ":refs/tags/${TAG}"
 
           # Create annotated tag on the release commit (with updated headers)
