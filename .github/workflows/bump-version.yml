@@ -1,0 +1,121 @@
+name: Release
+
+# Trigger: push a semver tag to main.
+#   git tag v0.3.0 && git push origin v0.3.0
+#
+# The workflow extracts the version from the tag name, updates every
+# file that carries a version string (VERSION, README.md, PROTOCOL.md,
+# CHANGELOG.md), commits the changes, and moves the tag so it points
+# to the final commit with all headers already updated.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"       # v0.3.0
+          VERSION="${TAG#v}"                    # 0.3.0
+          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Read current version
+        id: current
+        run: |
+          CURRENT=$(head -1 VERSION | tr -d '[:space:]')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+      - name: Validate version bump
+        env:
+          NEW: ${{ steps.tag.outputs.version }}
+          OLD: ${{ steps.current.outputs.version }}
+        run: |
+          if [[ "$NEW" == "$OLD" ]]; then
+            echo "::error::Tag version ($NEW) is the same as current VERSION ($OLD)."
+            exit 1
+          fi
+
+          # Verify the new version is greater than the current one
+          printf '%s\n%s' "$OLD" "$NEW" | sort -V | tail -1 | grep -qx "$NEW" || {
+            echo "::error::Tag version ($NEW) is not greater than current VERSION ($OLD)."
+            exit 1
+          }
+
+          echo "::notice::Releasing $OLD -> $NEW"
+
+      - name: Update VERSION file
+        run: echo "${{ steps.tag.outputs.version }}" > VERSION
+
+      - name: Update README.md header
+        run: |
+          sed -i \
+            "s/White Paper v[0-9]*\.[0-9]*\.[0-9]*/White Paper v${{ steps.tag.outputs.version }}/" \
+            README.md
+          sed -i \
+            "s/Anonymous Age Verification Protocol · v[0-9]*\.[0-9]*\.[0-9]*/Anonymous Age Verification Protocol · v${{ steps.tag.outputs.version }}/" \
+            README.md
+
+      - name: Update PROTOCOL.md header
+        run: |
+          sed -i \
+            "s/v[0-9]*\.[0-9]*\.[0-9]* — Borrador/v${{ steps.tag.outputs.version }} — Borrador/" \
+            PROTOCOL.md
+          sed -i \
+            "s/Especificacion Tecnica · v[0-9]*\.[0-9]*\.[0-9]*/Especificacion Tecnica · v${{ steps.tag.outputs.version }}/" \
+            PROTOCOL.md
+
+      - name: Stamp CHANGELOG.md
+        env:
+          NEW_VERSION: ${{ steps.tag.outputs.version }}
+          OLD_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+
+          # Stamp [Unreleased] with the new version and create fresh Unreleased
+          sed -i "s/^## \[Unreleased\]$/## [Unreleased]\n\n## [${NEW_VERSION}] - ${TODAY}/" \
+            CHANGELOG.md
+
+          # Update Unreleased comparison link
+          sed -i \
+            "s|\[Unreleased\]: \(.*\)/compare/v.*\.\.\.HEAD|[Unreleased]: \1/compare/v${NEW_VERSION}...HEAD|" \
+            CHANGELOG.md
+
+          # Add new version comparison link
+          sed -i \
+            "/^\[Unreleased\]:.*HEAD$/a [${NEW_VERSION}]: https://github.com/${{ github.repository }}/compare/v${OLD_VERSION}...v${NEW_VERSION}" \
+            CHANGELOG.md
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add VERSION README.md PROTOCOL.md CHANGELOG.md
+          git commit -m "Release v${{ steps.tag.outputs.version }}"
+          git push origin main
+
+      - name: Move tag to release commit
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          # Delete the original tag (points to pre-update commit)
+          git push origin ":refs/tags/${TAG}"
+
+          # Create annotated tag on the release commit (with updated headers)
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"
