@@ -19,6 +19,8 @@ CHANGELOG.md                       Registro de cambios (Keep a Changelog 1.1.0)
 VERSION                            Fuente de verdad para la version (semver)
 .github/workflows/bump-version.yml Workflow de bump automatico de version
 .github/workflows/deploy-site.yml  Workflow de deploy del sitio web a GitHub Pages
+.github/workflows/spec-consistency.yml Workflow de coherencia de la especificacion
+scripts/check-spec-consistency.sh  Script de verificacion de coherencia entre documentos
 site/                              Sitio web publico (Astro, desplegado en GitHub Pages)
 ```
 
@@ -307,6 +309,37 @@ Al modificar un concepto que aparece en varios documentos, actualizar todos los 
 - **README.md ↔ PROTOCOL.md:** Coherencia de conceptos a diferente nivel de audiencia.
 - **PROTOCOL.md ↔ SECURITY-ANALYSIS.md:** Coherencia entre la especificación y el análisis de sus vulnerabilidades. Si PROTOCOL.md cambia, las vulnerabilidades documentadas en SECURITY-ANALYSIS.md pueden cambiar de severidad o quedar resueltas.
 
+### Al modificar cualquier documento: actualizar la verificación automatizada
+
+El proyecto mantiene un script de verificación automatizada (`scripts/check-spec-consistency.sh`) que se ejecuta en CI con cada push y pull request. **Si un cambio en la especificación invalida o requiere ampliar algún check, el commit debe incluir la actualización correspondiente del script.**
+
+Situaciones que requieren actualizar el script:
+
+1. **Cambio en la estructura del token.** Si se añade, elimina o modifica un campo:
+   - Actualizar la lista `CANONICAL_FIELDS` con los campos activos.
+   - Actualizar la lista `REMOVED_FIELDS` si se elimina un campo.
+   - La verificación de offsets y tamaño total se recalcula automáticamente desde la tabla de PROTOCOL.md.
+
+2. **Cambio en el tamaño del token.** Si el tamaño total cambia:
+   - Actualizar la variable `TOKEN_SIZE` en el script.
+
+3. **Cambio en el esquema criptográfico.** Si se adopta un esquema diferente:
+   - Actualizar los checks de la sección 5 (actualmente buscan `RSAPBSSA-SHA384` y `RFC 9474`).
+
+4. **Cambio en las franjas de edad.** Si se añade o modifica una franja:
+   - Actualizar la lista `AGE_BRACKETS`.
+
+5. **Cambio en el semáforo de SECURITY-ANALYSIS.md.** Si se cambia el estado de un área (rojo/amarillo/verde):
+   - El script verifica automáticamente que el resumen textual coincide con los iconos de la tabla. Solo hay que asegurarse de que ambos se actualizan en el mismo commit.
+
+6. **Nuevo patrón de versión en un documento.** Si se añade un nuevo documento con versión en cabecera o pie:
+   - Añadir el check de versión correspondiente en la sección 1 del script.
+   - Añadir el patrón `sed` correspondiente en el workflow de release (`bump-version.yml`).
+
+**Regla práctica:** Después de hacer cambios, ejecutar `bash scripts/check-spec-consistency.sh` localmente. Si falla, corregir la inconsistencia o actualizar el script según corresponda. No pushear con checks rotos.
+
+**Al añadir un nuevo check al script**, actualizar también la página de verificación del sitio web (`site/src/pages/verificacion.astro`) para que la lista de comprobaciones publicada sea coherente con lo que realmente se ejecuta.
+
 ---
 
 ## Sitio web (GitHub Pages)
@@ -329,6 +362,7 @@ site/
       white-paper.astro      Renderiza README.md
       protocolo.astro        Renderiza PROTOCOL.md
       seguridad.astro        Renderiza SECURITY-ANALYSIS.md
+      verificacion.astro     Pagina de verificacion automatizada
       changelog.astro        Renderiza CHANGELOG.md
     styles/
       global.css             Estilos globales
@@ -344,6 +378,7 @@ site/
 | `/white-paper/` | White paper divulgativo | `README.md` (renderizado) |
 | `/protocolo/` | Especificación técnica | `PROTOCOL.md` (renderizado) |
 | `/seguridad/` | Análisis de seguridad | `SECURITY-ANALYSIS.md` (renderizado) |
+| `/verificacion/` | Verificación automatizada de la especificación | `site/src/pages/verificacion.astro` |
 | `/changelog/` | Registro de cambios | `CHANGELOG.md` (renderizado) |
 
 ### Cómo funciona
@@ -380,6 +415,9 @@ site/                                  Sitio web publico (Astro + GitHub Pages)
   workflows/
     bump-version.yml                   Workflow de bump automatico
     deploy-site.yml                    Workflow de deploy del sitio web
+    spec-consistency.yml               Workflow de coherencia de la especificacion
+scripts/
+  check-spec-consistency.sh            Verificacion de coherencia entre documentos
 spec/
   draft-aavp-protocol.md              Internet-Draft (futuro)
 reference/
@@ -421,3 +459,5 @@ Antes de dar por bueno cualquier cambio, verificar:
 - [ ] Si se modificó PROTOCOL.md: se revisó el resumen ejecutivo de SECURITY-ANALYSIS.md y se actualizaron las vulnerabilidades afectadas
 - [ ] Sin emojis, sin superlativos, sin lenguaje de marketing
 - [ ] Ortografía castellana correcta (tildes, eñes, ¿? ¡!)
+- [ ] `bash scripts/check-spec-consistency.sh` pasa sin errores
+- [ ] Si se modificó el script de verificación: se actualizó `site/src/pages/verificacion.astro`
