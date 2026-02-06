@@ -7,6 +7,11 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Modelo formal del protocolo en Tamarin Prover (`formal/aavp.spthy`, `formal/aavp-unlinkability.spthy`). Verifica matemáticamente: unforgeability (un token válido requiere participación del IM), unlinkability (dos tokens del mismo DA son indistinguibles), unicidad de nonce, y vinculación de metadatos.
+- Workflow de GitHub Actions para verificación formal (`formal-verification.yml`) con Docker (`infsec/tamarin-prover`).
+
 ## [0.4.0] - 2026-02-06
 
 ### Added

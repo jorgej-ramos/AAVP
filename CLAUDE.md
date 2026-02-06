@@ -20,7 +20,9 @@ VERSION                            Fuente de verdad para la version (semver)
 .github/workflows/bump-version.yml Workflow de bump automatico de version
 .github/workflows/deploy-site.yml  Workflow de deploy del sitio web a GitHub Pages
 .github/workflows/spec-consistency.yml Workflow de coherencia de la especificacion
+.github/workflows/formal-verification.yml Workflow de verificacion formal (Tamarin Prover)
 scripts/check-spec-consistency.sh  Script de verificacion de coherencia entre documentos
+formal/                            Modelo formal del protocolo (Tamarin Prover)
 site/                              Sitio web publico (Astro, desplegado en GitHub Pages)
 ```
 
@@ -416,8 +418,13 @@ site/                                  Sitio web publico (Astro + GitHub Pages)
     bump-version.yml                   Workflow de bump automatico
     deploy-site.yml                    Workflow de deploy del sitio web
     spec-consistency.yml               Workflow de coherencia de la especificacion
+    formal-verification.yml            Workflow de verificacion formal (Tamarin Prover)
 scripts/
   check-spec-consistency.sh            Verificacion de coherencia entre documentos
+formal/
+  aavp.spthy                           Modelo principal (unforgeability, executability)
+  aavp-unlinkability.spthy             Modelo de unlinkability (equivalencia observacional)
+  Makefile                             Targets para ejecutar las pruebas
 spec/
   draft-aavp-protocol.md              Internet-Draft (futuro)
 reference/
