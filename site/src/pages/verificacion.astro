@@ -15,6 +15,16 @@ const verifications = [
     workflowUrl: `${repoUrl}/actions/workflows/spec-consistency.yml`,
     scriptUrl: `${repoUrl}/blob/main/scripts/check-spec-consistency.sh`,
     description: 'Verifica que los documentos de la especificación (README.md, PROTOCOL.md, SECURITY-ANALYSIS.md) son coherentes entre sí: versiones, campos del token, terminología, esquema criptográfico y referencias cruzadas.',
+    references: [
+      {
+        text: 'Keep a Changelog 1.1.0 — Convención de registro de cambios adoptada por AAVP',
+        url: 'https://keepachangelog.com/en/1.1.0/',
+      },
+      {
+        text: 'Semantic Versioning 2.0.0 — Esquema de versionado seguido por el proyecto',
+        url: 'https://semver.org/spec/v2.0.0.html',
+      },
+    ],
     checks: [
       {
         category: 'Coherencia de versión',
@@ -87,23 +97,61 @@ const verifications = [
   {
     id: 'formal-verification',
     name: 'Verificación formal del protocolo',
-    status: 'planned',
-    description: 'Modelo formal en Tamarin Prover que demuestra matemáticamente las propiedades de seguridad del protocolo: unlinkability (dos tokens del mismo usuario son indistinguibles), unforgeability (no se puede fabricar un token válido sin un IM) y anonimato dentro de la franja (el IM no puede vincular una firma con un DA concreto).',
+    status: 'active',
+    badgeUrl: `${repoUrl}/actions/workflows/formal-verification.yml/badge.svg`,
+    scriptUrl: `${repoUrl}/tree/main/formal`,
+    workflowUrl: `${repoUrl}/actions/workflows/formal-verification.yml`,
+    description: 'Modelo formal en Tamarin Prover que demuestra matemáticamente las propiedades de seguridad del protocolo. Dos modelos independientes: uno para propiedades de traza (unforgeability, ejecutabilidad) y otro para equivalencia observacional (unlinkability).',
+    references: [
+      {
+        text: 'Tamarin Prover — Herramienta de verificación formal de protocolos de seguridad. Basin, Cremers, Dreier, Meier, Sasse, Schmidt.',
+        url: 'https://tamarin-prover.com',
+      },
+      {
+        text: 'RFC 9474 — RSA Blind Signatures. Amjad, Celi, Davidson, Wood, Armando. IRTF, 2023.',
+        url: 'https://www.rfc-editor.org/rfc/rfc9474',
+      },
+      {
+        text: 'Partially Blind RSA Signatures — draft-amjad-cfrg-partially-blind-rsa. Amjad, Celi, Davidson, Wood.',
+        url: 'https://datatracker.ietf.org/doc/draft-amjad-cfrg-partially-blind-rsa/',
+      },
+      {
+        text: 'Blind Signatures for Untraceable Payments — David Chaum. Advances in Cryptology (CRYPTO), 1983.',
+        url: 'https://link.springer.com/chapter/10.1007/978-1-4757-0602-4_18',
+      },
+      {
+        text: 'Automated Verification of Security Protocols with Tamarin — Meier, Schmidt, Cremers, Basin. CAV, 2013.',
+        url: 'https://doi.org/10.1007/978-3-642-39799-8_48',
+      },
+      {
+        text: 'Privacy Pass: A Formal Analysis — Davidson, Faz-Hernandez, Sullivan, Wood. ePrint 2025/2022.',
+        url: 'https://eprint.iacr.org/2025/2022',
+      },
+    ],
     checks: [
       {
-        category: 'Propiedades de seguridad',
+        category: 'Propiedades de seguridad (aavp.spthy)',
         items: [
-          'Unlinkability: dos tokens del mismo DA son indistinguibles para cualquier observador',
-          'Unforgeability: un token válido solo puede generarse con la participación de un IM legítimo',
-          'Anonimato intra-franja: el IM no puede vincular una firma con el DA que la solicitó',
+          'Ejecutabilidad: el protocolo puede completarse (comprobación de cordura)',
+          'Unforgeability: un token verificado implica participación del IM con los mismos metadatos',
+          'Unforgeability con compromiso: un token verificado implica participación del IM o compromiso de clave',
+          'Unicidad de nonce: cada emisión produce un nonce diferente',
+          'Vinculación de metadatos: age_bracket y expires_at no pueden alterarse tras la firma',
+        ],
+      },
+      {
+        category: 'Unlinkability (aavp-unlinkability.spthy)',
+        items: [
+          'Equivalencia observacional: dos tokens de DA distintos (misma franja) son indistinguibles',
+          'Anonimato intra-franja: el IM no puede vincular un token finalizado con el DA que lo solicitó',
         ],
       },
       {
         category: 'Modelo de adversario',
         items: [
-          'Adversario con control total de la red (Dolev-Yao)',
-          'Colusión IM + plataforma',
-          'Compromiso parcial de claves',
+          'Dolev-Yao: adversario con control total de la red (intercepta, modifica, inyecta)',
+          'Colusión IM + plataforma: el adversario ve tanto mensajes cegados como tokens finales',
+          'Compromiso de claves: modelado explícito de revelación de clave del IM',
         ],
       },
     ],
@@ -200,6 +248,22 @@ const plannedVerifications = verifications.filter(v => v.status === 'planned');
           <a href={v.workflowUrl} target="_blank" rel="noopener" class="btn btn-secondary btn-small">Ver ejecuciones</a>
         </div>
       )}
+      {v.references && v.references.length > 0 && (
+        <div class="references">
+          <p class="references-title">Referencias</p>
+          <ol class="references-list">
+            {v.references.map((ref) => (
+              <li>
+                {ref.url ? (
+                  <a href={ref.url} target="_blank" rel="noopener">{ref.text}</a>
+                ) : (
+                  <span>{ref.text}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </section>
   ))}
 
@@ -232,6 +296,16 @@ const plannedVerifications = verifications.filter(v => v.status === 'planned');
           </div>
         ))}
       </div>
+      {(v.scriptUrl || v.workflowUrl) && (
+        <div class="verification-links">
+          {v.scriptUrl && (
+            <a href={v.scriptUrl} target="_blank" rel="noopener" class="btn btn-secondary btn-small">Ver modelo</a>
+          )}
+          {v.workflowUrl && (
+            <a href={v.workflowUrl} target="_blank" rel="noopener" class="btn btn-secondary btn-small">Ver workflow</a>
+          )}
+        </div>
+      )}
     </section>
   ))}
 
@@ -393,6 +467,45 @@ const plannedVerifications = verifications.filter(v => v.status === 'planned');
   .btn-small {
     padding: 0.4rem 1rem;
     font-size: 0.85rem;
+  }
+
+  .references {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .references-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.6rem;
+  }
+
+  .references-list {
+    padding-left: 1.25rem;
+    margin: 0;
+  }
+
+  .references-list li {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.35rem;
+  }
+
+  .references-list a {
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--color-border);
+    transition: color 0.15s;
+  }
+
+  .references-list a:hover {
+    color: var(--color-accent);
   }
 
   @media (max-width: 768px) {
