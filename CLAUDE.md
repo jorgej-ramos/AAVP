@@ -13,6 +13,7 @@ Este repositorio es el punto de partida: contiene el white paper (README.md) y l
 ```
 README.md                          Documento divulgativo (audiencia general)
 PROTOCOL.md                        Especificacion tecnica (audiencia tecnica)
+SECURITY-ANALYSIS.md               Estudio de vulnerabilidades y analisis de seguridad
 CLAUDE.md                          Esta guia (normas de estilo y contribucion)
 CHANGELOG.md                       Registro de cambios (Keep a Changelog 1.1.0)
 VERSION                            Fuente de verdad para la version (semver)
@@ -286,9 +287,25 @@ Preguntarse:
 - ¿A qué audiencia va dirigida? (Colocarla en el documento correcto.)
 - ¿Añade valor o es relleno? (Solo contenido que aporte.)
 
+### Al modificar PROTOCOL.md: re-evaluación contra SECURITY-ANALYSIS.md
+
+Cada cambio en la especificación técnica puede resolver, agravar o introducir vulnerabilidades. **Antes de dar por bueno un cambio en PROTOCOL.md**, consultar el resumen ejecutivo de `SECURITY-ANALYSIS.md` y verificar:
+
+1. **¿El cambio mitiga alguna vulnerabilidad documentada?** Si es así, actualizar la severidad o el riesgo residual de la entrada correspondiente en SECURITY-ANALYSIS.md. Si la vulnerabilidad queda resuelta, indicarlo explícitamente.
+2. **¿El cambio introduce una nueva superficie de ataque?** Evaluar si crea nuevos vectores no contemplados. Si es así, documentarlos en la sección correspondiente de SECURITY-ANALYSIS.md.
+3. **¿El cambio afecta a algún supuesto de seguridad (S1-S14)?** Verificar si fortalece o debilita alguno de los supuestos explícitos o implícitos listados en la sección 1.
+4. **¿El cambio modifica la estructura del token?** Revisar las vulnerabilidades T-4.1 a T-4.6 para verificar que no se introducen nuevas carencias de especificación.
+
+**Ejemplo:** Si se define el formato binario del token (305 bytes fijos), las vulnerabilidades T-4.1 (formato no definido) y T-4.2 (tamaño no especificado) pasan a estado resuelto y deben actualizarse.
+
+**Regla práctica:** Todo commit que modifique PROTOCOL.md debe ir acompañado de una revisión del resumen ejecutivo de SECURITY-ANALYSIS.md. Si el cambio afecta a alguna entrada, el commit debe incluir también la actualización correspondiente en SECURITY-ANALYSIS.md.
+
 ### Verificación de coherencia
 
-Al modificar un concepto que aparece en ambos documentos, actualizar los dos. El README.md y el PROTOCOL.md deben ser coherentes entre sí en todo momento, aunque a distinto nivel de detalle.
+Al modificar un concepto que aparece en varios documentos, actualizar todos los afectados. README.md, PROTOCOL.md y SECURITY-ANALYSIS.md deben ser coherentes entre sí en todo momento, aunque a distinto nivel de detalle.
+
+- **README.md ↔ PROTOCOL.md:** Coherencia de conceptos a diferente nivel de audiencia.
+- **PROTOCOL.md ↔ SECURITY-ANALYSIS.md:** Coherencia entre la especificación y el análisis de sus vulnerabilidades. Si PROTOCOL.md cambia, las vulnerabilidades documentadas en SECURITY-ANALYSIS.md pueden cambiar de severidad o quedar resueltas.
 
 ---
 
@@ -311,6 +328,7 @@ site/
       index.astro            Landing page
       white-paper.astro      Renderiza README.md
       protocolo.astro        Renderiza PROTOCOL.md
+      seguridad.astro        Renderiza SECURITY-ANALYSIS.md
       changelog.astro        Renderiza CHANGELOG.md
     styles/
       global.css             Estilos globales
@@ -325,6 +343,7 @@ site/
 | `/` | Landing page con hero, principios y CTA | `site/src/pages/index.astro` |
 | `/white-paper/` | White paper divulgativo | `README.md` (renderizado) |
 | `/protocolo/` | Especificación técnica | `PROTOCOL.md` (renderizado) |
+| `/seguridad/` | Análisis de seguridad | `SECURITY-ANALYSIS.md` (renderizado) |
 | `/changelog/` | Registro de cambios | `CHANGELOG.md` (renderizado) |
 
 ### Cómo funciona
@@ -351,6 +370,7 @@ npm run preview  # Preview del build
 ```
 README.md                              White paper divulgativo
 PROTOCOL.md                            Especificacion tecnica
+SECURITY-ANALYSIS.md                   Estudio de vulnerabilidades y analisis de seguridad
 CLAUDE.md                              Guia de contribucion (este archivo)
 CHANGELOG.md                           Registro de cambios
 VERSION                                Version actual (fuente de verdad)
@@ -397,6 +417,7 @@ Antes de dar por bueno cualquier cambio, verificar:
 - [ ] El contenido está en el documento correcto según su audiencia
 - [ ] Los diagramas Mermaid son coherentes con el texto
 - [ ] No se introducen campos en el token sin justificación
-- [ ] README.md y PROTOCOL.md son coherentes entre sí
+- [ ] README.md, PROTOCOL.md y SECURITY-ANALYSIS.md son coherentes entre sí
+- [ ] Si se modificó PROTOCOL.md: se revisó el resumen ejecutivo de SECURITY-ANALYSIS.md y se actualizaron las vulnerabilidades afectadas
 - [ ] Sin emojis, sin superlativos, sin lenguaje de marketing
 - [ ] Ortografía castellana correcta (tildes, eñes, ¿? ¡!)

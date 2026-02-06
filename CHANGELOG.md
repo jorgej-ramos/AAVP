@@ -7,6 +7,13 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- `SECURITY-ANALYSIS.md`: estudio exhaustivo de vulnerabilidades y análisis de seguridad del protocolo, con supuestos de seguridad, vectores de ataque no documentados, análisis de esquemas criptográficos, vulnerabilidades del token, modelo de implementación para plataformas, protocolo de auditoría, verificación de segmentación de contenido, escenarios de ataque compuestos y recomendaciones priorizadas.
+- Página `/seguridad/` en el sitio web que renderiza SECURITY-ANALYSIS.md con soporte de diagramas Mermaid.
+- Enlace a análisis de seguridad en la navegación del sitio y en la landing page.
+- `SECURITY-ANALYSIS.md` añadido como trigger del workflow de deploy del sitio.
+
 ## [0.3.0] - 2026-02-06
 
 ### Added
