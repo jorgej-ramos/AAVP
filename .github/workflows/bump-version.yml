@@ -124,6 +124,15 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          # Check if the tag already points to HEAD (idempotent re-run)
+          TAG_COMMIT=$(git rev-parse "${TAG}^{commit}" 2>/dev/null || echo "")
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          if [ "$TAG_COMMIT" = "$HEAD_SHA" ]; then
+            echo "Tag ${TAG} already points to HEAD (${HEAD_SHA}). Nothing to do."
+            exit 0
+          fi
+
           # Delete local tag (from checkout)
           git tag -d "${TAG}" 2>/dev/null || true
 
