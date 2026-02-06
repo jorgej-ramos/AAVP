@@ -1,6 +1,6 @@
 # AAVP — Anonymous Age Verification Protocol
 
-> **White Paper v0.2.0 — Febrero 2026**
+> **White Paper v0.1.0 — Febrero 2026**
 >
 > Un protocolo abierto y descentralizado para la verificacion anonima de edad en plataformas digitales.
 
@@ -252,7 +252,7 @@ La descripcion tecnica completa del protocolo — arquitectura, fundamentos crip
 
 <div align="center">
 
-**AAVP** · Anonymous Age Verification Protocol · v0.2.0
+**AAVP** · Anonymous Age Verification Protocol · v0.1.0
 
 *Documento de trabajo — Sujeto a revision*
 
