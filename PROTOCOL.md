@@ -494,7 +494,7 @@ pie title Distribucion de riesgo residual
 
 <div align="center">
 
-**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.3.0
+**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.4.0
 
 *Documento de trabajo — Sujeto a revisión*
 

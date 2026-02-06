@@ -75,7 +75,7 @@ jobs:
             "s/v[0-9]*\.[0-9]*\.[0-9]* — Borrador/v${{ steps.tag.outputs.version }} — Borrador/" \
             PROTOCOL.md
           sed -i \
-            "s/Especificacion Tecnica · v[0-9]*\.[0-9]*\.[0-9]*/Especificacion Tecnica · v${{ steps.tag.outputs.version }}/" \
+            "s/Especificaci.n T.cnica · v[0-9]*\.[0-9]*\.[0-9]*/Especificación Técnica · v${{ steps.tag.outputs.version }}/" \
             PROTOCOL.md
 
       - name: Stamp CHANGELOG.md
