@@ -12,6 +12,12 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 ### Added
 
 - `SECURITY-ANALYSIS.md`: estudio exhaustivo de vulnerabilidades y análisis de seguridad del protocolo, con supuestos de seguridad, vectores de ataque no documentados, análisis de esquemas criptográficos, vulnerabilidades del token, modelo de implementación para plataformas, protocolo de auditoría, verificación de segmentación de contenido, escenarios de ataque compuestos y recomendaciones priorizadas.
+
+### Changed
+
+- Estructura del token AAVP: adopción de Partially Blind RSA (RSAPBSSA-SHA384) como esquema criptográfico. `age_bracket` y `expires_at` pasan a ser metadatos públicos de la firma parcialmente ciega. Añadidos campos `token_type` (2 bytes, agilidad criptográfica) y `token_key_id` (32 bytes, identificación de clave del IM). Eliminado `issued_at`. Tamaño fijo del token: 331 bytes.
+- Vulnerabilidades T-4.1 a T-4.5 de SECURITY-ANALYSIS.md marcadas como resueltas. Estado del área "Estructura del token" actualizado de rojo a amarillo.
+- Frase sobre firmas ciegas en README.md ajustada para reflejar firmas parcialmente ciegas.
 - Página `/seguridad/` en el sitio web que renderiza SECURITY-ANALYSIS.md con soporte de diagramas Mermaid.
 - Enlace a análisis de seguridad en la navegación del sitio y en la landing page.
 - `SECURITY-ANALYSIS.md` añadido como trigger del workflow de deploy del sitio.

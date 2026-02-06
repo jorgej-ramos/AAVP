@@ -82,7 +82,7 @@ En contexto divulgativo usar las etiquetas descriptivas: "Infantil", "Adolescent
 |----------|-------------|
 | credencial anónima / token | sello, certificado, ticket |
 | franja de edad | rango, grupo, categoría de edad |
-| firma ciega | firma enmascarada, firma oculta |
+| firma parcialmente ciega | firma enmascarada, firma oculta |
 | vehículo de implementación | plataforma de implementación, medio |
 | señal de edad | dato de edad, información de edad |
 
@@ -101,7 +101,7 @@ Al revisar o redactar contenido, verificar siempre que no se introduce lenguaje 
 
 - "La autoridad AAVP podría..." — No existe tal autoridad.
 - "El token incluye un identificador de sesión..." — Viola minimalismo de datos.
-- "El IM conoce la franja del token firmado..." — Viola firmas ciegas / privacidad.
+- "El IM conoce la identidad del usuario que solicita la firma..." — Viola firmas parcialmente ciegas / privacidad. (Nota: el IM sí conoce la franja de edad como metadato público, pero no la identidad del usuario.)
 - "Se requiere registro previo en..." — Viola estándar abierto.
 
 ---
@@ -112,7 +112,7 @@ Al revisar o redactar contenido, verificar siempre que no se introduce lenguaje 
 
 - El proyecto se redacta en **español**.
 - Los términos técnicos del protocolo se mantienen en **inglés**: Device Agent, Verification Gate, Implementador (este último ya es español), blind signature, token, nonce, TTL, ZKP.
-- Los nombres de campos del token van siempre en inglés y monospace: `age_bracket`, `issued_at`, `expires_at`, `nonce`, `implementer_sig`.
+- Los nombres de campos del token van siempre en inglés y monospace: `token_type`, `nonce`, `token_key_id`, `age_bracket`, `expires_at`, `authenticator`.
 
 ### Tono general
 
@@ -296,7 +296,7 @@ Cada cambio en la especificación técnica puede resolver, agravar o introducir 
 3. **¿El cambio afecta a algún supuesto de seguridad (S1-S14)?** Verificar si fortalece o debilita alguno de los supuestos explícitos o implícitos listados en la sección 1.
 4. **¿El cambio modifica la estructura del token?** Revisar las vulnerabilidades T-4.1 a T-4.6 para verificar que no se introducen nuevas carencias de especificación.
 
-**Ejemplo:** Si se define el formato binario del token (305 bytes fijos), las vulnerabilidades T-4.1 (formato no definido) y T-4.2 (tamaño no especificado) pasan a estado resuelto y deben actualizarse.
+**Ejemplo:** Si se define el formato binario del token (331 bytes fijos), las vulnerabilidades T-4.1 (formato no definido) y T-4.2 (tamaño no especificado) pasan a estado resuelto y deben actualizarse.
 
 **Regla práctica:** Todo commit que modifique PROTOCOL.md debe ir acompañado de una revisión del resumen ejecutivo de SECURITY-ANALYSIS.md. Si el cambio afecta a alguna entrada, el commit debe incluir también la actualización correspondiente en SECURITY-ANALYSIS.md.
 

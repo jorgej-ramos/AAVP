@@ -51,7 +51,7 @@ El protocolo funciona así a grandes rasgos:
 3. **La plataforma verifica que el sello es legítimo** (que proviene de un software fiable) y adapta el contenido según la franja de edad.
 4. **El sello se destruye y se regenera** cada pocas horas, para que nadie pueda usarlo como identificador persistente.
 
-La clave criptográfica: el software que emite el sello **puede certificar que es auténtico sin saber qué contiene**. Ni siquiera el proveedor del software puede vincular un sello con un usuario concreto.
+La clave criptográfica: el software que emite el sello **puede certificar que es auténtico sin saber quién lo solicita**. El emisor conoce la franja de edad (es la señal que el protocolo transmite), pero no puede vincular un sello con un usuario concreto.
 
 ### Franjas de edad
 
@@ -76,7 +76,7 @@ AAVP define tres roles claramente diferenciados:
 graph LR
     DA[Device Agent] -->|credencial anonima| VG[Verification Gate]
     VG -->|sesion con franja| APP[Plataforma]
-    IM[Implementador] -.->|firma ciega| DA
+    IM[Implementador] -.->|firma parcialmente ciega| DA
 ```
 
 | Rol | Qué es | Qué hace |

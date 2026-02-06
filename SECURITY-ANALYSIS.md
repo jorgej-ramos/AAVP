@@ -30,9 +30,9 @@
 
 | Área | Estado | Vulnerabilidades abiertas | Resumen |
 |------|:------:|--------------------------|---------|
-| **Estructura del token** | 🔴 | 6 críticas/altas | Sin formato de codificación, sin tamaño fijo definido, sin versionado de algoritmo. La interoperabilidad entre implementaciones no está garantizada. Prioridad de resolución inmediata. |
+| **Estructura del token** | 🟡 | 1 media (abierta), 5 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. Pendiente: especificar API criptográfica del SO para calidad del nonce (T-4.6). |
 | **Modelo de confianza (registro de IMs)** | 🔴 | 3 críticas | El registro de Implementadores no tiene mecanismo definido, ni procedimiento de revocación, ni protección contra envenenamiento. Pilar fundamental sin especificar. |
-| **Criptografía (firmas ciegas)** | 🟡 | 1 alta (futura) | Los esquemas candidatos son sólidos y bien estudiados (RSA Blind RFC 9474). Falta selección formal y plan de migración post-cuántica. Sin riesgo inmediato. |
+| **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
 | **Gestión de sesiones (VG)** | 🔴 | 3 altas | Comportamiento post-handshake no especificado: qué almacenar, cuánto tiempo, qué hacer sin token. Cada plataforma improvisa. |
 | **Segmentación de contenido** | 🔴 | 1 alta | AAVP entrega la señal pero no define cómo verificar que las plataformas la usan. Sin framework de auditoría, la eficacia real es desconocida. |
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. Ninguna área alcanza este nivel todavía. |
 
-**Distribución actual:** 4 áreas en rojo, 3 en amarillo, 0 en verde. El protocolo necesita trabajo significativo en la especificación del token, el registro de IMs y la gestión de sesiones antes de considerarse candidato a Internet-Draft.
+**Distribución actual:** 3 áreas en rojo, 4 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. Quedan pendientes el registro de IMs y la gestión de sesiones.
 
 ---
 
@@ -59,7 +59,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | S7 | PIN parental fácilmente eludible | [1.1](#s7-pin-parental-o-protección-a-nivel-de-so-impide-la-desactivación-por-el-menor) | Menor observa el PIN (*shoulder surfing*) o manipula al padre | Alta | Autenticación biométrica del SO; *cooldown* de 24h tras cambio de franja; notificaciones proactivas |
 | S8 | Dispositivo comprometido (root/jailbreak) no documentado como supuesto | [1.2](#s8-el-dispositivo-no-está-comprometido-a-nivel-de-so-root--jailbreak) | Dispositivo rooteado (~2-5% de Android) | Crítica | *Device attestation*; documentar el supuesto en PROTOCOL.md |
 | S9 | Canal DA-IM no especificado | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | Atacante con posición de red entre DA e IM | Media | Especificar TLS + certificate pinning para DA-IM en PROTOCOL.md |
-| S10 | Tolerancia de reloj (*clock skew*) no definida | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | Reloj del dispositivo manipulado (posible sin privilegios) | Media | Definir tolerancia de ±5 min; validar `expires_at - issued_at` ≤ TTL máximo |
+| S10 | Tolerancia de reloj (*clock skew*) no definida | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | Reloj del dispositivo manipulado (posible sin privilegios) | Media | Definir tolerancia para validación de `expires_at`; rechazar tokens con `expires_at` excesivamente futuro |
 | S11 | Registro de IMs sin mecanismo definido | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | Compromiso del registro (credenciales, DNS poisoning, BGP hijack) | Crítica | Log *append-only* tipo CT; *grace period* de 72h; firma cruzada M-of-N |
 | S12 | Segmentación de contenido no verificable | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | Alta | Framework de auditoría; protocolo de certificación en 3 niveles; crawlers de verificación |
 | S14 | Revocación de IMs sin mecanismo definido | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | IM comprometido sigue activo en plataformas que no actualizan | Alta | Definir mecanismo de revocación con TTL máximo de propagación |
@@ -68,7 +68,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 
 | ID | Vector de ataque | Sección | Precondiciones | Severidad | Mitigación propuesta |
 |----|-----------------|---------|----------------|-----------|---------------------|
-| V-2.1 | Suplantación de `age_bracket` | [2.1](#21-suplantación-de-age_bracket) | DA comprometido (root, malware) o acceso al PIN parental | Crítica | *Device attestation*; *partially blind signatures* (con tradeoff de privacidad); verificación de integridad del binario |
+| V-2.1 | Suplantación de `age_bracket` | [2.1](#21-suplantación-de-age_bracket) | DA comprometido (root, malware) o acceso al PIN parental | Crítica (parcialmente mitigada) | *Device attestation*; **Partially Blind RSA adoptado**: el IM puede verificar coherencia de `age_bracket` con la configuración del DA, actuando como segunda barrera; verificación de integridad del binario |
 | V-2.2 | Colusión entre múltiples IMs | [2.2](#22-colusión-entre-múltiples-implementadores) | ≥2 IMs con acuerdo de intercambio de metadatos de firma | Alta | OHTTP para canal DA-IM; prohibir retención de logs; minimizar interacciones DA-IM |
 | V-2.3 | *Timing side-channels* | [2.3](#23-timing-side-channels) | Observador con acceso a timestamps de presentación de tokens | Media | Rotación en momentos aleatorios (no intervalos fijos); jitter uniforme ±300s; VGs no logean timestamps exactos |
 | V-2.4 | Ataque al registro de IMs | [2.4](#24-ataque-al-registro-de-implementadores) | Acceso de escritura al registro o envenenamiento del canal de distribución | Crítica | Log CT-like; *grace period* 72h; firma cruzada M-of-N; pinning de claves por VGs |
@@ -76,18 +76,18 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | V-2.6 | Degradación de protocolo (*fail-open*) | [2.6](#26-degradación-de-protocolo) | Bloqueo selectivo del handshake AAVP (firewall, proxy, DNS sinkhole) | Alta | Política *fail-closed* (contenido restringido por defecto); señalización al usuario; directrices RFC 2119 para sesiones no verificadas |
 | V-2.7 | Análisis de tráfico | [2.7](#27-análisis-de-tráfico) | Observador de red (ISP, estado) con visibilidad DA-IM y DA-VG | Media | *Traffic padding*; pre-firma de tokens; OHTTP (RFC 9458) para DA-IM |
 | V-2.8 | *Token harvesting* | [2.8](#28-token-harvesting) | VG que retiene tokens completos (operador de plataforma popular) | Media | VG debe destruir token tras extraer `age_bracket`; tokens de un solo uso |
-| V-2.9 | Manipulación del reloj del dispositivo | [2.9](#29-manipulación-del-reloj-del-dispositivo) | Capacidad de modificar hora del sistema (sin privilegios en la mayoría de SO) | Media | VG valida `issued_at` con tolerancia ±5 min; rechazar `expires_at - issued_at` > TTL máximo |
+| V-2.9 | Manipulación del reloj del dispositivo | [2.9](#29-manipulación-del-reloj-del-dispositivo) | Capacidad de modificar hora del sistema (sin privilegios en la mayoría de SO) | Media | VG valida `expires_at` contra su propio reloj; rechazar tokens con `expires_at` excesivamente futuro |
 | V-2.10 | *Social engineering* parental | [2.10](#210-social-engineering-parental) | Relación de confianza con los padres; capacidad persuasiva del menor | Alta | Autenticación fuerte (biometría del SO); *cooldown* 24h tras cambio de franja; notificaciones al padre |
 
 ### Vulnerabilidades de la estructura del token
 
 | ID | Problema | Sección | Precondiciones | Severidad | Mitigación propuesta |
 |----|----------|---------|----------------|-----------|---------------------|
-| T-4.1 | Formato de codificación no definido | [4.1](#41-formato-de-codificación-no-definido) | Dos implementaciones con codificaciones diferentes | Crítica | Definir formato binario fijo de 305 bytes (propuesta incluida) |
-| T-4.2 | Tamaño fijo no especificado | [4.2](#42-tamaño-fijo-no-especificado) | Implementaciones con tokens de distinto tamaño por franja | Crítica | Especificar 305 bytes exactos; test vector de tamaño |
-| T-4.3 | Sin versionado de algoritmo | [4.3](#43-versionado-del-algoritmo) | Migración criptográfica futura (post-cuántica) | Alta | Añadir 1 byte de versión de algoritmo; lista blanca en VG; incluir en contenido firmado |
-| T-4.4 | Sin canonicalización definida | [4.4](#44-canonicalización) | Misma estructura con codificaciones binarias diferentes | Alta | Formato fijo con offsets determinísticos (implícito en propuesta 4.1) |
-| T-4.5 | Jitter de `issued_at` no cuantificado | [4.5](#45-precisión-del-timestamp-y-jitter) | Jitter insuficiente o predecible permite correlación temporal | Alta | Distribución uniforme ±300s; aplicar a `issued_at` y `expires_at`; diferencia constante |
+| T-4.1 | ~~Formato de codificación no definido~~ | [4.1](#41-formato-de-codificación-no-definido) | ~~Dos implementaciones con codificaciones diferentes~~ | ~~Crítica~~ **Resuelta** | Formato binario fijo de 331 bytes definido en PROTOCOL.md |
+| T-4.2 | ~~Tamaño fijo no especificado~~ | [4.2](#42-tamaño-fijo-no-especificado) | ~~Implementaciones con tokens de distinto tamaño por franja~~ | ~~Crítica~~ **Resuelta** | 331 bytes fijos especificados |
+| T-4.3 | ~~Sin versionado de algoritmo~~ | [4.3](#43-versionado-del-algoritmo) | ~~Migración criptográfica futura (post-cuántica)~~ | ~~Alta~~ **Resuelta** | Campo `token_type` de 2 bytes incluido en el token |
+| T-4.4 | ~~Sin canonicalización definida~~ | [4.4](#44-canonicalización) | ~~Misma estructura con codificaciones binarias diferentes~~ | ~~Alta~~ **Resuelta** | Formato fijo con offsets determinísticos; canonicalización implícita |
+| T-4.5 | ~~Jitter de `issued_at` no cuantificado~~ | [4.5](#45-precisión-del-timestamp-y-jitter) | ~~Jitter insuficiente o predecible permite correlación temporal~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado. `expires_at` con precisión gruesa (redondeo a la hora) |
 | T-4.6 | Calidad de la fuente de aleatoriedad del nonce | [4.6](#46-espacio-del-nonce-análisis-de-birthday-attack) | DA usa PRNG débil (espacio efectivo ≪ 256 bits) | Media | Requerir API criptográfica del SO; test de entropía en auditoría de conformidad |
 
 ### Carencias del modelo de implementación
@@ -146,14 +146,15 @@ Estos supuestos están documentados en PROTOCOL.md y constituyen las bases decla
 - Los emuladores y dispositivos rooteados pueden exponer un TEE emulado que no ofrece las mismas garantías.
 - **Si falla:** Un atacante con acceso físico al dispositivo podría extraer las claves del DA, generar tokens arbitrarios con cualquier `age_bracket` y utilizarlos en plataformas compatibles. El impacto se limita a ese dispositivo concreto, pero es crítico para su usuario.
 
-#### S3. Las firmas ciegas impiden al IM conocer el contenido del token
+#### S3. Las firmas parcialmente ciegas impiden al IM vincular el token con el usuario
 
-**Supuesto:** El protocolo de firma ciega garantiza que el Implementador firma el token sin conocer su contenido, preservando la privacidad del usuario.
+**Supuesto:** El protocolo de firma parcialmente ciega (RSAPBSSA-SHA384) garantiza que el Implementador firma el token conociendo los metadatos públicos (`age_bracket`, `expires_at`) pero sin poder vincular el token resultante con el DA que lo solicitó.
 
 **Análisis de robustez:**
-- Las firmas ciegas (RSA, BLS) tienen demostración matemática de la propiedad de ceguera (*blindness*). La garantía es fuerte siempre que el esquema se implemente correctamente.
+- Las firmas parcialmente ciegas (RSAPBSSA) tienen demostración matemática de la propiedad de ceguera parcial. El IM ve los metadatos públicos pero no el `nonce`. La garantía es fuerte siempre que el esquema se implemente correctamente.
+- El IM conoce la franja de edad, lo que constituye una excepción controlada respecto a las firmas ciegas puras. Esta fuga es aceptable: la franja no es un dato personal y el VG también la conoce.
 - El riesgo principal no es la criptografía sino la implementación: *side-channel leaks* durante el proceso de firma, logs del servicio de firma que capturen datos de la petición, o metadatos de red que el IM pueda correlacionar.
-- Las *partially blind signatures* vinculan un parámetro público (potencialmente `age_bracket`) a la firma, lo que supone una excepción controlada a la ceguera total.
+- Dentro de una misma franja, todos los tokens son indistinguibles para el IM. La *unlinkability* se preserva dentro de la franja.
 - **Si falla:** Si la implementación del IM filtra la correlación entre la petición de firma y el token resultante, el IM podría vincular tokens con usuarios específicos, comprometiendo la privacidad y potencialmente la *unlinkability*.
 
 #### S4. La rotación de tokens impide el rastreo longitudinal
@@ -214,7 +215,7 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 #### S9. El canal entre DA e IM es confidencial e íntegro
 
-**Descripción:** La comunicación entre el Device Agent y el Implementador para la firma ciega se produce sobre un canal seguro que impide la interceptación o modificación de los mensajes.
+**Descripción:** La comunicación entre el Device Agent y el Implementador para la firma parcialmente ciega se produce sobre un canal seguro que impide la interceptación o modificación de los mensajes.
 
 **Análisis:**
 - PROTOCOL.md especifica TLS con certificate pinning para el canal DA-VG, pero no menciona explícitamente las garantías del canal DA-IM.
@@ -224,12 +225,13 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 #### S10. Los relojes del DA y el VG están razonablemente sincronizados
 
-**Descripción:** Los campos `issued_at` y `expires_at` del token dependen de una noción compartida del tiempo. Si los relojes del DA y el VG divergen significativamente, la validación del TTL se vuelve incoherente.
+**Descripción:** El campo `expires_at` del token depende de una noción compartida del tiempo. Si los relojes del DA y el VG divergen significativamente, la validación se vuelve incoherente. Con la eliminación de `issued_at`, el VG solo valida `expires_at` contra su propio reloj.
 
 **Análisis:**
 - Los dispositivos móviles típicamente sincronizan su reloj vía NTP con los servidores del fabricante. Sin embargo, un dispositivo comprometido o sin conectividad puede tener un reloj manipulado.
 - Un usuario podría adelantar el reloj del dispositivo para generar tokens con un `expires_at` en el futuro lejano, extendiendo artificialmente su validez.
 - El VG necesita definir una tolerancia (*clock skew*) aceptable, pero PROTOCOL.md no especifica este valor.
+- La precisión gruesa de `expires_at` (redondeo a la hora) simplifica la validación pero no elimina la necesidad de una tolerancia definida.
 - **Impacto si falla:** Tokens prematuramente rechazados (si el DA está adelantado) o tokens que deberían haber expirado aceptados (si el DA está atrasado o el VG es tolerante en exceso).
 
 #### S11. El registro de Implementadores es resistente a manipulación
@@ -306,14 +308,16 @@ PROTOCOL.md documenta 8 amenazas con sus mitigaciones. Esta sección amplía el 
 - Control sobre el DA a nivel de software (root, debug mode, modificación del binario).
 - O bien: acceso al PIN/contraseña parental para reconfigurar la franja.
 
-**Impacto:** Crítico. El menor accede sin restricciones a contenido para adultos. La plataforma no tiene forma de distinguir un token legítimo de uno con franja suplantada, ya que la firma ciega es válida en ambos casos.
+**Impacto:** Crítico. El menor accede sin restricciones a contenido para adultos. La plataforma no tiene forma de distinguir un token legítimo de uno con franja suplantada, ya que la firma parcialmente ciega es válida en ambos casos (el IM firma lo que el DA le solicita si la franja es coherente con la configuración).
 
 **Mitigaciones propuestas:**
 - Atestación remota del dispositivo (*device attestation*) para verificar la integridad del DA. Conflicto: introduce una dependencia en el fabricante del SO.
 - Verificación periódica de la integridad del DA vía hash del binario publicado por el IM. Limitación: no protege contra modificación en memoria.
 - Detección de anomalías estadísticas: si un IM observa un cambio repentino en la distribución de franjas solicitadas, podría señalar un problema. Conflicto: requiere que el IM tenga visibilidad sobre las franjas, lo que viola la ceguera de las firmas.
 
-**Riesgo residual:** Alto. No existe una mitigación completa dentro de las restricciones del protocolo. La protección depende en última instancia de la integridad del dispositivo (supuesto S8).
+**Mitigación parcial (Partially Blind RSA):** Con la adopción de firmas parcialmente ciegas, el IM puede verificar la coherencia del `age_bracket` con la configuración del DA durante el proceso de firma. Esto añade una segunda barrera: el IM rechaza solicitudes de firma cuya franja no coincida con la configuración establecida. Sin embargo, esta mitigación no protege contra un DA comprometido que modifique tanto la franja como la solicitud de firma.
+
+**Riesgo residual:** Alto (reducido parcialmente). La adopción de Partially Blind RSA mitiga el caso de manipulación en memoria del token post-generación, pero no protege contra un dispositivo rooteado que reemplace completamente el DA. La protección depende en última instancia de la integridad del dispositivo (supuesto S8).
 
 ### 2.2 Colusión entre múltiples Implementadores
 
@@ -345,11 +349,11 @@ PROTOCOL.md documenta 8 amenazas con sus mitigaciones. Esta sección amplía el 
 **Análisis detallado:**
 - Si el DA rota tokens a intervalos regulares (ej: cada 2 horas exactas), el patrón de rotación es un identificador de hecho.
 - Si el DA rota basándose en actividad del usuario (ej: al abrir la app), el patrón de uso se convierte en señal.
-- El *jitter* en `issued_at` mitiga parcialmente la correlación, pero si el jitter es insuficiente o predecible, la mitigación es débil.
+- La precisión gruesa de `expires_at` (redondeo a la hora) agrupa los tokens temporalmente, lo que incrementa el *anonymity set* y dificulta la correlación.
 
 **Mitigaciones propuestas:**
 - Especificar que la rotación debe producirse en momentos aleatorios dentro de una ventana, no en intervalos fijos.
-- El jitter de `issued_at` debe seguir una distribución uniforme con magnitud especificada (se propone ±300 segundos).
+- La precisión gruesa de `expires_at` (adoptada en PROTOCOL.md) mitiga la correlación por timestamps.
 - Las plataformas (VG) no deben loguear el timestamp exacto de validación de cada token.
 
 **Riesgo residual:** Bajo con mitigaciones implementadas. Medio sin ellas.
@@ -487,13 +491,12 @@ flowchart TD
 
 **Precondiciones:**
 - Capacidad de modificar la hora del sistema (posible en la mayoría de SO sin privilegios especiales).
-- El VG no valida el `issued_at` contra su propia noción del tiempo.
 
 **Impacto:** Medio. Un token con TTL extendido reduce la frecuencia de rotación, degradando la *unlinkability*. En combinación con otros vectores, podría servir para mantener una identidad persistente.
 
 **Mitigaciones propuestas:**
-- El VG debe validar `issued_at` contra su propio reloj con una tolerancia definida (*max clock skew*). Se propone una tolerancia de ±5 minutos.
-- El VG debe rechazar tokens cuyo `expires_at - issued_at` exceda el TTL máximo permitido (ej: 4 horas + tolerancia).
+- El VG debe validar `expires_at` contra su propio reloj. Un `expires_at` demasiado lejano en el futuro debe rechazarse. Se propone rechazar tokens cuyo `expires_at` exceda el tiempo actual del VG en más del TTL máximo permitido (ej: 4 horas + tolerancia).
+- La precisión gruesa de `expires_at` (redondeo a la hora) limita la granularidad de la manipulación: el atacante solo puede extender el token en incrementos de 1 hora.
 - La especificación debe definir estos valores de tolerancia para garantizar un comportamiento uniforme entre VGs.
 
 **Riesgo residual:** Bajo con validación del VG implementada.
@@ -597,30 +600,34 @@ PROTOCOL.md lista esquemas criptográficos candidatos para firmas ciegas y ZKP s
 
 **Evaluación para AAVP:** Candidato alternativo. Las firmas cortas son atractivas para minimizar el tamaño del token, pero la madurez y el rendimiento en móvil son inferiores a RSA.
 
-#### 3.1.3 Partially Blind Signatures
+#### 3.1.3 Partially Blind Signatures (esquema adoptado)
 
-**Descripción:** Variante de las firmas ciegas donde parte del mensaje es visible para el firmante (la parte "pública") mientras el resto permanece oculto. En el contexto de AAVP, el parámetro público sería `age_bracket` y el contenido oculto sería el `nonce` y los timestamps.
+**Descripción:** Variante de las firmas ciegas donde parte del mensaje es visible para el firmante (la parte "pública") mientras el resto permanece oculto. En AAVP, los metadatos públicos son `age_bracket` y `expires_at`, y el contenido oculto es el `nonce`.
+
+**Esquema adoptado:** RSAPBSSA-SHA384 (*RSA Partially Blind Signature Scheme with Appendix*), basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa.
 
 | Propiedad | Valor |
 |-----------|-------|
-| Esquemas concretos | Abe-Okamoto (CRYPTO 2000), extensión RSA parcialmente ciega, BLS parcialmente ciega |
-| Tamaño de firma | Abe-Okamoto: ~80 bytes, RSA parcial: ~256 bytes, BLS parcial: ~48 bytes |
-| Madurez | Baja. Abe-Okamoto tiene prueba de seguridad corregida (Kastner et al. 2022). Sin RFC |
-| Resistencia post-cuántica | No (esquemas clásicos). Existen construcciones basadas en retículos (~1.5-10 KB de firma) en fase de investigación |
+| Esquema concreto | RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) |
+| Tamaño de firma | 256 bytes (RSA-2048) |
+| Metadatos públicos | `age_bracket` (1 byte), `expires_at` (8 bytes) |
+| Contenido cegado | `nonce` (32 bytes) |
+| Madurez | Media-Alta. Basado en RFC 9474 (RSA Blind Signatures). Extensión parcialmente ciega en draft IRTF |
+| Resistencia post-cuántica | No (esquema clásico). Campo `token_type` permite migración futura |
 
 **Ventajas:**
-- Permite al IM verificar que la franja de edad en el token es legítima sin ver el resto del contenido. Esto mitiga el vector de suplantación de `age_bracket` (sección 2.1).
-- El IM podría implementar políticas (ej: solo firmar tokens cuya franja coincida con la configuración del DA) sin comprometer la privacidad del usuario.
+- Permite al IM verificar que la franja de edad en el token es legítima sin ver el `nonce`. Esto mitiga parcialmente el vector de suplantación de `age_bracket` (sección 2.1).
+- El IM puede implementar políticas (ej: solo firmar tokens cuya franja coincida con la configuración del DA) sin comprometer la *unlinkability* del usuario.
+- La derivación de clave por metadato (HKDF) vincula criptográficamente los metadatos a la firma.
 
 **Desventajas:**
-- El IM conoce la franja de edad del usuario, lo que es una fuga de información respecto a las firmas ciegas puras.
-- Implementaciones disponibles muy limitadas. No hay RFC ni estándar formal.
+- El IM conoce la franja de edad del token, lo que es una fuga de información respecto a las firmas ciegas puras.
 - La combinación de la franja visible con metadatos de red podría permitir correlación (ej: "IP X solicita firma para `UNDER_13`" → probablemente un menor).
 
-**Evaluación para AAVP:** Las *partially blind signatures* presentan una tensión fundamental con el principio de privacidad de AAVP. Si bien mitigan el riesgo de suplantación de franja, revelan información al IM que podría combinarse con otros datos para reducir el anonimato. Su uso requiere un análisis formal de las fugas de información antes de adoptarse.
+**Justificación de la adopción:** La fuga de `age_bracket` al IM es aceptable porque: (1) la franja no es un dato personal, es la señal que el protocolo transmite; (2) el VG también la conoce; (3) el IM no puede vincular un token con un DA concreto dentro de la misma franja; (4) permite al IM actuar como segunda barrera de validación.
 
 > [!IMPORTANT]
-> La elección entre firmas ciegas puras y parcialmente ciegas es una decisión arquitectónica que afecta directamente al modelo de privacidad. No es solo una cuestión de rendimiento o tamaño de firma.
+> La elección de firmas parcialmente ciegas sobre firmas ciegas puras es una decisión arquitectónica deliberada. La fuga controlada de `age_bracket` al IM se justifica por la mitigación parcial de V-2.1 (suplantación de franja) y por el hecho de que la franja es la señal mínima del protocolo, no un dato personal.
 
 ### 3.2 Pruebas de conocimiento cero (ZKP)
 
@@ -761,11 +768,11 @@ Todos los esquemas excepto STARKs tienen un impacto en latencia de red desprecia
 
 ### 3.4 Recomendación
 
-**Esquema principal:** RSA Blind Signatures (RFC 9474). Fundamento: máxima madurez, RFC publicado, rendimiento adecuado, amplia disponibilidad de librerías. El tamaño de firma (256 bytes) es aceptable.
+**Esquema adoptado:** RSAPBSSA-SHA384 (*RSA Partially Blind Signature Scheme with Appendix*, basado en RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Fundamento: máxima madurez del esquema base, RFC publicado, rendimiento adecuado, amplia disponibilidad de librerías. El tamaño de firma (256 bytes) es aceptable. Los metadatos públicos (`age_bracket`, `expires_at`) permiten al IM actuar como segunda barrera de validación.
 
 **Esquema secundario (opcional, para ZKP de verificación inicial):** Bulletproofs para *range proofs* sobre la fecha de nacimiento. Fundamento: diseñados para este caso de uso, rendimiento compatible con móvil, sin *trusted setup*.
 
-**Plan de migración post-cuántica:** Incorporar *algorithm agility* en la especificación del token (campo de versión de algoritmo) para permitir la migración futura a esquemas basados en retículos (*lattice-based blind signatures*) cuando estén estandarizados.
+**Plan de migración post-cuántica:** El campo `token_type` (uint16) en el token permite identificar el esquema criptográfico y facilita la migración futura a esquemas basados en retículos (*lattice-based blind signatures*) cuando estén estandarizados.
 
 ---
 
@@ -775,9 +782,11 @@ PROTOCOL.md define la estructura del token AAVP con cinco campos, pero la especi
 
 ### 4.1 Formato de codificación no definido
 
-**Estado actual:** PROTOCOL.md describe los campos del token pero no especifica cómo se codifican en bytes. Sin un formato de codificación definido, dos implementaciones pueden generar representaciones binarias diferentes del mismo token lógico.
+> **Estado: Resuelta.** PROTOCOL.md define un formato binario fijo de 331 bytes con offsets determinísticos.
 
-**Análisis de opciones:**
+**Estado anterior:** PROTOCOL.md describía los campos del token pero no especificaba cómo se codifican en bytes. Sin un formato de codificación definido, dos implementaciones podían generar representaciones binarias diferentes del mismo token lógico.
+
+**Análisis de opciones (histórico):**
 
 | Formato | Tamaño fijo | Canonicalización | Parsing seguro | Madurez | Complejidad |
 |---------|-------------|------------------|----------------|---------|-------------|
@@ -786,47 +795,46 @@ PROTOCOL.md define la estructura del token AAVP con cinco campos, pero la especi
 | **ASN.1 DER** | Determinístico por diseño | Sí (DER es canónico) | Media (parsing complejo) | Muy Alta | Alta |
 | **Binario ad hoc** | Sí (por diseño) | Por definición | Alta (simple) | N/A | Muy Baja |
 
-**Recomendación:** Definir un formato binario ad hoc de tamaño fijo. Justificación:
+**Resolución:** Se adoptó un formato binario ad hoc de tamaño fijo. Justificación:
 
-- AAVP tiene exactamente 5 campos con tamaños conocidos. No necesita la flexibilidad de CBOR o Protobuf.
+- AAVP tiene exactamente 6 campos con tamaños conocidos. No necesita la flexibilidad de CBOR o Protobuf.
 - Un formato fijo elimina la variabilidad de codificación, lo que es crítico para la prevención de *fingerprinting* (todos los tokens tienen idéntico tamaño).
 - La ausencia de metadatos de codificación (tags, longitudes variables) reduce la superficie de ataque de parsing.
 - Un formato simple es más fácil de auditar y de implementar correctamente en todos los lenguajes.
 
-**Propuesta de formato fijo:**
+**Formato adoptado:**
 
 ```
-Offset  Tamaño  Campo
-0       1       age_bracket (enum: 0x00-0x03)
-1       8       issued_at (uint64, big-endian, Unix timestamp con jitter)
-9       8       expires_at (uint64, big-endian, Unix timestamp)
-17      32      nonce (bytes aleatorios)
-49      256     implementer_sig (RSA-2048 blind signature)
+Offset  Tamaño  Campo                Visibilidad
+0       2       token_type           Público
+2       32      nonce                Cegado (oculto al IM durante emisión)
+34      32      token_key_id         Público
+66      1       age_bracket          Metadato público (0x00-0x03)
+67      8       expires_at           Metadato público (uint64 BE, precisión 1h)
+75      256     authenticator        Firma parcialmente ciega (RSAPBSSA-SHA384)
 ---
-Total: 305 bytes (fijo)
+Total: 331 bytes (fijo)
 ```
-
-**Implicaciones de seguridad de no definir el formato:**
-- Sin canonicalización, el VG podría aceptar dos codificaciones diferentes del mismo token, facilitando *replay* con re-codificación.
-- Las diferencias de codificación entre implementaciones pueden usarse como señal de *fingerprinting* (identificar qué DA generó el token por su estilo de codificación).
 
 ### 4.2 Tamaño fijo no especificado
 
-**Estado actual:** PROTOCOL.md afirma que "Todos los tokens tienen idéntico tamaño en bytes" como medida anti-fingerprinting, pero no especifica el tamaño.
+> **Estado: Resuelta.** PROTOCOL.md especifica 331 bytes exactos como tamaño fijo del token.
 
-**Problema:** Sin un tamaño definido, la promesa es un principio de diseño sin verificabilidad. Diferentes implementaciones pueden producir tokens de distinto tamaño, rompiendo la garantía.
+**Estado anterior:** PROTOCOL.md afirmaba que "Todos los tokens tienen idéntico tamaño en bytes" como medida anti-fingerprinting, pero no especificaba el tamaño.
 
-**Impacto:** Si los tokens de `UNDER_13` y `OVER_18` tienen diferentes tamaños (ej: por diferencias en el padding), un observador de red puede inferir la franja de edad sin descifrar el token.
+**Problema original:** Sin un tamaño definido, la promesa era un principio de diseño sin verificabilidad. Diferentes implementaciones podían producir tokens de distinto tamaño, rompiendo la garantía.
 
-**Recomendación:** Definir el tamaño exacto del token en la especificación (305 bytes con la propuesta de la sección 4.1) y exigir que todas las implementaciones produzcan tokens de este tamaño exacto. Incluir un test vector de tamaño como parte de los test de conformidad.
+**Resolución:** El tamaño exacto del token es 331 bytes. Todas las implementaciones conformes deben producir tokens de este tamaño exacto. Un token de tamaño diferente es inválido y debe ser rechazado por el VG.
 
 ### 4.3 Versionado del algoritmo
 
-**Estado actual:** La estructura del token no incluye un campo de versión del algoritmo criptográfico. No hay mecanismo para migrar de un esquema a otro.
+> **Estado: Resuelta.** El campo `token_type` (2 bytes) identifica el esquema criptográfico del token.
 
-**Problema:** Cuando AAVP necesite migrar de RSA Blind Signatures a un esquema post-cuántico, ¿cómo distinguirá el VG qué algoritmo se usó para firmar un token dado?
+**Estado anterior:** La estructura del token no incluía un campo de versión del algoritmo criptográfico. No había mecanismo para migrar de un esquema a otro.
 
-**Riesgos:**
+**Problema original:** Cuando AAVP necesitase migrar a un esquema post-cuántico, ¿cómo distinguiría el VG qué algoritmo se usó para firmar un token dado?
+
+**Riesgos analizados (histórico):**
 
 ```mermaid
 flowchart TD
@@ -838,42 +846,39 @@ flowchart TD
     F --> G[Riesgo: atacante fuerza version debil]
 ```
 
-- **Sin versionado:** El VG debe intentar verificar con todos los algoritmos soportados. Esto degrada el rendimiento y puede generar falsos positivos si un token antiguo pasa verificación con un algoritmo nuevo.
-- **Con versionado:** Un atacante podría forzar el uso de un algoritmo débil o deprecated (*downgrade attack*). El VG necesita mantener una lista de algoritmos aceptados y rechazar versiones obsoletas.
-
-**Recomendación:** Añadir un byte de versión de algoritmo al token, con las siguientes reglas:
-- El VG solo acepta algoritmos en su lista blanca (configurable).
-- Los algoritmos deprecated se rechazan con un periodo de transición definido.
-- El campo de versión se incluye en el contenido firmado para impedir su modificación sin invalidar la firma.
-
-> [!IMPORTANT]
-> Añadir un campo al token requiere superar el test de minimalismo de datos de CLAUDE.md. El campo de versión de algoritmo se justifica porque: (1) es necesario para la migración post-cuántica, (2) su valor es idéntico para todos los tokens del mismo IM (no permite *fingerprinting*), (3) no contiene información del usuario.
+**Resolución:** El campo `token_type` (uint16, 2 bytes) identifica el esquema criptográfico. Reglas:
+- El VG solo acepta `token_type` en su lista blanca (configurable).
+- Los esquemas deprecated se rechazan con un periodo de transición definido.
+- `token_type` forma parte del contenido firmado: modificarlo invalida la firma.
+- El campo supera el test de minimalismo: es necesario para la migración post-cuántica, su valor es idéntico para todos los tokens del mismo esquema (no permite *fingerprinting*), y no contiene información del usuario.
 
 ### 4.4 Canonicalización
 
-**Estado actual:** No se define un orden de campos ni un método de canonicalización. Sin canonicalización, la misma estructura lógica puede codificarse de múltiples formas, y la verificación de firma fallará si el verificador reconstruye la representación binaria de forma diferente al firmante.
+> **Estado: Resuelta.** El formato binario fijo de 331 bytes con offsets determinísticos implica canonicalización por definición.
 
-**Problema:** La canonicalización es necesaria para:
-1. Que el VG pueda verificar la firma reconstruyendo exactamente los bytes que el DA firmó.
-2. Que dos implementaciones del DA produzcan representaciones idénticas para el mismo token lógico.
-3. Que los test vectors sean determinísticos.
+**Estado anterior:** No se definía un orden de campos ni un método de canonicalización.
 
-**Recomendación:** Si se adopta el formato binario fijo propuesto en 4.1, la canonicalización está implícita en el formato: los campos tienen offsets fijos y no hay ambigüedad de codificación. Documentar explícitamente que la representación binaria es la concatenación de los campos en el orden especificado, sin separadores ni padding adicional.
+**Problema original:** Sin canonicalización, la misma estructura lógica podía codificarse de múltiples formas, y la verificación de firma fallaría si el verificador reconstruía la representación binaria de forma diferente al firmante.
+
+**Resolución:** El formato binario fijo adoptado en 4.1 resuelve la canonicalización de forma implícita: los campos tienen offsets fijos y no hay ambigüedad de codificación. La representación binaria es la concatenación de los campos en el orden especificado, sin separadores ni padding adicional.
 
 ### 4.5 Precisión del timestamp y jitter
 
-**Estado actual:** PROTOCOL.md especifica que `issued_at` lleva "ruido aleatorio" (*jitter*) para evitar correlación por momento de emisión. No se especifica la distribución ni la magnitud del jitter.
+> **Estado: Resuelta.** El campo `issued_at` ha sido eliminado del token. `expires_at` utiliza precisión gruesa (redondeo a la hora completa).
 
-**Problemas:**
+**Estado anterior:** PROTOCOL.md especificaba que `issued_at` llevaba "ruido aleatorio" (*jitter*) para evitar correlación por momento de emisión. No se especificaba la distribución ni la magnitud del jitter.
 
-- **Magnitud insuficiente:** Si el jitter es de ±1 segundo, un observador con resolución de 10 segundos puede correlacionar tokens. Si es de ±1 hora, el VG tiene dificultades para validar la frescura.
-- **Distribución predecible:** Si el jitter sigue una distribución normal, los valores centrales son más frecuentes y la distribución misma se convierte en señal.
-- **Interacción con TTL:** Si `issued_at` tiene jitter pero `expires_at` no, la diferencia `expires_at - issued_at` varía entre tokens, lo que podría ser una señal de *fingerprinting*.
+**Problemas originales:**
 
-**Recomendación:**
-- Jitter de distribución uniforme en el rango `[-300, +300]` segundos (±5 minutos). Justificación: suficiente para impedir correlación temporal pero dentro de la tolerancia de validación del VG.
-- El jitter debe aplicarse tanto a `issued_at` como a `expires_at` para que la diferencia entre ambos permanezca constante.
-- La distribución uniforme es preferible a la normal porque todos los valores tienen la misma probabilidad.
+- Magnitud del jitter no cuantificada.
+- Distribución predecible como señal de *fingerprinting*.
+- Interacción entre `issued_at` con jitter y `expires_at` sin él.
+
+**Resolución:** Se adoptó un enfoque diferente que elimina la complejidad del jitter:
+
+1. **`issued_at` eliminado:** La frescura del token se gestiona exclusivamente con `expires_at`. Un timestamp de emisión con jitter era una superficie innecesaria de *fingerprinting*.
+2. **`expires_at` con precisión gruesa:** El valor se redondea a la hora completa más cercana. Todos los tokens emitidos en la misma hora comparten el mismo valor de expiración, lo que incrementa el *anonymity set*.
+3. **Validación simplificada:** El VG valida `expires_at` contra su propio reloj. No necesita calcular `expires_at - issued_at` ni gestionar tolerancias de jitter.
 
 ### 4.6 Espacio del nonce: análisis de *birthday attack*
 
@@ -1087,10 +1092,10 @@ sequenceDiagram
 
 #### Verificación de ausencia de metadatos ocultos
 
-El token debe contener exactamente los 5 campos especificados. Test:
+El token debe contener exactamente los 6 campos especificados. Test:
 
 1. Generar 10,000 tokens con el DA bajo prueba.
-2. Verificar que todos tienen exactamente el tamaño especificado (305 bytes con la propuesta de 4.1).
+2. Verificar que todos tienen exactamente el tamaño especificado (331 bytes).
 3. Verificar que no existen patrones estadísticos en los bytes que sugieran metadatos ocultos (*steganography*): test de chi-cuadrado sobre los bytes del nonce y la firma.
 
 #### Verificación de *unlinkability*
@@ -1107,7 +1112,7 @@ La especificación debe incluir un conjunto de test vectors para validar impleme
 
 | Test vector | Entrada | Salida esperada |
 |-------------|---------|-----------------|
-| TV-DA-1 | `age_bracket=UNDER_13, nonce=0x00...00 (32 bytes), issued_at=1700000000, expires_at=1700014400` | Token de 305 bytes con estructura validable |
+| TV-DA-1 | `token_type=0x0001, nonce=0x00...00 (32 bytes), token_key_id=SHA256(pk), age_bracket=UNDER_13, expires_at=1700010000` | Token de 331 bytes con estructura validable |
 | TV-DA-2 | Token de TV-DA-1 con firma ciega usando clave de test | Firma verificable con clave pública de test |
 | TV-DA-3 | Token expirado (`expires_at` en el pasado) | El VG debe rechazar |
 | TV-DA-4 | Token con `age_bracket` inválido (0x04) | El VG debe rechazar |
@@ -1132,8 +1137,8 @@ El VG solo debe extraer `age_bracket` del token. Test:
 | IM no confiable | Firma de un IM no aceptado | Rechazo |
 | Token malformado | Tamaño incorrecto | Rechazo |
 | `age_bracket` inválido | Valor fuera de rango (0x04+) | Rechazo |
-| `issued_at` futuro | `issued_at` > tiempo actual + tolerancia | Rechazo |
-| TTL excesivo | `expires_at - issued_at` > TTL máximo | Rechazo |
+| `expires_at` excesivo | `expires_at` > tiempo actual + TTL máximo + tolerancia | Rechazo |
+| `token_type` no soportado | Esquema criptográfico no aceptado por el VG | Rechazo |
 | Token válido | Todos los campos correctos | Aceptación |
 
 #### Resistencia a *timing attacks*
@@ -1386,11 +1391,11 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 
 | # | Cambio | Prioridad | Justificación |
 |---|--------|-----------|---------------|
-| R1 | Definir formato de codificación del token (binario fijo de 305 bytes) | Crítica | Sin formato definido, las implementaciones son incompatibles entre sí |
-| R2 | Especificar tamaño exacto del token | Crítica | La promesa de "tamaño fijo" es inverificable sin un valor concreto |
-| R3 | Añadir campo de versión de algoritmo (1 byte) | Alta | Necesario para migración post-cuántica y prevención de downgrade |
+| R1 | ~~Definir formato de codificación del token~~ | ~~Crítica~~ **Resuelta** | Formato binario fijo de 331 bytes definido con RSAPBSSA-SHA384 |
+| R2 | ~~Especificar tamaño exacto del token~~ | ~~Crítica~~ **Resuelta** | 331 bytes fijos especificados |
+| R3 | ~~Añadir campo de versión de algoritmo~~ | ~~Alta~~ **Resuelta** | Campo `token_type` de 2 bytes incluido |
 | R4 | Definir tolerancia de reloj (*clock skew*) para validación de timestamps | Alta | Sin tolerancia definida, los VGs aplican criterios dispares |
-| R5 | Especificar magnitud y distribución del jitter en `issued_at` | Alta | El jitter actual no está cuantificado; puede ser insuficiente |
+| R5 | ~~Especificar magnitud y distribución del jitter en `issued_at`~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado; `expires_at` con precisión gruesa (1h) |
 | R6 | Definir política de sesiones no verificadas (SHOULD) | Media | Sin directrices, las plataformas no restringirán contenido |
 | R7 | Documentar los supuestos implícitos (S8-S14) | Media | Los supuestos no documentados no pueden ser evaluados por implementadores |
 | R8 | Definir el mecanismo del registro de IMs | Media | Sin mecanismo concreto, el registro es una abstracción no implementable |
@@ -1404,7 +1409,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | E2 | Protocolo de auditoría formal | Framework verificable para auditar las tres partes del protocolo |
 | E3 | Mecanismo de revocación de IMs | Procedimiento definido para revocar claves de IMs comprometidos con propagación oportuna |
 | E4 | Especificación de `.well-known/aavp` | Formato JSON del endpoint de descubrimiento |
-| E5 | Recomendación de esquema criptográfico | RSA Blind Signatures (RFC 9474) como esquema principal, con justificación formal |
+| E5 | ~~Recomendación de esquema criptográfico~~ | **Resuelta**: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) adoptado como esquema principal |
 | E6 | Política de migración de algoritmos | Procedimiento para transicionar de un esquema criptográfico a otro sin romper compatibilidad |
 | E7 | Análisis formal con ProVerif/Tamarin | Verificación formal de las propiedades de privacidad (*unlinkability*, *blindness*) |
 
@@ -1426,12 +1431,12 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 
 | ID | Vulnerabilidad | Severidad | Explotabilidad | Impacto en privacidad | Impacto en protección | Mitigación disponible |
 |----|---------------|-----------|----------------|----------------------|----------------------|----------------------|
-| V1 | Formato del token no definido | Crítica | Fácil | Medio | Alto | Sí (definir formato) |
+| V1 | ~~Formato del token no definido~~ | ~~Crítica~~ **Resuelta** | N/A | N/A | N/A | Formato binario de 331 bytes definido |
 | V2 | Registro de IMs no especificado | Crítica | Media | Alto | Crítico | Sí (diseñar mecanismo) |
 | V3 | Suplantación de `age_bracket` | Crítica | Media | Bajo | Crítico | Parcial |
 | V4 | Degradación de protocolo | Alta | Fácil | Bajo | Alto | Parcial (requiere política de plataforma) |
-| V5 | Ausencia de versionado de algoritmo | Alta | N/A (futura) | N/A | Alto (futuro) | Sí (añadir campo) |
-| V6 | Jitter no especificado | Alta | Fácil | Medio | Bajo | Sí (especificar) |
+| V5 | ~~Ausencia de versionado de algoritmo~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | Campo `token_type` incluido |
+| V6 | ~~Jitter no especificado~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | `issued_at` eliminado; `expires_at` con precisión gruesa |
 | V7 | Supuestos implícitos no documentados | Media | N/A | Variable | Variable | Sí (documentar) |
 | V8 | *Timing side-channels* | Media | Media | Medio | Bajo | Sí (especificar jitter y rotación) |
 | V9 | Análisis de tráfico | Media | Difícil | Medio | Bajo | Parcial (OHTTP) |

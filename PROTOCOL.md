@@ -28,7 +28,7 @@ AAVP define tres roles con responsabilidades diferenciadas. El diseño garantiza
 
 ```mermaid
 graph LR
-    DA[Device Agent] -->|firma ciega| IM[Implementador]
+    DA[Device Agent] -->|firma parcialmente ciega| IM[Implementador]
     IM -->|firma| DA
     DA -->|token| VG[Verification Gate]
     VG -.->|valida clave publica| IM
@@ -55,7 +55,7 @@ La separación entre el rol (Device Agent) y su vehículo de implementación es 
 **Responsabilidades del DA:**
 - Generar pares de claves locales en almacenamiento seguro (Secure Enclave, TPM, StrongBox).
 - Generar tokens efímeros con la franja de edad configurada.
-- Obtener firma ciega del Implementador sin revelar el contenido del token.
+- Obtener firma parcialmente ciega del Implementador: los metadatos públicos (`age_bracket`, `expires_at`) son visibles al IM, pero el `nonce` permanece cegado.
 - Presentar tokens firmados al Verification Gate.
 - Rotar tokens antes de su expiración.
 - Proteger la configuración de franja mediante PIN parental o mecanismo equivalente a nivel de SO.
@@ -78,7 +78,7 @@ Empresa u organización que desarrolla software que actúa como Device Agent, co
 **Responsabilidades del IM:**
 - Publicar su clave pública en el registro de Implementadores.
 - Mantener código auditable (preferentemente open source).
-- Proveer servicio de firma ciega al Device Agent.
+- Proveer servicio de firma parcialmente ciega al Device Agent.
 - Cumplir con la especificación abierta.
 
 ### 1.2 Modelo de Puerta de Entrada (Verification Gate)
@@ -127,16 +127,17 @@ sequenceDiagram
 
 ## 2. Estructura del Token AAVP
 
-El token es una estructura criptográfica diseñada para ser mínima. Cada campo tiene una justificación específica:
+El token es una estructura criptográfica de tamaño fijo (331 bytes) diseñada para ser mínima. Cada campo tiene una justificación específica y supera el test de minimalismo de datos del protocolo.
 
 ```mermaid
 classDiagram
     class AAVPToken {
-        +AgeBracket age_bracket
-        +uint64 issued_at
-        +uint64 expires_at
+        +uint16 token_type
         +bytes32 nonce
-        +bytes implementer_sig
+        +bytes32 token_key_id
+        +AgeBracket age_bracket
+        +uint64 expires_at
+        +bytes authenticator
     }
     class AgeBracket {
         UNDER_13
@@ -149,11 +150,51 @@ classDiagram
 
 | Campo | Contenido | Propósito |
 |-------|-----------|-----------|
-| `age_bracket` | Enumeración: `UNDER_13`, `AGE_13_15`, `AGE_16_17`, `OVER_18` | Señal de franja de edad para filtrado de contenido. |
-| `issued_at` | Timestamp Unix con ruido aleatorio | Verificar frescura sin revelar el momento exacto de emisión. |
-| `expires_at` | Timestamp Unix | Ventana de validez. Fuerza la rotación. |
-| `nonce` | Valor aleatorio criptográficamente seguro (32 bytes) | Previene reutilización y asegura unicidad de cada token. |
-| `implementer_sig` | Firma ciega (blind signature) | Demuestra que el token proviene de un IM legítimo sin vincular al usuario. |
+| `token_type` | uint16, identifica el esquema criptográfico | Permite agilidad criptográfica y migración post-cuántica. |
+| `nonce` | 32 bytes aleatorios criptográficamente seguros | Previene reutilización y asegura unicidad de cada token. Cegado durante la emisión. |
+| `token_key_id` | SHA-256 de la clave pública del IM (32 bytes) | Permite al VG identificar qué clave usar para verificar la firma. |
+| `age_bracket` | Enumeración: `UNDER_13` (0x00), `AGE_13_15` (0x01), `AGE_16_17` (0x02), `OVER_18` (0x03) | Señal de franja de edad. Metadato público de la firma parcialmente ciega. |
+| `expires_at` | uint64 big-endian, timestamp Unix con precisión de 1 hora | Ventana de validez. Metadato público. La precisión gruesa agrupa tokens temporalmente. |
+| `authenticator` | Firma parcialmente ciega RSAPBSSA-SHA384 (256 bytes) | Demuestra que el token proviene de un IM legítimo sin vincular al usuario. |
+
+### Formato binario
+
+El token tiene un formato binario fijo de 331 bytes, sin separadores ni metadatos de codificación. La canonicalización está implícita en el formato: los campos se concatenan en el orden especificado con offsets determinísticos.
+
+```
+Offset  Tamaño  Campo                Visibilidad
+0       2       token_type           Público
+2       32      nonce                Cegado (oculto al IM durante emisión)
+34      32      token_key_id         Público
+66      1       age_bracket          Metadato público (0x00-0x03)
+67      8       expires_at           Metadato público (uint64 BE, precisión 1h)
+75      256     authenticator        Firma parcialmente ciega (RSAPBSSA-SHA384)
+---
+Total: 331 bytes (fijo)
+```
+
+Todas las implementaciones conformes deben producir tokens de exactamente 331 bytes. Un token de tamaño diferente es inválido.
+
+### Metadatos públicos vs. contenido cegado
+
+El token AAVP utiliza **firmas parcialmente ciegas** (Partially Blind Signatures). Esto implica una distinción entre dos tipos de contenido dentro del token:
+
+- **Metadatos públicos** (`age_bracket`, `expires_at`): visibles al IM durante el proceso de firma. El IM los utiliza para derivar una clave de firma específica via HKDF. Son parte del contrato visible entre el DA y el IM.
+- **Contenido cegado** (`nonce`): oculto al IM durante la emisión. Solo el DA y el VG conocen su valor. El cegamiento criptográfico garantiza que el IM no puede leerlo.
+
+El IM conoce la franja de edad del token que firma, pero **no puede vincular esa información con la identidad del usuario** que la solicita. Dentro de una misma franja, todos los tokens son indistinguibles para el IM. Esto preserva la *unlinkability*: la franja de edad no es un dato personal, es la señal mínima que el protocolo necesita transmitir.
+
+Esta arquitectura es aceptable porque:
+1. La franja de edad es precisamente la señal que el protocolo transmite. No es información adicional.
+2. El IM no obtiene nada que el VG no obtenga también al verificar el token.
+3. El IM puede actuar como segunda barrera contra la suplantación de `age_bracket`, verificando coherencia con la configuración del DA.
+
+### Test de minimalismo de los campos nuevos
+
+Los campos `token_type` y `token_key_id` son adiciones respecto a versiones anteriores de la especificación. Ambos superan el test de minimalismo de datos:
+
+- **`token_type`**: necesario para la agilidad criptográfica (migración post-cuántica). Su valor es idéntico para todos los tokens del mismo esquema. No permite *fingerprinting* individual.
+- **`token_key_id`**: necesario para que el VG identifique la clave de verificación sin probar todas las claves conocidas. Derivado de la clave pública del IM (no del usuario). Idéntico para todos los tokens del mismo IM.
 
 ### Campos explícitamente excluidos
 
@@ -165,9 +206,10 @@ El token **no contiene** y **no puede contener**:
 - Localización geográfica
 - Versión del software
 - Sistema operativo
+- Timestamp de emisión (`issued_at`): eliminado porque la frescura se gestiona con `expires_at` grueso, y un timestamp de emisión con jitter es una superficie innecesaria de *fingerprinting*
 - Ningún otro dato que permita correlación o rastreo
 
-Cada dato adicional es un vector potencial de fingerprinting y debe justificarse rigurosamente antes de incluirse en futuras versiones del protocolo.
+Cada dato adicional es un vector potencial de *fingerprinting* y debe justificarse rigurosamente antes de incluirse en futuras versiones del protocolo.
 
 ---
 
@@ -185,7 +227,8 @@ stateDiagram-v2
     Activo --> Revocado : DA desactivado
 ```
 
-- **Tiempo de vida máximo (TTL):** Cada token tiene una validez configurable, recomendándose entre 1 y 4 horas.
+- **Tiempo de vida máximo (TTL):** Cada token tiene una validez definida por `expires_at`, recomendándose entre 1 y 4 horas. El VG valida `expires_at` contra su propio reloj.
+- **Precisión gruesa de `expires_at`:** El valor de `expires_at` se redondea a la hora completa más cercana. Esto implica que todos los tokens emitidos en la misma hora comparten el mismo valor de expiración, lo que incrementa el *anonymity set* y dificulta la correlación temporal.
 - **Rotación proactiva:** El Device Agent puede generar un nuevo token antes de la expiración para mantener la continuidad de la sesión.
 - **No vinculabilidad (*unlinkability*):** Dos tokens consecutivos del mismo dispositivo no son correlacionables entre sí. Cada token es criptográficamente independiente del anterior.
 
@@ -193,35 +236,43 @@ stateDiagram-v2
 
 ## 4. Fundamentos Criptográficos
 
-### 4.1 Firmas Ciegas (Blind Signatures)
+### 4.1 Firmas Parcialmente Ciegas (Partially Blind Signatures)
 
-El mecanismo central de AAVP para desacoplar la identidad del usuario de la señal de edad es el uso de **firmas ciegas**, una técnica propuesta por David Chaum en 1983.
+El mecanismo central de AAVP para desacoplar la identidad del usuario de la señal de edad es el uso de **firmas parcialmente ciegas**, una evolución de las firmas ciegas propuestas por David Chaum en 1983.
 
-**Analogía:** Un sobre con papel carbón. El firmante estampa su firma sobre el sobre cerrado, y la firma se transfiere al documento interior sin que el firmante lo vea.
+**Analogía:** Un sobre con papel carbón y una ventanilla transparente. El firmante estampa su firma sobre el sobre cerrado: ve a través de la ventanilla la franja de edad (metadato público), pero el resto del contenido permanece oculto.
+
+**Esquema elegido:** RSAPBSSA-SHA384 (*RSA Partially Blind Signature Scheme with Appendix*), basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Este esquema permite que el IM vea los metadatos públicos (`age_bracket`, `expires_at`) mientras el `nonce` permanece cegado.
 
 ```mermaid
 sequenceDiagram
     participant DA as Device Agent
     participant IM as Implementador
 
-    DA->>DA: Genera token T
-    DA->>DA: Enmascara: T' = blind(T, r)
+    DA->>DA: Genera nonce, construye token
+    DA->>DA: Define metadatos publicos: age_bracket, expires_at
+    DA->>DA: Ciega el mensaje con factor r
 
-    DA->>IM: Envia T' (enmascarado)
-    Note over IM: No ve el contenido de T
-    IM->>IM: Firma: S' = sign(T')
-    IM-->>DA: Devuelve S'
+    DA->>IM: Mensaje cegado + metadatos publicos
+    Note over IM: Ve age_bracket y expires_at
+    Note over IM: NO ve el nonce
+    IM->>IM: Verifica coherencia de metadatos
+    IM->>IM: Deriva clave: sk' = DeriveKeyPair(sk, metadatos)
+    IM->>IM: Firma: blind_sig = BlindSign(sk', msg_cegado)
+    IM-->>DA: Devuelve blind_sig
 
-    DA->>DA: Desenmascara: S = unblind(S', r)
-    Note over DA: S es firma valida sobre T original
+    DA->>DA: Desciega: authenticator = Finalize(pk, token, metadatos, blind_sig, r)
+    Note over DA: authenticator es firma valida sobre el token completo
 ```
 
-**Resultado:** El Implementador puede certificar que un token es legítimo (proviene de una instalación real que actúa como Device Agent) sin saber qué token ha firmado. **Ni siquiera el Implementador puede vincular un token con un usuario o dispositivo.**
+**Derivación de clave por metadato:** El IM tiene una sola clave maestra (sk, pk). Para cada combinación de metadatos públicos (age_bracket, expires_at), se deriva automáticamente un par de claves (sk', pk') via HKDF. El VG, que conoce la clave pública maestra y los metadatos del token, realiza la misma derivación para verificar. Esto vincula criptográficamente los metadatos a la firma sin revelar el contenido cegado.
 
-**Esquemas candidatos:**
-- RSA Blind Signatures (RFC 9474)
-- Blind BLS Signatures
-- Partially Blind Signatures (para vincular la firma a la franja sin revelar el nonce)
+**Resultado:** El Implementador conoce la franja de edad pero **no puede vincular un token firmado con el DA que lo solicitó**. Dentro de la misma franja, todos los tokens son indistinguibles para el IM. La franja no es un dato personal: es la señal que el protocolo transmite.
+
+**Esquema principal y alternativas:**
+- **RSAPBSSA-SHA384** (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) — Esquema elegido por AAVP.
+- Blind BLS Signatures — Alternativa futura por tamaño de firma reducido (48 bytes). Sin RFC publicado.
+- ZKP (Bulletproofs) — Complemento para la verificación inicial de edad contra un documento oficial.
 
 ### 4.2 Pruebas de Conocimiento Cero (ZKP)
 
@@ -248,11 +299,11 @@ Cada campo del token está diseñado para minimizar la información que podría 
 
 | Medida | Campo afectado | Propósito |
 |--------|---------------|-----------|
-| Ruido temporal (jitter) | `issued_at` | Evita correlación por momento de emisión |
+| Precisión gruesa | `expires_at` | Redondeo a la hora elimina correlación temporal. Todos los tokens emitidos en la misma hora comparten el mismo valor. |
 | Nonce criptográfico | `nonce` | Generado sin derivación de identificadores del dispositivo |
-| Ausencia de metadatos | (todo el token) | No se incluye versión de software, SO ni dato del entorno |
+| Metadatos mínimos | `age_bracket`, `expires_at` | Solo dos metadatos públicos. `age_bracket` particiona el *anonymity set* en 4 grupos (inherente al propósito del protocolo). La precisión horaria de `expires_at` agrupa todos los tokens de la misma hora. |
 | Rotación frecuente | `expires_at` | Tokens de corta vida impiden seguimiento longitudinal |
-| Tamaño fijo | (todo el token) | Todos los tokens tienen idéntico tamaño en bytes |
+| Tamaño fijo | (todo el token) | Todos los tokens tienen exactamente 331 bytes |
 
 ---
 
@@ -345,13 +396,13 @@ flowchart TD
     A[Padres / Tutores] -->|1. Activan| B[Software con rol de DA]
     B -->|2. Genera claves| C[Secure Enclave / TPM]
     B -->|3. Conecta con| D[Implementador]
-    D -->|4. Establece firma ciega| B
+    D -->|4. Establece firma parcialmente ciega| B
     A -->|5. Configura franja| B
 ```
 
 1. Los padres activan la funcionalidad AAVP en el dispositivo del menor. El vehículo puede ser un sistema de control parental, una configuración nativa del SO, u otro software conforme.
 2. El software que actúa como Device Agent genera un par de claves locales en el almacenamiento seguro del dispositivo (Secure Enclave en iOS, StrongBox/TEE en Android, TPM en Windows/Linux).
-3. El DA establece una conexión única con el servicio de firma del Implementador para obtener la capacidad de firma ciega.
+3. El DA establece una conexión única con el servicio de firma del Implementador para obtener la capacidad de firma parcialmente ciega.
 4. Se configura la franja de edad correspondiente al menor.
 
 ### 6.2 Acceso a una Plataforma (cada sesión)
@@ -360,7 +411,7 @@ Este proceso es **completamente transparente** para el usuario:
 
 1. El usuario abre la aplicación o accede al sitio web.
 2. El Device Agent detecta que la plataforma soporta AAVP (vía registro DNS `_aavp` o endpoint `.well-known/aavp`).
-3. El DA genera un token efímero, lo enmascara (blind), lo envía al Implementador para firma ciega, lo desenmascara y lo presenta al Verification Gate.
+3. El DA genera un token efímero, ciega el `nonce`, envía el mensaje cegado junto con los metadatos públicos (`age_bracket`, `expires_at`) al Implementador para firma parcialmente ciega, desciega la firma y presenta el token al Verification Gate.
 4. El VG valida la firma contra las claves públicas de los Implementadores aceptados, verifica el TTL y extrae la franja de edad.
 5. La plataforma establece una sesión con un flag interno de franja de edad.
 6. El contenido se filtra según la política de la plataforma para esa franja.
@@ -383,16 +434,17 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 | **Bypass por dispositivo sin DA** | Política de plataforma para sesiones sin token | Medio |
 | **Implementador fraudulento** | Auditoría open source, reputación, exclusión por plataformas | Bajo |
 | **MITM en handshake** | TLS con certificate pinning, ventana temporal mínima | Muy bajo |
-| **Correlación de tokens** | Rotación, nonces, ruido temporal, firmas ciegas, tamaño fijo | Muy bajo |
+| **Correlación de tokens** | Rotación, nonces, `expires_at` con precisión gruesa, firmas parcialmente ciegas, tamaño fijo (331 bytes) | Muy bajo |
 | **Menor desactiva DA** | Protección a nivel de SO, PIN parental, políticas MDM | Medio |
-| **Fabricación de tokens** | Firma criptográfica computacionalmente inviable de falsificar | Muy bajo |
-| **Implementador colude con plataforma** | Firmas ciegas impiden al IM conocer el contenido del token | Muy bajo |
-| **Replay de tokens** | Nonce único + TTL corto + validación de expiración por el VG | Muy bajo |
+| **Fabricación de tokens** | Firma criptográfica RSAPBSSA-SHA384 computacionalmente inviable de falsificar | Muy bajo |
+| **Implementador colude con plataforma** | El IM conoce `age_bracket` (metadato público) pero no puede vincular el token con un DA concreto. El VG también conoce `age_bracket` (es la señal que recibe). El IM no gana información adicional útil para correlación. | Muy bajo |
+| **Replay de tokens** | Nonce único + `expires_at` validado por el VG contra su propio reloj | Muy bajo |
+| **Suplantación de `age_bracket`** | Con Partially Blind RSA, el IM puede verificar coherencia de `age_bracket` con la configuración del DA, actuando como segunda barrera de validación | Bajo |
 
 ```mermaid
 pie title Distribucion de riesgo residual
     "Muy bajo" : 5
-    "Bajo" : 1
+    "Bajo" : 2
     "Medio" : 2
 ```
 
@@ -406,14 +458,15 @@ pie title Distribucion de riesgo residual
 
 ## 8. Trabajo Futuro y Líneas Abiertas
 
-- **Especificación formal:** Desarrollar una especificación técnica completa en formato RFC, incluyendo formatos de mensaje, algoritmos específicos y procedimientos de prueba de conformidad.
+- **Especificación formal:** Desarrollar una especificación técnica completa en formato RFC, incluyendo formatos de mensaje, procedimientos de prueba de conformidad y test vectors.
 - **Implementación de referencia:** Crear bibliotecas open source en múltiples lenguajes para Device Agent y Verification Gate.
 - **Análisis formal de seguridad:** Verificación formal de las propiedades de privacidad y seguridad mediante herramientas como ProVerif o Tamarin.
 - **Pruebas de usabilidad:** Evaluar la experiencia de usuario completa, especialmente la transparencia de la revalidación y la configuración inicial.
 - **Evaluación de rendimiento:** Medir el impacto en latencia del handshake y optimizar para conexiones móviles de baja calidad.
 - **Extensibilidad del token:** Explorar señales adicionales (preferencias de privacidad parentales, por ejemplo) manteniendo las garantías de anonimato.
 - **Gobernanza del estándar:** Definir un modelo de gobernanza comunitaria para la evolución del protocolo, potencialmente bajo el W3C o el IETF.
-- **Selección de esquemas criptográficos:** Evaluar formalmente los esquemas candidatos para firmas ciegas y ZKP, considerando rendimiento en dispositivos móviles, tamaño de prueba y madurez de las bibliotecas disponibles.
+- **Migración post-cuántica:** El campo `token_type` permite adoptar esquemas de firma ciega post-cuánticos cuando estén estandarizados. Las firmas basadas en retículos (*lattice-based blind signatures*) son la línea de investigación más prometedora. Los estándares NIST PQC actuales (ML-KEM, ML-DSA, SLH-DSA) no cubren firmas ciegas.
+- **Registro IANA:** Registrar los valores de `token_type` y la extensión `age_bracket` en los registros IANA correspondientes cuando se formalice el Internet-Draft.
 
 ---
 
@@ -427,6 +480,11 @@ pie title Distribucion de riesgo residual
 | **Device Agent (DA)** | Rol del protocolo AAVP: componente de software en el dispositivo del menor que genera y gestiona los tokens de edad. No es sinónimo de "control parental"; puede ser implementado por distintos tipos de software. |
 | **Fingerprinting** | Técnica de rastreo que identifica usuarios por características únicas de su dispositivo o comportamiento. |
 | **Implementador (IM)** | Organización que desarrolla software conforme al estándar AAVP, actuando como proveedor de la funcionalidad de Device Agent. |
+| **Metadato público** | Parte del token visible al IM durante la firma parcialmente ciega, vinculada criptográficamente via derivación de clave. En AAVP: `age_bracket` y `expires_at`. |
+| **Partially Blind Signature** | Esquema de firma donde el firmante ve una parte del mensaje (metadato público) pero no el resto. En AAVP, el IM ve `age_bracket` y `expires_at` pero no el `nonce`. |
+| **RSAPBSSA** | RSA Partially Blind Signature Scheme with Appendix. Esquema concreto elegido por AAVP, basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Utiliza SHA-384 como función hash. |
+| **`token_key_id`** | SHA-256 de la clave pública del IM. Permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas. |
+| **`token_type`** | Campo del token que identifica el esquema criptográfico utilizado. Permite agilidad criptográfica y migración futura a esquemas post-cuánticos. |
 | **TTL (Time To Live)** | Tiempo de vida máximo de un token antes de que expire y deba ser reemplazado. |
 | **Unlinkability** | Propiedad criptográfica que impide correlacionar dos tokens como pertenecientes al mismo usuario o dispositivo. |
 | **Verification Gate (VG)** | Endpoint dedicado de una plataforma que valida tokens AAVP y establece sesiones con franja de edad. |
@@ -436,7 +494,7 @@ pie title Distribucion de riesgo residual
 
 <div align="center">
 
-**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.2.0
+**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.3.0
 
 *Documento de trabajo — Sujeto a revisión*
 
