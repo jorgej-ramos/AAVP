@@ -42,6 +42,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && always()
     permissions:
       contents: read
+    env:
+      GIST_ID: ${{ secrets.FORMAL_VERIFICATION_GIST_ID }}
     steps:
       - name: Determine badge status
         id: badge
@@ -57,8 +59,6 @@ jobs:
       - name: Update badge via gist
         if: env.GIST_ID != ''
         uses: schneegans/dynamic-badges-action@v1.7.0
-        env:
-          GIST_ID: ${{ secrets.FORMAL_VERIFICATION_GIST_ID }}
         with:
           auth: ${{ secrets.FORMAL_VERIFICATION_GIST_TOKEN }}
           gistID: ${{ secrets.FORMAL_VERIFICATION_GIST_ID }}
