@@ -1,5 +1,7 @@
 # AAVP — Anonymous Age Verification Protocol
 
+[![Spec Consistency](https://github.com/jorgej-ramos/AAVP/actions/workflows/spec-consistency.yml/badge.svg)](https://github.com/jorgej-ramos/AAVP/actions/workflows/spec-consistency.yml)
+
 > **White Paper v0.4.0 — Febrero 2026**
 >
 > Un protocolo abierto y descentralizado para la verificación anónima de edad en plataformas digitales.

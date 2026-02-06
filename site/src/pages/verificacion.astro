@@ -1,0 +1,415 @@
+---
+import Base from '../layouts/Base.astro';
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
+
+const repoUrl = 'https://github.com/jorgej-ramos/AAVP';
+
+const verifications = [
+  {
+    id: 'spec-consistency',
+    name: 'Consistencia de la especificación',
+    status: 'active',
+    badgeUrl: `${repoUrl}/actions/workflows/spec-consistency.yml/badge.svg`,
+    workflowUrl: `${repoUrl}/actions/workflows/spec-consistency.yml`,
+    scriptUrl: `${repoUrl}/blob/main/scripts/check-spec-consistency.sh`,
+    description: 'Verifica que los documentos de la especificación (README.md, PROTOCOL.md, SECURITY-ANALYSIS.md) son coherentes entre sí: versiones, campos del token, terminología, esquema criptográfico y referencias cruzadas.',
+    checks: [
+      {
+        category: 'Coherencia de versión',
+        items: [
+          'La versión en VERSION coincide con las cabeceras y pies de README.md y PROTOCOL.md',
+        ],
+      },
+      {
+        category: 'Tamaño del token',
+        items: [
+          'No quedan referencias obsoletas a tamaños anteriores del token',
+          'PROTOCOL.md especifica el tamaño correcto (331 bytes)',
+        ],
+      },
+      {
+        category: 'Campos canónicos del token',
+        items: [
+          'Los 6 campos activos están documentados en PROTOCOL.md',
+          'Los campos eliminados no aparecen como parte activa de la estructura',
+        ],
+      },
+      {
+        category: 'Franjas de edad',
+        items: [
+          'Las 4 franjas (UNDER_13, AGE_13_15, AGE_16_17, OVER_18) están definidas',
+        ],
+      },
+      {
+        category: 'Esquema criptográfico',
+        items: [
+          'RSAPBSSA-SHA384 y RFC 9474 están referenciados en PROTOCOL.md y SECURITY-ANALYSIS.md',
+        ],
+      },
+      {
+        category: 'Terminología',
+        items: [
+          'Device Agent no se equipara con control parental',
+          'Los roles del protocolo usan sus nombres canónicos',
+        ],
+      },
+      {
+        category: 'Coherencia cruzada',
+        items: [
+          'Terminología de firmas ciegas coherente entre documentos',
+          'Franjas de edad coherentes entre README.md y PROTOCOL.md',
+        ],
+      },
+      {
+        category: 'Formato binario del token',
+        items: [
+          'Los offsets de la tabla binaria son secuenciales (cada offset = anterior + tamaño)',
+          'La suma total de campos coincide con el tamaño declarado (331 bytes)',
+        ],
+      },
+      {
+        category: 'Semáforo de seguridad',
+        items: [
+          'El recuento de áreas rojas, amarillas y verdes en el resumen coincide con los iconos de la tabla',
+        ],
+      },
+      {
+        category: 'Integridad del CHANGELOG',
+        items: [
+          'Existe la sección [Unreleased] (necesaria para el workflow de release)',
+          'El link de comparación de [Unreleased] apunta a la versión actual',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'formal-verification',
+    name: 'Verificación formal del protocolo',
+    status: 'planned',
+    description: 'Modelo formal en Tamarin Prover que demuestra matemáticamente las propiedades de seguridad del protocolo: unlinkability (dos tokens del mismo usuario son indistinguibles), unforgeability (no se puede fabricar un token válido sin un IM) y anonimato dentro de la franja (el IM no puede vincular una firma con un DA concreto).',
+    checks: [
+      {
+        category: 'Propiedades de seguridad',
+        items: [
+          'Unlinkability: dos tokens del mismo DA son indistinguibles para cualquier observador',
+          'Unforgeability: un token válido solo puede generarse con la participación de un IM legítimo',
+          'Anonimato intra-franja: el IM no puede vincular una firma con el DA que la solicitó',
+        ],
+      },
+      {
+        category: 'Modelo de adversario',
+        items: [
+          'Adversario con control total de la red (Dolev-Yao)',
+          'Colusión IM + plataforma',
+          'Compromiso parcial de claves',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'test-vectors',
+    name: 'Vectores de test',
+    status: 'planned',
+    description: 'Suite de vectores de prueba con entradas y salidas conocidas para validar que cualquier implementación de AAVP produce resultados correctos. Requiere la implementación de referencia del protocolo.',
+    checks: [
+      {
+        category: 'Generación de tokens',
+        items: [
+          'Token generado con nonce conocido produce la estructura esperada de 331 bytes',
+          'Los offsets y tamaños de cada campo son correctos',
+        ],
+      },
+      {
+        category: 'Validación',
+        items: [
+          'Tokens expirados se rechazan',
+          'Tokens con age_bracket manipulado se detectan',
+          'Tokens con authenticator inválido se rechazan',
+        ],
+      },
+      {
+        category: 'Interoperabilidad',
+        items: [
+          'Tokens generados por diferentes implementaciones son mutuamente verificables',
+        ],
+      },
+    ],
+  },
+];
+
+const activeVerifications = verifications.filter(v => v.status === 'active');
+const plannedVerifications = verifications.filter(v => v.status === 'planned');
+---
+
+<Base title="Verificación de la especificación — AAVP" currentPage="verificacion">
+
+  <section class="verification-hero">
+    <h1 class="verification-title">Verificación automatizada</h1>
+    <p class="verification-subtitle">
+      AAVP se auto-examina con cada cambio. Un sistema de verificación automática comprueba que la especificación es coherente, que las propiedades de seguridad se cumplen y que las implementaciones son correctas.
+    </p>
+    <div class="badge-container">
+      {activeVerifications.map((v) => (
+        <a href={v.workflowUrl} target="_blank" rel="noopener">
+          <img src={v.badgeUrl} alt={v.name} class="badge-img" />
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Por qué verificamos</h2>
+    <p class="section-subtitle">
+      Un protocolo de seguridad no puede permitirse ambigüedades ni contradicciones en su documentación. Si la especificación técnica dice una cosa y el white paper dice otra, los implementadores producirán software incompatible. Si un campo del token aparece en un documento pero no en otro, las auditorías de seguridad partirán de premisas incorrectas.
+    </p>
+    <p class="section-text">
+      La verificación automatizada garantiza que cada cambio en la especificación — por pequeño que sea — se valida contra el resto de documentos antes de ser aceptado. No es un sustituto de la revisión humana, pero es una primera línea de defensa contra errores silenciosos.
+    </p>
+  </section>
+
+  <!-- Active verifications -->
+  {activeVerifications.map((v) => (
+    <section class="section verification-section" id={v.id} style="background: var(--color-surface); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+      <div class="verification-header">
+        <div>
+          <h2 class="section-title" style="margin-bottom: 0.5rem;">{v.name}</h2>
+          <span class="status-badge status-active">Activa</span>
+        </div>
+        <a href={v.workflowUrl} target="_blank" rel="noopener">
+          <img src={v.badgeUrl} alt={v.name} class="badge-img" />
+        </a>
+      </div>
+      <p class="section-subtitle">{v.description}</p>
+      <div class="checks-grid">
+        {v.checks.map((group) => (
+          <div class="check-card">
+            <p class="check-card-title">{group.category}</p>
+            <ul class="check-card-list">
+              {group.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      {v.scriptUrl && (
+        <div class="verification-links">
+          <a href={v.scriptUrl} target="_blank" rel="noopener" class="btn btn-secondary btn-small">Ver script</a>
+          <a href={v.workflowUrl} target="_blank" rel="noopener" class="btn btn-secondary btn-small">Ver ejecuciones</a>
+        </div>
+      )}
+    </section>
+  ))}
+
+  <!-- Planned verifications -->
+  <section class="section">
+    <h2 class="section-title">Verificaciones en desarrollo</h2>
+    <p class="section-subtitle">
+      Las siguientes verificaciones están planificadas y se incorporarán progresivamente a la suite de CI. Cuando estén activas, sus badges aparecerán junto al de consistencia de la especificación.
+    </p>
+  </section>
+
+  {plannedVerifications.map((v) => (
+    <section class="section verification-section verification-planned" id={v.id}>
+      <div class="verification-header">
+        <div>
+          <h2 class="section-title" style="margin-bottom: 0.5rem;">{v.name}</h2>
+          <span class="status-badge status-planned">Planificada</span>
+        </div>
+      </div>
+      <p class="section-subtitle">{v.description}</p>
+      <div class="checks-grid">
+        {v.checks.map((group) => (
+          <div class="check-card check-card-planned">
+            <p class="check-card-title">{group.category}</p>
+            <ul class="check-card-list">
+              {group.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <section class="section" style="text-align: center; padding-bottom: 5rem;">
+    <h2 class="section-title">Transparencia total</h2>
+    <p class="section-subtitle">
+      Los scripts de verificación, los workflows de CI y los resultados de cada ejecución son públicos. Cualquiera puede auditarlos, reproducirlos localmente o proponer nuevas comprobaciones.
+    </p>
+    <div class="hero-cta">
+      <a href={`${repoUrl}/tree/main/scripts`} class="btn btn-primary" target="_blank" rel="noopener">Ver scripts</a>
+      <a href={`${repoUrl}/actions`} class="btn btn-secondary" target="_blank" rel="noopener">Ver ejecuciones</a>
+      <a href={`${base}protocolo/`} class="btn btn-secondary">Especificación Técnica</a>
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  .verification-hero {
+    text-align: center;
+    padding: 5rem 1.5rem 3rem;
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+  }
+
+  .verification-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+
+  .verification-subtitle {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    max-width: 620px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  .badge-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .badge-img {
+    height: 28px;
+    display: block;
+  }
+
+  .section-text {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .verification-section {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .verification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .status-active {
+    background: rgba(34, 139, 34, 0.12);
+    color: #228b22;
+  }
+
+  :global(html[data-theme="dark"]) .status-active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .status-planned {
+    background: rgba(45, 95, 170, 0.1);
+    color: var(--color-accent);
+  }
+
+  .verification-planned {
+    opacity: 0.75;
+  }
+
+  .checks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .check-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  .check-card-planned {
+    border-style: dashed;
+  }
+
+  .check-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.6rem;
+    color: var(--color-text);
+  }
+
+  .check-card-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .check-card-list li {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    padding: 0.25rem 0 0.25rem 1.25rem;
+    position: relative;
+  }
+
+  .check-card-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    opacity: 0.5;
+  }
+
+  .verification-links {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-small {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .verification-title {
+      font-size: 1.75rem;
+    }
+
+    .verification-subtitle {
+      font-size: 1rem;
+    }
+
+    .checks-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .verification-header {
+      flex-direction: column;
+    }
+  }
+</style>
