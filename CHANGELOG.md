@@ -9,15 +9,24 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [0.3.0] - 2026-02-06
 
-## [0.2.0] - 2026-02-06
-
 ### Added
 
 - Sitio web público con Astro desplegado en GitHub Pages (`site/`).
 - Landing page con hero, sección del problema, cómo funciona, principios y CTA.
 - Páginas que renderizan README.md, PROTOCOL.md y CHANGELOG.md con soporte de diagramas Mermaid (SVG en build time).
+- Modo claro/oscuro con detección de preferencia del sistema y persistencia en localStorage.
 - Workflow de GitHub Actions para deploy automático del sitio (`deploy-site.yml`).
 - Sección de documentación del sitio web en CLAUDE.md.
+
+### Changed
+
+- Ortografía castellana corregida en todos los documentos: tildes, eñes y signos de puntuación.
+- Regla de ortografía actualizada en CLAUDE.md: el proyecto usa ortografía castellana correcta.
+
+## [0.2.0] - 2026-02-06
+
+### Added
+
 - `PROTOCOL.md`: nuevo documento de especificación técnica separado del white paper divulgativo.
 - `CLAUDE.md`: guía de contribución con normas de estilo, terminología obligatoria y principios inviolables.
 - `CHANGELOG.md`: registro de cambios con Semantic Versioning.
