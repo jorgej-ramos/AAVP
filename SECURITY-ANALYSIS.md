@@ -31,7 +31,7 @@
 | Área | Estado | Vulnerabilidades abiertas | Resumen |
 |------|:------:|--------------------------|---------|
 | **Estructura del token** | 🟡 | 1 media (abierta), 5 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. Pendiente: especificar API criptográfica del SO para calidad del nonce (T-4.6). |
-| **Modelo de confianza (registro de IMs)** | 🔴 | 3 críticas | El registro de Implementadores no tiene mecanismo definido, ni procedimiento de revocación, ni protección contra envenenamiento. Pilar fundamental sin especificar. |
+| **Modelo de confianza (registro de IMs)** | 🟡 | 3 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Pendiente: formato concreto del endpoint (E4). |
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
 | **Gestión de sesiones (VG)** | 🔴 | 3 altas | Comportamiento post-handshake no especificado: qué almacenar, cuánto tiempo, qué hacer sin token. Cada plataforma improvisa. |
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. Ninguna área alcanza este nivel todavía. |
 
-**Distribución actual:** 3 áreas en rojo, 4 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. Quedan pendientes el registro de IMs y la gestión de sesiones.
+**Distribución actual:** 2 áreas en rojo, 5 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. Quedan pendientes la gestión de sesiones y la segmentación de contenido.
 
 ---
 
@@ -60,9 +60,9 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | S8 | Dispositivo comprometido (root/jailbreak) no documentado como supuesto | [1.2](#s8-el-dispositivo-no-está-comprometido-a-nivel-de-so-root--jailbreak) | Dispositivo rooteado (~2-5% de Android) | Crítica | *Device attestation*; documentar el supuesto en PROTOCOL.md |
 | S9 | ~~Canal DA-IM no especificado~~ | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | ~~Atacante con posición de red entre DA e IM~~ | ~~Media~~ **Resuelta** | Canal DA-IM especificado en PROTOCOL.md: TLS 1.3 + CT. OHTTP recomendado como medida opcional de máxima privacidad |
 | S10 | ~~Tolerancia de reloj (*clock skew*) no definida~~ | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | ~~Reloj del dispositivo manipulado (posible sin privilegios)~~ | ~~Media~~ **Resuelta** | Tolerancia asimétrica definida en PROTOCOL.md: 300s pasado, 60s futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519) |
-| S11 | Registro de IMs sin mecanismo definido | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | Compromiso del registro (credenciales, DNS poisoning, BGP hijack) | Crítica | Log *append-only* tipo CT; *grace period* de 72h; firma cruzada M-of-N |
+| S11 | ~~Registro de IMs sin mecanismo definido~~ | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | ~~Compromiso del registro~~ | ~~Crítica~~ **Resuelta** | Modelo de auto-publicación definido en PROTOCOL.md: cada IM publica claves en su dominio sobre TLS 1.3 + CT |
 | S12 | Segmentación de contenido no verificable | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | Alta | Framework de auditoría; protocolo de certificación en 3 niveles; crawlers de verificación |
-| S14 | Revocación de IMs sin mecanismo definido | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | IM comprometido sigue activo en plataformas que no actualizan | Alta | Definir mecanismo de revocación con TTL máximo de propagación |
+| S14 | ~~Revocación de IMs sin mecanismo definido~~ | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | ~~IM comprometido sigue activo en plataformas que no actualizan~~ | ~~Alta~~ **Resuelta** | Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs. Sin mecanismo centralizado. |
 
 ### Vectores de ataque
 
@@ -71,7 +71,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | V-2.1 | Suplantación de `age_bracket` | [2.1](#21-suplantación-de-age_bracket) | DA comprometido (root, malware) o acceso al PIN parental | Crítica (parcialmente mitigada) | *Device attestation*; **Partially Blind RSA adoptado**: el IM puede verificar coherencia de `age_bracket` con la configuración del DA, actuando como segunda barrera; verificación de integridad del binario |
 | V-2.2 | Colusión entre múltiples IMs | [2.2](#22-colusión-entre-múltiples-implementadores) | ≥2 IMs con acuerdo de intercambio de metadatos de firma | Alta | OHTTP para canal DA-IM; prohibir retención de logs; minimizar interacciones DA-IM |
 | V-2.3 | *Timing side-channels* | [2.3](#23-timing-side-channels) | Observador con acceso a timestamps de presentación de tokens | Media | Rotación en momentos aleatorios (no intervalos fijos); jitter uniforme ±300s; VGs no logean timestamps exactos |
-| V-2.4 | Ataque al registro de IMs | [2.4](#24-ataque-al-registro-de-implementadores) | Acceso de escritura al registro o envenenamiento del canal de distribución | Crítica | Log CT-like; *grace period* 72h; firma cruzada M-of-N; pinning de claves por VGs |
+| V-2.4 | ~~Ataque al registro de IMs~~ Compromiso del dominio del IM | [2.4](#24-ataque-al-registro-de-implementadores) | Compromiso del dominio de un IM individual (certificados TLS, DNS) | ~~Crítica~~ **Media** | Auto-publicación elimina registro central. Claves de vida limitada (≤ 6 meses), TLS 1.3 + CT, key pinning por VGs, revocación bilateral |
 | V-2.5 | Exfiltración de claves del DA | [2.5](#25-exfiltración-de-claves-del-da) | Acceso físico al dispositivo o control remoto con root | Alta | Operaciones criptográficas dentro del enclave; *key attestation*; rotación semanal de claves |
 | V-2.6 | Degradación de protocolo (*fail-open*) | [2.6](#26-degradación-de-protocolo) | Bloqueo selectivo del handshake AAVP (firewall, proxy, DNS sinkhole) | Alta | Política *fail-closed* (contenido restringido por defecto); señalización al usuario; directrices RFC 2119 para sesiones no verificadas |
 | V-2.7 | Análisis de tráfico | [2.7](#27-análisis-de-tráfico) | Observador de red (ISP, estado) con visibilidad DA-IM y DA-VG | Media | *Traffic padding*; pre-firma de tokens; OHTTP (RFC 9458) para DA-IM |
@@ -238,14 +238,16 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 #### S11. El registro de Implementadores es resistente a manipulación
 
-**Descripción:** PROTOCOL.md propone un "registro público descentralizado" donde los Implementadores publican sus claves públicas. El protocolo asume que este registro es íntegro y que las claves publicadas corresponden a Implementadores legítimos.
+> **Estado: Resuelta.** PROTOCOL.md define un modelo de auto-publicación: cada IM publica claves en su propio dominio sobre TLS 1.3 + CT. No existe un registro centralizado que comprometer.
+
+**Descripción:** PROTOCOL.md define un modelo de auto-publicación donde cada Implementador publica sus claves en su propio dominio. No existe un registro centralizado. El supuesto se transforma: ya no se evalúa la integridad de un registro común, sino la integridad del dominio individual del IM.
 
 **Análisis:**
-- El mecanismo concreto del registro no está especificado. Sin una implementación definida, no se puede evaluar su resistencia a manipulación.
-- Si el registro es un simple repositorio Git (como en muchos registros de claves públicas), está sujeto a los controles de acceso del hosting (GitHub, GitLab), introduciendo una dependencia centralizada de facto.
-- Si se implementa sobre una cadena de bloques, hereda los costes y la latencia de esa infraestructura.
-- Un registro basado en DNS (`_aavp` TXT records) hereda las debilidades de DNS: *cache poisoning*, *BGP hijacking*, latencia de propagación.
-- **Impacto si falla:** Un atacante podría insertar claves de un IM fraudulento, permitiendo la generación de tokens con firmas que serían aceptadas por los VGs que consulten el registro envenenado.
+- El modelo de auto-publicación elimina el registro centralizado como punto único de fallo. Un atacante ya no puede comprometer un solo recurso para afectar a todos los VGs.
+- El compromiso de un dominio de IM individual solo afecta a los VGs que confían en ese IM concreto.
+- La integridad de las claves publicadas se respalda por TLS 1.3 y Certificate Transparency (RFC 9162).
+- Las claves tienen vida limitada (≤ 6 meses), acotando la ventana de exposición ante un compromiso.
+- **Riesgo residual:** Compromiso del dominio de un IM individual. Mitigado por claves de vida corta, CT y revocación bilateral por VGs.
 
 #### S12. Las plataformas implementan correctamente la política de segmentación
 
@@ -269,13 +271,16 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 #### S14. La revocación de Implementadores se propaga a tiempo
 
-**Descripción:** Cuando un IM es comprometido o detectado como fraudulento, las plataformas deben dejar de aceptar sus tokens. El protocolo asume que este proceso de revocación es oportuno.
+> **Estado: Resuelta.** PROTOCOL.md define claves de vida limitada (≤ 6 meses) como mitigación primaria y revocación bilateral: cada VG gestiona su propio trust store de forma independiente.
+
+**Descripción:** Cuando un IM es comprometido o detectado como fraudulento, las plataformas deben dejar de aceptar sus tokens. El modelo bilateral de confianza implica que cada VG toma esta decisión de forma independiente.
 
 **Análisis:**
-- Sin un mecanismo de revocación definido, cada plataforma gestiona su lista de IMs aceptados de forma independiente. No hay garantía de que la revocación se propague uniformemente.
-- Un IM comprometido podría seguir emitiendo tokens válidos mientras alguna plataforma mantenga su clave pública como aceptada.
-- En el modelo DMARC/DKIM que AAVP toma como referencia, la revocación se basa en DNS TTL, que puede tardar horas o días en propagarse.
-- **Impacto si falla:** Tokens fraudulentos aceptados durante la ventana de propagación. La gravedad depende de la velocidad de la revocación y del número de plataformas afectadas.
+- Las claves de vida limitada (≤ 6 meses) acotan la ventana de exposición: una clave comprometida deja de ser válida al expirar, sin necesidad de coordinación.
+- La revocación bilateral permite que cada VG retire a un IM de su trust store en cualquier momento, sin depender de un mecanismo centralizado de propagación.
+- Si un IM detecta un compromiso, retira la clave de su endpoint. Los VGs que refrescan su caché periódicamente (recomendado: cada 24 horas) detectan la retirada.
+- No existe un punto único de fallo para la propagación: la velocidad depende de la política de refresco de cada VG individual.
+- **Riesgo residual:** Un VG que no refresque su caché puede aceptar tokens de una clave retirada durante un máximo de 24 horas (si sigue la recomendación) o hasta la expiración natural de la clave.
 
 ### 1.3 Tabla resumen de supuestos
 
@@ -291,10 +296,10 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 | S8 | Dispositivo no comprometido | Implícito | Media | Crítico (por dispositivo) |
 | S9 | Canal DA-IM confidencial | Implícito | No evaluable | Medio |
 | S10 | Sincronización de relojes | Implícito | Media | Medio |
-| S11 | Registro de IMs íntegro | Implícito | No evaluable | Crítico |
+| S11 | Auto-publicación de claves por IM | Explícito | Alta | Medio (compromiso de dominio) |
 | S12 | Segmentación correcta por plataformas | Implícito | Baja | Alto |
 | S13 | Sin segundo dispositivo sin DA | Implícito | Muy baja | Medio |
-| S14 | Revocación oportuna de IMs | Implícito | No evaluable | Alto |
+| S14 | Revocación bilateral por VGs | Explícito | Alta | Medio (ventana de caché) |
 
 ---
 
@@ -360,38 +365,41 @@ PROTOCOL.md documenta 8 amenazas con sus mitigaciones. Esta sección amplía el 
 
 **Riesgo residual:** Bajo con mitigaciones implementadas. Medio sin ellas.
 
-### 2.4 Ataque al registro de Implementadores
+### 2.4 Compromiso del dominio del Implementador
 
-**Descripción:** Un atacante compromete el registro público de Implementadores para insertar claves de un IM fraudulento o modificar las claves de un IM legítimo.
+> **Reclasificado.** Este vector se denominaba anteriormente "Ataque al registro de IMs". La adopción del modelo de auto-publicación elimina el registro centralizado, transformando el vector en un compromiso de dominio individual.
+
+**Descripción:** Un atacante compromete el dominio de un Implementador para modificar las claves publicadas, insertando una clave bajo su control. Esto le permitiría firmar tokens que serían aceptados por los VGs que confían en ese IM.
 
 **Precondiciones:**
-- Acceso de escritura al registro (compromiso de credenciales, vulnerabilidad en la infraestructura del registro).
-- O bien: capacidad de envenenamiento del mecanismo de distribución (DNS poisoning, BGP hijacking).
+- Compromiso de la infraestructura del dominio del IM (certificados TLS, credenciales de hosting, DNS del dominio).
+- El VG debe confiar en el IM comprometido y no haber detectado el compromiso.
 
-**Impacto:** Crítico. Si el atacante inserta una clave propia, puede actuar como un IM aceptado por todas las plataformas que consulten el registro envenenado, emitiendo tokens con cualquier franja.
+**Impacto:** Medio. A diferencia del modelo anterior (registro centralizado), el compromiso solo afecta a los VGs que confían en el IM comprometido, no a todo el ecosistema. El atacante no puede inyectar claves en los dominios de otros IMs.
 
 ```mermaid
 sequenceDiagram
     participant A as Atacante
-    participant R as Registro de IMs
+    participant D as Dominio del IM
     participant VG as Verification Gate
 
-    A->>R: Inserta clave publica fraudulenta
-    A->>A: Genera tokens con firma propia
+    A->>D: Compromete dominio, modifica claves
+    A->>A: Genera tokens con clave fraudulenta
     A->>VG: Presenta token
-    VG->>R: Consulta claves aceptadas
-    R-->>VG: Incluye clave del atacante
-    VG->>VG: Firma valida (clave en registro)
-    Note over VG: Token aceptado como legitimo
+    VG->>D: Refresca claves del IM
+    D-->>VG: Incluye clave del atacante
+    VG->>VG: Firma valida (clave en dominio del IM)
+    Note over VG: Solo afecta a VGs que confian en este IM
 ```
 
-**Mitigaciones propuestas:**
-- *Certificate Transparency*-like log: todas las adiciones y modificaciones de claves se registran en un log *append-only* público y auditable. Las plataformas pueden monitorizar el log y detectar inserciones sospechosas.
-- Periodo de espera (*grace period*): una nueva clave no es activa hasta pasado un periodo configurable (ej: 72 horas), dando tiempo a la detección.
-- Firma cruzada: las claves nuevas deben estar co-firmadas por al menos N Implementadores existentes (*M-of-N* multisig).
-- Pinning de claves por parte de las plataformas: cada VG mantiene una lista local de claves aceptadas y solo consulta el registro para descubrir nuevos IMs.
+**Mitigaciones (especificadas en PROTOCOL.md):**
+- **Claves de vida limitada (≤ 6 meses):** Una clave comprometida expira naturalmente, acotando la ventana de explotación.
+- **TLS 1.3 + Certificate Transparency (RFC 9162):** Los VGs verifican la cadena de certificados y la presencia en logs CT antes de aceptar claves. Un certificado TLS fraudulento sería detectado por los monitores de CT.
+- **Key pinning por VGs:** Cada VG puede mantener un historial de claves conocidas del IM y alertar si cambian inesperadamente.
+- **Revocación bilateral:** Si un VG detecta anomalías en las claves de un IM, puede retirarlo de su trust store unilateralmente, sin depender de coordinación con otros VGs.
+- **Aislamiento del impacto:** El compromiso de un dominio no afecta a otros IMs ni a los VGs que no confían en el IM comprometido.
 
-**Riesgo residual:** Medio con mitigaciones. Crítico sin un mecanismo de registro definido.
+**Riesgo residual:** Bajo. El modelo de auto-publicación distribuye el riesgo y elimina el punto único de fallo del registro centralizado.
 
 ### 2.5 Exfiltración de claves del DA
 
@@ -532,7 +540,7 @@ flowchart TD
 | 2.1 | Suplantación de `age_bracket` | Crítico | Alto |
 | 2.2 | Colusión entre IMs | Alto | Medio |
 | 2.3 | *Timing side-channels* | Medio | Bajo-Medio |
-| 2.4 | Ataque al registro de IMs | Crítico | Medio-Crítico |
+| 2.4 | Compromiso del dominio del IM | Medio | Bajo |
 | 2.5 | Exfiltración de claves del DA | Alto | Medio |
 | 2.6 | Degradación de protocolo | Alto | Alto |
 | 2.7 | Análisis de tráfico | Medio | Bajo-Medio |
@@ -1325,33 +1333,34 @@ sequenceDiagram
 
 **Riesgo residual:** Medio-Alto. Las mitigaciones requieren APIs de atestación del fabricante, lo que introduce una dependencia centralizada.
 
-### 8.3 Escenario C: Ataque al registro de IMs + *phishing* parental
+### 8.3 Escenario C: Compromiso de dominio de IM + *phishing* parental
 
-**Narrativa:** Un atacante compromete el registro de Implementadores e inserta un IM fraudulento. Simultáneamente, distribuye una aplicación de "control parental" falsa que actúa como DA pero configura `age_bracket = OVER_18` para todos los usuarios. Los padres instalan la app creyéndola legítima. El IM fraudulento firma los tokens. Las plataformas aceptan los tokens porque la clave del IM está en el registro.
+**Narrativa:** Un atacante compromete el dominio de un Implementador legítimo y sustituye sus claves por claves bajo su control. Simultáneamente, distribuye una aplicación de "control parental" falsa que actúa como DA pero configura `age_bracket = OVER_18` para todos los usuarios. Los padres instalan la app creyéndola legítima. El atacante firma los tokens con la clave fraudulenta publicada en el dominio comprometido. Los VGs que confían en ese IM y refrescan su caché aceptan los tokens.
 
 ```mermaid
 flowchart TD
-    A[Atacante compromete registro de IMs] --> B[Inserta clave de IM fraudulento]
+    A[Atacante compromete dominio del IM] --> B[Sustituye claves en endpoint]
     C[Atacante distribuye app falsa de control parental] --> D[Padres instalan la app]
     D --> E[App configura age_bracket = OVER_18]
-    E --> F[DA falso solicita firma ciega al IM fraudulento]
-    F --> G[Token firmado con clave en registro]
-    G --> H[VG acepta token como valido]
+    E --> F[DA falso firma tokens con clave fraudulenta]
+    F --> G[Token firmado con clave en dominio comprometido]
+    G --> H[VG que confia en ese IM acepta token]
     H --> I[Menor accede sin restricciones]
     style I fill:#f99,stroke:#333
 ```
 
-**Probabilidad:** Baja. Requiere comprometer el registro de IMs Y distribuir malware de forma convincente.
+**Probabilidad:** Baja. Requiere comprometer el dominio de un IM Y distribuir malware de forma convincente. El modelo de auto-publicación limita el impacto al IM comprometido.
 
-**Impacto:** Crítico a escala. Puede afectar a miles de familias simultáneamente.
+**Impacto:** Medio. Solo afecta a familias que usan la app falsa Y plataformas que confían en el IM comprometido. No tiene impacto a escala como el registro centralizado anterior.
 
-**Mitigaciones propuestas:**
-- Grace period para nuevas claves en el registro (72 horas mínimo).
-- Verificación de identidad del IM (KYC organizacional) antes de aceptar su clave en el registro.
+**Mitigaciones (especificadas en PROTOCOL.md):**
+- Claves de vida limitada (≤ 6 meses): la clave fraudulenta expira naturalmente.
+- TLS 1.3 + Certificate Transparency: un certificado TLS fraudulento para el dominio del IM sería detectado por monitores de CT.
+- Key pinning por VGs: cambios inesperados de clave generan alertas.
 - *App signing* y verificación: los DA distribuidos en tiendas de apps (App Store, Google Play) están sujetos a revisión del fabricante.
-- Mecanismo de reporte rápido: canal para que usuarios y plataformas reporten IMs sospechosos.
+- Revocación bilateral: los VGs que detecten anomalías retiran al IM de su trust store.
 
-**Riesgo residual:** Medio. La mitigación depende de la seguridad del registro y de los procesos de distribución de apps.
+**Riesgo residual:** Bajo. El aislamiento del impacto y las claves de vida corta limitan significativamente el alcance del ataque.
 
 ### 8.4 Escenario D: Análisis de tráfico + correlación temporal
 
@@ -1380,7 +1389,7 @@ flowchart TD
 |-----------|---------------------|-------------|---------|----------------|
 | A | IM comprometido + plataforma cómplice | Baja | Crítico | Medio |
 | B | Dispositivo rooteado + replay | Media | Crítico (por dispositivo) | Medio-Alto |
-| C | Registro envenenado + phishing | Baja | Crítico a escala | Medio |
+| C | Dominio de IM comprometido + phishing | Baja | Medio | Bajo |
 | D | Análisis de tráfico + correlación | Media-Alta | Medio | Medio |
 
 ---
@@ -1400,7 +1409,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | R5 | ~~Especificar magnitud y distribución del jitter en `issued_at`~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado; `expires_at` con precisión gruesa (1h) |
 | R6 | Definir política de sesiones no verificadas (SHOULD) | Media | Sin directrices, las plataformas no restringirán contenido |
 | R7 | Documentar los supuestos implícitos (S8-S14) | Media | Los supuestos no documentados no pueden ser evaluados por implementadores |
-| R8 | Definir el mecanismo del registro de IMs | Media | Sin mecanismo concreto, el registro es una abstracción no implementable |
+| R8 | ~~Definir el mecanismo del registro de IMs~~ | ~~Media~~ **Resuelta** | Modelo de auto-publicación definido; cada IM publica en su dominio |
 | R9 | ~~Especificar el canal DA-IM (protocolo, seguridad)~~ | ~~Media~~ **Resuelta** | TLS 1.3 + CT especificados; OHTTP recomendado como opcional |
 
 ### 9.2 Especificaciones adicionales para el Internet-Draft (medio plazo)
@@ -1409,7 +1418,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 |---|----------------|-------------|
 | E1 | Test vectors completos | Conjunto de entradas y salidas para validar implementaciones de DA, VG e IM |
 | E2 | Protocolo de auditoría formal | Framework verificable para auditar las tres partes del protocolo |
-| E3 | Mecanismo de revocación de IMs | Procedimiento definido para revocar claves de IMs comprometidos con propagación oportuna |
+| E3 | ~~Mecanismo de revocación de IMs~~ | **Resuelta**: Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs |
 | E4 | Especificación de `.well-known/aavp` | Formato JSON del endpoint de descubrimiento |
 | E5 | ~~Recomendación de esquema criptográfico~~ | **Resuelta**: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) adoptado como esquema principal |
 | E6 | Política de migración de algoritmos | Procedimiento para transicionar de un esquema criptográfico a otro sin romper compatibilidad |
@@ -1434,7 +1443,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 | ID | Vulnerabilidad | Severidad | Explotabilidad | Impacto en privacidad | Impacto en protección | Mitigación disponible |
 |----|---------------|-----------|----------------|----------------------|----------------------|----------------------|
 | V1 | ~~Formato del token no definido~~ | ~~Crítica~~ **Resuelta** | N/A | N/A | N/A | Formato binario de 331 bytes definido |
-| V2 | Registro de IMs no especificado | Crítica | Media | Alto | Crítico | Sí (diseñar mecanismo) |
+| V2 | ~~Registro de IMs no especificado~~ | ~~Crítica~~ **Resuelta** | N/A | N/A | N/A | Modelo de auto-publicación definido; compromiso limitado a dominio individual |
 | V3 | Suplantación de `age_bracket` | Crítica | Media | Bajo | Crítico | Parcial |
 | V4 | Degradación de protocolo | Alta | Fácil | Bajo | Alto | Parcial (requiere política de plataforma) |
 | V5 | ~~Ausencia de versionado de algoritmo~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | Campo `token_type` incluido |

@@ -9,6 +9,11 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ### Changed
 
+- Modelo de confianza del registro de Implementadores especificado en PROTOCOL.md: auto-publicación de claves por cada IM en su dominio (TLS 1.3 + CT). Sin registro centralizado. Vulnerabilidad S11 y recomendación R8 de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Ciclo de vida de claves del IM definido en PROTOCOL.md: vida máxima de 6 meses, rotación con solapamiento, expiración natural.
+- Revocación bilateral definida: cada VG gestiona su trust store de forma independiente. Vulnerabilidad S14 y especificación E3 de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Vector V-2.4 (ataque al registro de IMs) reclasificado en SECURITY-ANALYSIS.md: de Crítico (registro central) a Medio (compromiso de dominio individual).
+- Área "Modelo de confianza (registro de IMs)" de SECURITY-ANALYSIS.md actualizada de rojo a amarillo.
 - Seguridad del canal DA-IM especificada en PROTOCOL.md: TLS 1.3 con Certificate Transparency (RFC 9162). OHTTP (RFC 9458) recomendado como medida opcional de máxima privacidad. Vulnerabilidad S9 y recomendación R9 de SECURITY-ANALYSIS.md marcadas como resueltas.
 - Tolerancia asimétrica de *clock skew* definida para validación de `expires_at`: 300 segundos para tokens recién expirados, 60 segundos para tokens del futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519). Vulnerabilidad S10 y recomendación R4 de SECURITY-ANALYSIS.md marcadas como resueltas.
 - Mención de *certificate pinning* reemplazada por TLS 1.3 + Certificate Transparency en toda la especificación. Tabla de amenazas de PROTOCOL.md actualizada.

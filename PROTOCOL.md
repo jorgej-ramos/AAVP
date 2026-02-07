@@ -76,7 +76,7 @@ Endpoint dedicado de la plataforma digital que actúa como puerta de entrada al 
 Empresa u organización que desarrolla software que actúa como Device Agent, conforme al estándar AAVP.
 
 **Responsabilidades del IM:**
-- Publicar su clave pública en el registro de Implementadores.
+- Publicar su clave pública en su propio dominio mediante un endpoint estándar.
 - Mantener código auditable (preferentemente open source).
 - Proveer servicio de firma parcialmente ciega al Device Agent.
 - Cumplir con la especificación abierta.
@@ -367,13 +367,59 @@ Cualquier organización puede implementar AAVP. Sus tokens son verificables crip
 
 El estándar recomienda firmemente — y la regulación podría exigir — que las implementaciones del Device Agent sean de código abierto o, como mínimo, auditables por terceros independientes. Esto es análogo a los logs de Certificate Transparency: la comunidad puede verificar que el software cumple con la especificación.
 
-#### 5.2.3 Registro público de Implementadores
+#### 5.2.3 Publicación de claves del Implementador
 
-Se propone un registro público descentralizado (potencialmente basado en un log transparente) donde los Implementadores publican sus claves públicas y declaran conformidad con el estándar.
+Cada Implementador publica su material criptográfico en su propio dominio. No existe un registro centralizado: el IM es la fuente autoritativa de sus propias claves.
 
-> **Importante:** Esto **no es una autoridad de aprobación**. Es un directorio público auditable, abierto a cualquiera.
+**Canales de publicación:**
 
-#### 5.2.4 Confianza por reputación
+- **Primario:** Endpoint HTTPS en el dominio del IM (la ruta y formato concretos se definirán en el Internet-Draft). El endpoint se sirve sobre TLS 1.3, con integridad de certificados respaldada por Certificate Transparency (RFC 9162).
+- **Complementario:** Registro DNS TXT bajo `_aavp-keys.[dominio-IM]` con la información mínima para que un VG pueda localizar el endpoint primario.
+
+**Información publicada por el IM:**
+
+Para cada clave de firma activa, el IM publica como mínimo:
+
+- Clave pública (formato según el esquema criptográfico, actualmente RSAPBSSA-SHA384).
+- `token_key_id`: SHA-256 de la clave pública (coincide con el campo del token).
+- Identificador del esquema criptográfico (coincide con `token_type`).
+- Periodo de validez: fecha de inicio y fecha de expiración de la clave.
+
+El `token_key_id` ya presente en cada token permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas.
+
+> [!IMPORTANT]
+> Este endpoint **no es una autoridad de aprobación**. Cualquier organización puede publicar claves en su dominio. La confianza no proviene de estar publicado, sino de la decisión independiente de cada VG de aceptar a ese Implementador.
+
+#### 5.2.4 Ciclo de vida de las claves del Implementador
+
+Las claves de firma del IM tienen una vida limitada. Esto reduce la ventana de exposición si una clave es comprometida y elimina la necesidad de un mecanismo de revocación centralizado.
+
+- **Vida máxima recomendada:** 6 meses (180 días). Las implementaciones no deben aceptar claves con un periodo de validez superior.
+- **Rotación:** Cuando el IM genera una nueva clave, publica ambas (antigua y nueva) simultáneamente. El periodo de solapamiento debe ser al menos igual al TTL máximo de los tokens (4 horas), para que los tokens firmados con la clave anterior sigan siendo verificables hasta su expiración. Se recomienda un solapamiento de al menos 24 horas para dar margen a los VGs a refrescar su caché.
+- **Expiración natural:** Una clave que supera su fecha de expiración deja de ser válida para la verificación de firmas. Los VGs rechazan tokens cuyo `token_key_id` corresponda a una clave expirada.
+- **Sin revocación centralizada:** No existe un mecanismo central para revocar una clave de IM. Si un IM detecta que su clave ha sido comprometida, retira la clave de su endpoint. La revocación efectiva es bilateral: cada VG gestiona su propio trust store y puede retirar a un IM en cualquier momento.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Publicada : IM genera y publica
+    Publicada --> Activa : Fecha de inicio alcanzada
+    Activa --> Solapamiento : IM publica nueva clave
+    Solapamiento --> Expirada : Fecha de expiración
+    Activa --> Retirada : IM detecta compromiso
+    Expirada --> [*]
+    Retirada --> [*]
+```
+
+#### 5.2.5 Gestión de confianza por el Verification Gate
+
+Cada VG mantiene un **trust store local**: una lista de Implementadores aceptados junto con sus claves públicas. La decisión de confiar en un IM es independiente para cada VG, sin mediación de ninguna autoridad central.
+
+- **Obtención de claves:** El VG obtiene las claves públicas directamente del dominio del IM, sobre TLS 1.3. El VG verifica la cadena de certificados TLS y la presencia en logs de Certificate Transparency antes de aceptar el material criptográfico.
+- **Caché y refresco:** El VG cachea las claves de los IMs aceptados. El refresco debe ser periódico (recomendado: al menos cada 24 horas) para detectar rotaciones de clave y posibles retiros.
+- **Revocación de confianza:** El VG puede retirar a un IM de su trust store en cualquier momento, sin coordinación con otros VGs. Esto es análogo a cómo un navegador puede dejar de confiar en una Autoridad de Certificación unilateralmente.
+- **Descubrimiento de nuevos IMs:** Los VGs no confían automáticamente en IMs desconocidos. La incorporación de un nuevo IM al trust store es una decisión deliberada que sigue el proceso reputacional descrito en la sección 5.2.6.
+
+#### 5.2.6 Confianza por reputación
 
 Las plataformas deciden individualmente en qué Implementadores confían, del mismo modo que los navegadores deciden en qué CAs confían para TLS. No hay una decisión centralizada, sino múltiples decisiones independientes que tienden a converger.
 
@@ -448,6 +494,7 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 |---------|------------|-----------------|
 | **Bypass por dispositivo sin DA** | Política de plataforma para sesiones sin token | Medio |
 | **Implementador fraudulento** | Auditoría open source, reputación, exclusión por plataformas | Bajo |
+| **Compromiso del dominio del IM** | Claves de vida limitada (≤ 6 meses), TLS 1.3 + CT para la obtención de claves, key pinning por VGs, revocación bilateral | Bajo |
 | **MITM en handshake** | TLS 1.3, Certificate Transparency, ventana temporal mínima | Muy bajo |
 | **Correlación de tokens** | Rotación, nonces, `expires_at` con precisión gruesa, firmas parcialmente ciegas, tamaño fijo (331 bytes) | Muy bajo |
 | **Menor desactiva DA** | Protección a nivel de SO, PIN parental, políticas MDM | Medio |
@@ -460,7 +507,7 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 ```mermaid
 pie title Distribucion de riesgo residual
     "Muy bajo" : 5
-    "Bajo" : 3
+    "Bajo" : 4
     "Medio" : 2
 ```
 
@@ -502,6 +549,7 @@ pie title Distribucion de riesgo residual
 | **RSAPBSSA** | RSA Partially Blind Signature Scheme with Appendix. Esquema concreto elegido por AAVP, basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Utiliza SHA-384 como función hash. |
 | **`token_key_id`** | SHA-256 de la clave pública del IM. Permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas. |
 | **`token_type`** | Campo del token que identifica el esquema criptográfico utilizado. Permite agilidad criptográfica y migración futura a esquemas post-cuánticos. |
+| **Trust store** | Lista de Implementadores aceptados por un Verification Gate, junto con sus claves públicas. Cada VG mantiene su propio trust store de forma independiente. Análogo al trust store de certificados raíz de un navegador. |
 | **TTL (Time To Live)** | Tiempo de vida máximo de un token antes de que expire y deba ser reemplazado. |
 | **Unlinkability** | Propiedad criptográfica que impide correlacionar dos tokens como pertenecientes al mismo usuario o dispositivo. |
 | **Verification Gate (VG)** | Endpoint dedicado de una plataforma que valida tokens AAVP y establece sesiones con franja de edad. |
