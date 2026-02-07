@@ -7,6 +7,13 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Changed
+
+- Seguridad del canal DA-IM especificada en PROTOCOL.md: TLS 1.3 con Certificate Transparency (RFC 9162). OHTTP (RFC 9458) recomendado como medida opcional de máxima privacidad. Vulnerabilidad S9 y recomendación R9 de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Tolerancia asimétrica de *clock skew* definida para validación de `expires_at`: 300 segundos para tokens recién expirados, 60 segundos para tokens del futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519). Vulnerabilidad S10 y recomendación R4 de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Mención de *certificate pinning* reemplazada por TLS 1.3 + Certificate Transparency en toda la especificación. Tabla de amenazas de PROTOCOL.md actualizada.
+- Entrada de glosario "Certificate Pinning" reemplazada por "Certificate Transparency (CT)" y "Clock skew".
+
 ## [0.5.0] - 2026-02-06
 
 ### Added

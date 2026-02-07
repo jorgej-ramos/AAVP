@@ -36,7 +36,7 @@
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
 | **Gestión de sesiones (VG)** | 🔴 | 3 altas | Comportamiento post-handshake no especificado: qué almacenar, cuánto tiempo, qué hacer sin token. Cada plataforma improvisa. |
 | **Segmentación de contenido** | 🔴 | 1 alta | AAVP entrega la señal pero no define cómo verificar que las plataformas la usan. Sin framework de auditoría, la eficacia real es desconocida. |
-| **Resistencia a análisis de tráfico** | 🟡 | 2 medias | El protocolo es susceptible a correlación por metadatos de red. Mitigaciones propuestas (OHTTP, pre-firma) pero fuera del alcance mínimo del protocolo. |
+| **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
 
 | | Significado |
 |:---:|-------------|
@@ -58,8 +58,8 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | S6 | Auditoría de código abierto insuficiente para prevenir IMs maliciosos | [1.1](#s6-la-auditoría-de-código-abierto-previene-implementadores-maliciosos) | IM publica código conforme pero ejecuta versión modificada en producción | Crítica | *Reproducible builds*; atestación de binario; auditorías periódicas con test de caja negra |
 | S7 | PIN parental fácilmente eludible | [1.1](#s7-pin-parental-o-protección-a-nivel-de-so-impide-la-desactivación-por-el-menor) | Menor observa el PIN (*shoulder surfing*) o manipula al padre | Alta | Autenticación biométrica del SO; *cooldown* de 24h tras cambio de franja; notificaciones proactivas |
 | S8 | Dispositivo comprometido (root/jailbreak) no documentado como supuesto | [1.2](#s8-el-dispositivo-no-está-comprometido-a-nivel-de-so-root--jailbreak) | Dispositivo rooteado (~2-5% de Android) | Crítica | *Device attestation*; documentar el supuesto en PROTOCOL.md |
-| S9 | Canal DA-IM no especificado | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | Atacante con posición de red entre DA e IM | Media | Especificar TLS + certificate pinning para DA-IM en PROTOCOL.md |
-| S10 | Tolerancia de reloj (*clock skew*) no definida | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | Reloj del dispositivo manipulado (posible sin privilegios) | Media | Definir tolerancia para validación de `expires_at`; rechazar tokens con `expires_at` excesivamente futuro |
+| S9 | ~~Canal DA-IM no especificado~~ | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | ~~Atacante con posición de red entre DA e IM~~ | ~~Media~~ **Resuelta** | Canal DA-IM especificado en PROTOCOL.md: TLS 1.3 + CT. OHTTP recomendado como medida opcional de máxima privacidad |
+| S10 | ~~Tolerancia de reloj (*clock skew*) no definida~~ | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | ~~Reloj del dispositivo manipulado (posible sin privilegios)~~ | ~~Media~~ **Resuelta** | Tolerancia asimétrica definida en PROTOCOL.md: 300s pasado, 60s futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519) |
 | S11 | Registro de IMs sin mecanismo definido | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | Compromiso del registro (credenciales, DNS poisoning, BGP hijack) | Crítica | Log *append-only* tipo CT; *grace period* de 72h; firma cruzada M-of-N |
 | S12 | Segmentación de contenido no verificable | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | Alta | Framework de auditoría; protocolo de certificación en 3 niveles; crawlers de verificación |
 | S14 | Revocación de IMs sin mecanismo definido | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | IM comprometido sigue activo en plataformas que no actualizan | Alta | Definir mecanismo de revocación con TTL máximo de propagación |
@@ -126,15 +126,15 @@ Todo protocolo criptográfico descansa sobre un conjunto de supuestos. Si un sup
 
 Estos supuestos están documentados en PROTOCOL.md y constituyen las bases declaradas del modelo de seguridad.
 
-#### S1. TLS con certificate pinning protege el handshake
+#### S1. TLS 1.3 con Certificate Transparency protege los canales
 
-**Supuesto:** El canal entre el Device Agent y el Verification Gate está protegido por TLS con certificate pinning, lo que impide ataques MITM durante la transmisión del token.
+**Supuesto:** Todos los canales del protocolo (DA-VG y DA-IM) están protegidos por TLS 1.3 o superior. La integridad de los certificados se respalda con Certificate Transparency (RFC 9162), que exige el registro público de todos los certificados emitidos.
 
 **Análisis de robustez:**
-- Certificate pinning es una defensa sólida pero con limitaciones operativas. Requiere actualización de pines cuando los certificados rotan, lo que introduce una ventana de fragilidad.
-- En entornos corporativos o educativos con proxies TLS de inspección, el certificate pinning puede fallar, dejando al DA sin capacidad de presentar el token.
-- Algunas plataformas móviles (Android 7+) soportan certificate pinning nativo via *Network Security Config*, pero la implementación varía entre vehículos del DA.
-- **Si falla:** Un atacante con posición de red privilegiada podría interceptar el token durante el handshake. Dado que el token no contiene datos personales, el impacto directo es limitado, pero el atacante podría intentar un *replay attack* en otra sesión.
+- TLS 1.3 elimina suites de cifrado débiles y reduce la superficie de ataque del handshake respecto a versiones anteriores. Es el estándar de transporte mínimo aceptable en 2025+.
+- Certificate Transparency (CT) ha reemplazado al *certificate pinning* (deprecado; Chrome lo eliminó en 2018, OWASP lo desaconseja salvo excepciones) como mecanismo principal de detección de certificados fraudulentos. CT no requiere mantenimiento de pines por parte del DA.
+- En entornos corporativos o educativos con proxies TLS de inspección, la verificación de CT puede fallar, dejando al DA sin capacidad de presentar el token. Este escenario es análogo al fallo de pinning pero con menor frecuencia de falsos positivos.
+- **Si falla:** Un atacante con posición de red privilegiada y un certificado fraudulento (no registrado en CT) podría interceptar el token durante el handshake. Dado que el token no contiene datos personales, el impacto directo es limitado, pero el atacante podría intentar un *replay attack* en otra sesión.
 
 #### S2. Secure Enclave / TPM / StrongBox protegen las claves del DA
 
@@ -218,10 +218,11 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 **Descripción:** La comunicación entre el Device Agent y el Implementador para la firma parcialmente ciega se produce sobre un canal seguro que impide la interceptación o modificación de los mensajes.
 
 **Análisis:**
-- PROTOCOL.md especifica TLS con certificate pinning para el canal DA-VG, pero no menciona explícitamente las garantías del canal DA-IM.
+- PROTOCOL.md especifica TLS 1.3 para ambos canales (DA-VG y DA-IM), respaldado por Certificate Transparency (RFC 9162).
 - Si el canal DA-IM no está protegido, un atacante podría interceptar el token enmascarado (*blinded*) y, aunque no puede descifrarlo (por la ceguera), podría bloquear la firma, forzando un fallo en la generación del token.
 - Un atacante activo podría sustituir la respuesta del IM con una firma inválida, causando un *denial of service* selectivo.
 - **Impacto si falla:** Denegación de servicio (bloqueo de firma) o, en el peor caso, correlación de metadatos de red entre la petición de firma y el uso posterior del token.
+- **Estado:** Resuelta en PROTOCOL.md v0.5.0. El canal DA-IM requiere TLS 1.3 con verificación de cadena de certificados respaldada por Certificate Transparency (RFC 9162). OHTTP (RFC 9458) se recomienda como medida opcional para ocultar la IP del DA al IM. La fuga de metadatos de red (IP, TLS fingerprint, patrones temporales) se documenta como riesgo residual aceptable para el alcance mínimo del protocolo.
 
 #### S10. Los relojes del DA y el VG están razonablemente sincronizados
 
@@ -233,6 +234,7 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 - El VG necesita definir una tolerancia (*clock skew*) aceptable, pero PROTOCOL.md no especifica este valor.
 - La precisión gruesa de `expires_at` (redondeo a la hora) simplifica la validación pero no elimina la necesidad de una tolerancia definida.
 - **Impacto si falla:** Tokens prematuramente rechazados (si el DA está adelantado) o tokens que deberían haber expirado aceptados (si el DA está atrasado o el VG es tolerante en exceso).
+- **Estado:** Resuelta en PROTOCOL.md v0.5.0. Se define una tolerancia asimétrica: 300 segundos para tokens recién expirados (*clock skew* del DA por detrás) y 60 segundos para tokens del futuro (*clock skew* del DA por delante). La asimetría se justifica porque las distribuciones de *clock skew* no son simétricas (RFC 8446) y un token del futuro es más sospechoso que uno recién expirado. El redondeo a la hora de `expires_at` limita el riesgo de *fingerprinting* por reloj.
 
 #### S11. El registro de Implementadores es resistente a manipulación
 
@@ -279,7 +281,7 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 | ID | Supuesto | Tipo | Robustez | Impacto si falla |
 |----|----------|------|----------|-----------------|
-| S1 | TLS + certificate pinning | Explícito | Alta | Bajo |
+| S1 | TLS 1.3 + Certificate Transparency | Explícito | Alta | Bajo |
 | S2 | Hardware seguro (Enclave/TPM) | Explícito | Media-Alta | Crítico (por dispositivo) |
 | S3 | Ceguera de las firmas ciegas | Explícito | Alta | Crítico |
 | S4 | Rotación impide rastreo | Explícito | Media | Medio |
@@ -437,7 +439,7 @@ flowchart TD
 
 **Análisis detallado:**
 - Un menor técnicamente sofisticado podría utilizar un firewall local, un proxy o un DNS sinkhole para bloquear las conexiones del DA sin afectar al resto de la navegación.
-- En redes con inspección TLS (corporativas, educativas), el certificate pinning puede fallar legítimamente, creando un escenario de degradación no malicioso pero con el mismo efecto.
+- En redes con inspección TLS (corporativas, educativas), la verificación de Certificate Transparency puede fallar legítimamente, creando un escenario de degradación no malicioso pero con el mismo efecto.
 
 **Mitigaciones propuestas:**
 - Las plataformas que implementen AAVP deben definir una política para sesiones no verificadas. La recomendación mínima: aplicar las restricciones de la franja más restrictiva (`UNDER_13`) a sesiones sin token.
@@ -931,7 +933,7 @@ PROTOCOL.md describe las responsabilidades del Verification Gate a alto nivel. E
 
 **Ataques específicos a cada mecanismo:**
 
-- **`.well-known/aavp`:** Un proxy TLS malicioso podría modificar la respuesta para indicar que la plataforma no soporta AAVP, provocando degradación (sección 2.6). Mitigación: servir el endpoint con el mismo certificate pinning que el VG.
+- **`.well-known/aavp`:** Un proxy TLS malicioso podría modificar la respuesta para indicar que la plataforma no soporta AAVP, provocando degradación (sección 2.6). Mitigación: servir el endpoint sobre TLS 1.3 con certificados verificables via Certificate Transparency.
 - **DNS `_aavp`:** El envenenamiento de caché DNS (*Kaminsky attack* y variantes) podría redirigir al DA a un VG falso. Mitigación: DNSSEC. Limitación: la adopción de DNSSEC es parcial (~30% de dominios a nivel global).
 
 **Recomendación:** Usar `.well-known/aavp` como mecanismo primario y DNS como mecanismo de descubrimiento complementario. El DA debe implementar ambos con la siguiente prioridad:
@@ -1394,12 +1396,12 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | R1 | ~~Definir formato de codificación del token~~ | ~~Crítica~~ **Resuelta** | Formato binario fijo de 331 bytes definido con RSAPBSSA-SHA384 |
 | R2 | ~~Especificar tamaño exacto del token~~ | ~~Crítica~~ **Resuelta** | 331 bytes fijos especificados |
 | R3 | ~~Añadir campo de versión de algoritmo~~ | ~~Alta~~ **Resuelta** | Campo `token_type` de 2 bytes incluido |
-| R4 | Definir tolerancia de reloj (*clock skew*) para validación de timestamps | Alta | Sin tolerancia definida, los VGs aplican criterios dispares |
+| R4 | ~~Definir tolerancia de reloj (*clock skew*) para validación de timestamps~~ | ~~Alta~~ **Resuelta** | Tolerancia asimétrica definida: 300s pasado, 60s futuro |
 | R5 | ~~Especificar magnitud y distribución del jitter en `issued_at`~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado; `expires_at` con precisión gruesa (1h) |
 | R6 | Definir política de sesiones no verificadas (SHOULD) | Media | Sin directrices, las plataformas no restringirán contenido |
 | R7 | Documentar los supuestos implícitos (S8-S14) | Media | Los supuestos no documentados no pueden ser evaluados por implementadores |
 | R8 | Definir el mecanismo del registro de IMs | Media | Sin mecanismo concreto, el registro es una abstracción no implementable |
-| R9 | Especificar el canal DA-IM (protocolo, seguridad) | Media | El canal no está especificado, dejando un punto ciego |
+| R9 | ~~Especificar el canal DA-IM (protocolo, seguridad)~~ | ~~Media~~ **Resuelta** | TLS 1.3 + CT especificados; OHTTP recomendado como opcional |
 
 ### 9.2 Especificaciones adicionales para el Internet-Draft (medio plazo)
 
