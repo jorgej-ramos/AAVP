@@ -1,6 +1,6 @@
 # AAVP — Estudio de Vulnerabilidades y Análisis de Seguridad
 
-> **Documento de trabajo — Febrero 2026**
+> **v0.5.0 — Documento de trabajo — Febrero 2026**
 >
 > Análisis exhaustivo de seguridad del Anonymous Age Verification Protocol. Para la especificación técnica, consultar [PROTOCOL.md](PROTOCOL.md). Para una introducción accesible, consultar [README.md](README.md).
 
@@ -1447,7 +1447,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 
 <div align="center">
 
-**AAVP** · Anonymous Age Verification Protocol · Estudio de Vulnerabilidades
+**AAVP** · Anonymous Age Verification Protocol · Estudio de Vulnerabilidades · v0.5.0
 
 *Documento de trabajo — Sujeto a revisión*
 

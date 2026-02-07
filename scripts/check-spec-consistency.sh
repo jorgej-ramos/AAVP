@@ -101,6 +101,26 @@ else
   check "version_protocol_footer" "PROTOCOL.md footer coincide con VERSION" "fail" "VERSION=$VERSION, PROTOCOL footer=$PROTOCOL_FOOTER_VERSION"
 fi
 
+# SECURITY-ANALYSIS.md header: "vX.Y.Z — Documento de trabajo"
+SECURITY_HEADER_LINE=$(grep "Documento de trabajo" "$REPO_ROOT/SECURITY-ANALYSIS.md" 2>/dev/null | head -1 || echo "")
+SECURITY_HEADER_VERSION=$(extract_version_after "$SECURITY_HEADER_LINE" "v")
+SECURITY_HEADER_VERSION="${SECURITY_HEADER_VERSION:-NOT_FOUND}"
+if [[ "$SECURITY_HEADER_VERSION" == "$VERSION" ]]; then
+  check "version_security_header" "SECURITY-ANALYSIS.md header coincide con VERSION ($VERSION)" "pass"
+else
+  check "version_security_header" "SECURITY-ANALYSIS.md header coincide con VERSION" "fail" "VERSION=$VERSION, SECURITY header=$SECURITY_HEADER_VERSION"
+fi
+
+# SECURITY-ANALYSIS.md footer: "Vulnerabilidades · vX.Y.Z"
+SECURITY_FOOTER_LINE=$(grep "Vulnerabilidades · v" "$REPO_ROOT/SECURITY-ANALYSIS.md" 2>/dev/null | head -1 || echo "")
+SECURITY_FOOTER_VERSION=$(extract_version_after "$SECURITY_FOOTER_LINE" "Vulnerabilidades · v")
+SECURITY_FOOTER_VERSION="${SECURITY_FOOTER_VERSION:-NOT_FOUND}"
+if [[ "$SECURITY_FOOTER_VERSION" == "$VERSION" ]]; then
+  check "version_security_footer" "SECURITY-ANALYSIS.md footer coincide con VERSION ($VERSION)" "pass"
+else
+  check "version_security_footer" "SECURITY-ANALYSIS.md footer coincide con VERSION" "fail" "VERSION=$VERSION, SECURITY footer=$SECURITY_FOOTER_VERSION"
+fi
+
 # ─── 2. Tamaño del token ────────────────────────────────────────────
 
 printf "\n\033[1m2. Tamaño del token\033[0m\n"

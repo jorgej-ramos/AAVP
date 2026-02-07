@@ -78,6 +78,15 @@ jobs:
             "s/Especificaci.n T.cnica · v[0-9]*\.[0-9]*\.[0-9]*/Especificación Técnica · v${{ steps.tag.outputs.version }}/" \
             PROTOCOL.md
 
+      - name: Update SECURITY-ANALYSIS.md header
+        run: |
+          sed -i \
+            "s/v[0-9]*\.[0-9]*\.[0-9]* — Documento de trabajo/v${{ steps.tag.outputs.version }} — Documento de trabajo/" \
+            SECURITY-ANALYSIS.md
+          sed -i \
+            "s/Vulnerabilidades · v[0-9]*\.[0-9]*\.[0-9]*/Vulnerabilidades · v${{ steps.tag.outputs.version }}/" \
+            SECURITY-ANALYSIS.md
+
       - name: Stamp CHANGELOG.md
         env:
           NEW_VERSION: ${{ steps.tag.outputs.version }}
@@ -109,7 +118,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add VERSION README.md PROTOCOL.md CHANGELOG.md
+          git add VERSION README.md PROTOCOL.md SECURITY-ANALYSIS.md CHANGELOG.md
 
           if git diff --cached --quiet; then
             echo "No changes to commit (previous run already applied updates)."

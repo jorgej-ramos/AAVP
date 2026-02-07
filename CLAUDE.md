@@ -262,6 +262,7 @@ Eso es todo. El workflow `.github/workflows/bump-version.yml` se encarga del res
 
 - `README.md`: `White Paper vX.Y.Z` y `Anonymous Age Verification Protocol · vX.Y.Z`
 - `PROTOCOL.md`: `vX.Y.Z — Borrador` y `Especificacion Tecnica · vX.Y.Z`
+- `SECURITY-ANALYSIS.md`: `vX.Y.Z — Documento de trabajo` y `Estudio de Vulnerabilidades · vX.Y.Z`
 
 Si se añade un nuevo documento con versión en la cabecera, hay que añadir el patrón `sed` correspondiente al workflow.
 
