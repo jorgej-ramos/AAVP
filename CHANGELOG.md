@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-07
+
 ### Changed
 
 - Modelo de confianza del registro de Implementadores especificado en PROTOCOL.md: auto-publicación de claves por cada IM en su dominio (TLS 1.3 + CT). Sin registro centralizado. Vulnerabilidad S11 y recomendación R8 de SECURITY-ANALYSIS.md marcadas como resueltas.
@@ -105,7 +107,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.2.0...v0.3.0
