@@ -412,6 +412,41 @@ else
     "No se encontro referencia a session_expires_at"
 fi
 
+# ─── 12. Endpoints de descubrimiento ──────────────────────────────────
+
+printf "\n\033[1m12. Endpoints de descubrimiento\033[0m\n"
+
+if grep -q '\.well-known/aavp-issuer' "$REPO_ROOT/PROTOCOL.md"; then
+  check "discovery_im_endpoint" "PROTOCOL.md especifica .well-known/aavp-issuer" "pass"
+else
+  check "discovery_im_endpoint" "PROTOCOL.md especifica .well-known/aavp-issuer" "fail" \
+    "No se encontro referencia a .well-known/aavp-issuer"
+fi
+
+if grep -q '\.well-known/aavp' "$REPO_ROOT/PROTOCOL.md" && grep -q 'vg_endpoint' "$REPO_ROOT/PROTOCOL.md"; then
+  check "discovery_vg_endpoint" "PROTOCOL.md especifica .well-known/aavp con vg_endpoint" "pass"
+else
+  check "discovery_vg_endpoint" "PROTOCOL.md especifica .well-known/aavp con vg_endpoint" "fail" \
+    "No se encontro especificacion completa de .well-known/aavp"
+fi
+
+if grep -q 'accepted_token_types' "$REPO_ROOT/PROTOCOL.md"; then
+  check "discovery_token_types" "Campo accepted_token_types documentado en PROTOCOL.md" "pass"
+else
+  check "discovery_token_types" "Campo accepted_token_types documentado en PROTOCOL.md" "fail" \
+    "No se encontro referencia a accepted_token_types"
+fi
+
+# Verificar que no quedan referencias obsoletas al esquema borrador
+STALE_ALGO=$(grep -c '"rsa-blind-2048"' "$REPO_ROOT/SECURITY-ANALYSIS.md" 2>/dev/null) || true
+STALE_ALGO="${STALE_ALGO:-0}"
+if [[ "$STALE_ALGO" -eq 0 ]]; then
+  check "discovery_no_stale_algo" "SECURITY-ANALYSIS.md no contiene referencias a esquema obsoleto rsa-blind-2048" "pass"
+else
+  check "discovery_no_stale_algo" "SECURITY-ANALYSIS.md no contiene referencias a esquema obsoleto rsa-blind-2048" "fail" \
+    "$STALE_ALGO ocurrencias de rsa-blind-2048"
+fi
+
 # ─── Resumen ─────────────────────────────────────────────────────────
 
 TOTAL=$((PASS + FAIL))
