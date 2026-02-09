@@ -14,8 +14,9 @@
 - [4. Fundamentos Criptográficos](#4-fundamentos-criptográficos)
 - [5. Modelo de Confianza Descentralizado](#5-modelo-de-confianza-descentralizado)
 - [6. Flujo Operativo Detallado](#6-flujo-operativo-detallado)
-- [7. Modelo de Amenazas](#7-modelo-de-amenazas)
-- [8. Trabajo Futuro y Líneas Abiertas](#8-trabajo-futuro-y-líneas-abiertas)
+- [7. Credencial de Sesión del Verification Gate](#7-credencial-de-sesión-del-verification-gate)
+- [8. Modelo de Amenazas](#8-modelo-de-amenazas)
+- [9. Trabajo Futuro y Líneas Abiertas](#9-trabajo-futuro-y-líneas-abiertas)
 - [Glosario](#glosario)
 
 ---
@@ -474,7 +475,7 @@ Este proceso es **completamente transparente** para el usuario:
 2. El Device Agent detecta que la plataforma soporta AAVP (vía registro DNS `_aavp` o endpoint `.well-known/aavp`).
 3. El DA genera un token efímero, ciega el `nonce`, envía el mensaje cegado junto con los metadatos públicos (`age_bracket`, `expires_at`) al Implementador para firma parcialmente ciega, desciega la firma y presenta el token al Verification Gate.
 4. El VG valida la firma contra las claves públicas de los Implementadores aceptados, verifica el TTL y extrae la franja de edad.
-5. La plataforma establece una sesión con un flag interno de franja de edad.
+5. La plataforma establece una sesión conforme al modelo de credencial de sesión descrito en la sección 7.
 6. El contenido se filtra según la política de la plataforma para esa franja.
 7. Al caducar el token, el DA genera uno nuevo y el VG renueva la sesión. El proceso es transparente.
 
@@ -482,11 +483,176 @@ Este proceso es **completamente transparente** para el usuario:
 
 Si el software que actúa como Device Agent se desactiva durante una sesión activa, deja de emitir tokens. En la siguiente revalidación, la sesión no puede renovarse y transiciona a un estado "no verificado".
 
-La política de qué hacer con sesiones no verificadas es decisión exclusiva de cada plataforma. El protocolo es deliberadamente agnóstico en este punto.
+La política de qué hacer con sesiones donde el DA desaparece es decisión de cada plataforma. Sin embargo, el protocolo establece directrices en la sección 7.7: si la plataforma ha registrado previamente una franja menor para esa cuenta, las restricciones deben mantenerse hasta que se presente una credencial `OVER_18` válida.
 
 ---
 
-## 7. Modelo de Amenazas
+## 7. Credencial de Sesión del Verification Gate
+
+Una vez que el VG valida un token AAVP, necesita un mecanismo para mantener
+la señal de franja de edad durante la sesión del usuario sin retener el token
+original ni almacenar estado en el servidor. Esta sección define el modelo
+recomendado: una credencial de sesión autocontenida, efímera y no vinculable.
+
+### 7.1 Principios de diseño
+
+| Principio AAVP | Aplicación a la sesión |
+|-----------------|----------------------|
+| **Privacidad por Diseño** | La credencial contiene exclusivamente `age_bracket`. El token AAVP completo se descarta tras la validación. |
+| **Descentralización** | Cada VG genera y valida sus propias credenciales de sesión. No existe un servicio centralizado de sesiones. |
+| **Estándar Abierto** | El modelo es parte de la especificación abierta. Cada plataforma elige su formato concreto. |
+| **Minimalismo de Datos** | Solo tres campos: `age_bracket`, `session_expires_at` y firma del VG. Ningún dato adicional. |
+
+### 7.2 Descarte obligatorio del token
+
+Tras validar un token AAVP, el VG:
+
+1. **Extrae** exclusivamente `age_bracket` del token.
+2. **Descarta** el token completo. El VG no debe almacenar, registrar en logs ni retransmitir ningún campo del token AAVP tras la validación. Esto incluye `nonce`, `authenticator`, `token_key_id` y `expires_at`.
+3. **No debe** generar ni almacenar derivados del token (hashes, resúmenes) que puedan actuar como pseudoidentificadores.
+
+> [!IMPORTANT]
+> El descarte del token es la propiedad de privacidad más importante de la gestión de sesiones. Un VG que almacene tokens completos está creando inadvertidamente un repositorio de pseudoidentificadores que, en caso de brecha de seguridad, podría comprometer la privacidad de los usuarios.
+
+### 7.3 Estructura de la credencial de sesión
+
+El VG emite una **credencial de sesión autocontenida** (*self-contained session credential*) que contiene únicamente:
+
+| Campo | Tipo | Propósito |
+|-------|------|-----------|
+| `age_bracket` | Enumeración (`UNDER_13`, `AGE_13_15`, `AGE_16_17`, `OVER_18`) | Franja de edad extraída del token validado |
+| `session_expires_at` | Timestamp | Momento de expiración de la credencial de sesión |
+| `vg_signature` | Firma del VG | Garantiza integridad y autenticidad de la credencial |
+
+La credencial es **autocontenida**: incluye toda la información necesaria para su validación. El VG no necesita mantener estado en servidor (*session store*). La verificación se realiza comprobando `vg_signature` y que `session_expires_at` no ha pasado.
+
+> [!NOTE]
+> El formato concreto de la credencial (estructura binaria, algoritmo de firma, mecanismo de transporte al cliente) es decisión de implementación de cada plataforma. La especificación define los campos obligatorios y las propiedades que la credencial debe cumplir, no el formato exacto. Esto es coherente con la separación entre el protocolo AAVP (interoperable entre DA, IM y VG) y la gestión de sesiones interna (específica de cada plataforma).
+
+### 7.4 Tiempo de vida y renovación
+
+El TTL de la credencial de sesión debe ser **estrictamente menor o igual** al TTL del token AAVP que la originó.
+
+| Propiedad | Valor recomendado | Justificación |
+|-----------|-------------------|---------------|
+| TTL de la credencial | 15-30 minutos | Limita la ventana de explotación ante *session hijacking* |
+| Relación con TTL del token | `session_expires_at` ≤ `expires_at` del token | La sesión no debe sobrevivir al token que la generó |
+| Frecuencia de renovación | Al expirar la credencial | El DA presenta un nuevo token AAVP |
+
+La renovación de la credencial implica un ciclo completo:
+
+1. La credencial de sesión caduca.
+2. El DA genera un **nuevo** token AAVP, criptográficamente independiente del anterior.
+3. El DA presenta el nuevo token al VG.
+4. El VG valida el nuevo token, descarta el token y emite una **nueva** credencial de sesión.
+5. La nueva credencial no es vinculable con la anterior.
+
+Este modelo garantiza que cada renovación produce una sesión criptográficamente independiente: el VG no puede correlacionar dos credenciales consecutivas del mismo usuario.
+
+### 7.5 Ciclo de vida
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoVerificada
+    NoVerificada --> Validando : DA presenta token AAVP
+    Validando --> Activa : Token valido → VG emite credencial
+    Validando --> NoVerificada : Token invalido o expirado
+    Activa --> Expirada : session_expires_at alcanzado
+    Expirada --> Validando : DA presenta nuevo token
+    Expirada --> NoVerificada : Sin nuevo token (DA desactivado)
+    Activa --> NoVerificada : Usuario cierra sesion
+```
+
+El flujo de renovación sincronizada con el DA:
+
+```mermaid
+sequenceDiagram
+    participant DA as Device Agent
+    participant VG as Verif. Gate
+    participant APP as Plataforma
+
+    DA->>VG: Token AAVP (token₁)
+    VG->>VG: Valida firma + TTL
+    VG->>VG: Extrae age_bracket
+    VG->>VG: Descarta token completo
+    VG->>VG: Emite credencial (age_bracket + TTL + firma VG)
+    VG-->>DA: OK
+    VG->>APP: age_bracket via credencial
+    APP-->>DA: Contenido filtrado
+
+    Note over DA,APP: 15-30 min (credencial activa)
+
+    VG->>VG: Credencial expira
+    DA->>DA: Genera token₂ (independiente de token₁)
+    DA->>VG: Token AAVP (token₂)
+    VG->>VG: Valida, descarta, nueva credencial
+    VG->>APP: age_bracket via nueva credencial
+
+    Note over VG: token₁ y token₂ no son vinculables
+    Note over VG: credencial₁ y credencial₂ no son vinculables
+```
+
+### 7.6 Propiedades de seguridad
+
+La credencial de sesión cumple las siguientes propiedades:
+
+- **Autocontenida.** No requiere estado en servidor. Validable con la clave de verificación del VG. Compatible con arquitecturas CDN/edge donde la validación puede ocurrir en el borde de la red.
+- **Efímera.** TTL corto (15-30 minutos) que limita la ventana de explotación ante robo de credencial (*session hijacking*).
+- **No vinculable.** Dos credenciales consecutivas del mismo usuario son independientes. Cada una proviene de un token AAVP diferente, y la credencial no contiene identificadores que permitan correlacionarlas.
+- **Puramente aditiva.** AAVP solo restringe cuando hay una señal activa de franja menor. La ausencia de señal AAVP (usuario sin DA) no implica restricción alguna: la experiencia es idéntica a la que existiría sin AAVP. Las restricciones se aplican exclusivamente a cuentas que han recibido una franja menor.
+- **Persistente a nivel de cuenta.** Cuando una plataforma recibe una franja menor para una cuenta, esa restricción debe persistir a nivel de cuenta. Retirar las restricciones requiere una credencial `OVER_18` válida; la mera ausencia de señal AAVP no es suficiente.
+- **Minimalista.** Contiene exclusivamente `age_bracket`, `session_expires_at` y `vg_signature`. Cualquier dato adicional viola el principio de minimalismo de datos y no debe incluirse.
+
+### 7.7 Modelo aditivo y persistencia a nivel de cuenta
+
+AAVP es un protocolo **puramente aditivo**: solo añade restricciones cuando un DA envía activamente una señal de franja menor. Un usuario sin DA no se ve afectado en absoluto.
+
+#### Principio fundamental
+
+| Situación | Experiencia del usuario |
+|-----------|------------------------|
+| Sin DA (nunca hubo handshake AAVP) | Sin restricciones. Experiencia idéntica a la de una plataforma sin AAVP. |
+| DA presente, franja menor | Restricciones según la franja recibida. |
+| DA presente, franja `OVER_18` | Sin restricciones. Prueba criptográfica de edad disponible. |
+
+#### Persistencia a nivel de cuenta
+
+Cuando una plataforma recibe una señal de franja menor para una cuenta de usuario, debe **persistir esa señal como un flag interno** de la cuenta. Este flag sobrevive a la expiración de la credencial de sesión y a la desactivación del DA:
+
+| Situación | Comportamiento recomendado |
+|-----------|--------------------------|
+| Cuenta marcada como menor, credencial de sesión activa | Restricciones según la franja de la credencial |
+| Cuenta marcada como menor, credencial expirada sin renovación | Restricciones se mantienen (la cuenta sigue marcada) |
+| Cuenta marcada como menor, DA desinstalado | Restricciones se mantienen (la cuenta sigue marcada) |
+| Retirada de restricciones | Solo mediante credencial `OVER_18` válida |
+
+> [!IMPORTANT]
+> La persistencia a nivel de cuenta es la principal defensa contra la evasión por desactivación del DA. Si un menor desinstala el software que actúa como Device Agent, las plataformas donde su cuenta ya fue marcada como menor siguen aplicando restricciones. Para retirarlas, es necesario presentar una credencial `OVER_18` válida — que requiere un DA configurado con esa franja y la firma de un Implementador.
+
+#### Señalización
+
+La plataforma debe señalizar al usuario cuando las restricciones están activas y ofrecer un mecanismo para presentar una credencial `OVER_18` si el usuario considera que las restricciones no le corresponden.
+
+### 7.8 Escenarios de borde
+
+- **El usuario borra cookies durante una sesión activa.** La plataforma pierde la credencial de sesión, pero el flag de franja menor a nivel de cuenta persiste. En la siguiente interacción, si el DA está presente, se inicia un nuevo handshake AAVP. Si el DA no está presente, las restricciones de cuenta se mantienen.
+- **Múltiples pestañas o ventanas.** Cada pestaña puede tener su propia credencial de sesión. El DA debe poder gestionar múltiples handshakes concurrentes sin reutilizar tokens.
+- **Sesión expira sin que el DA esté disponible.** La credencial caduca naturalmente. Sin DA disponible para renovar, las restricciones de cuenta se mantienen según la sección 7.7.
+- **Menor desinstala el DA y crea cuenta nueva en un dispositivo sin DA.** La cuenta nueva no tiene historial de señal AAVP. Sin DA en el dispositivo, no hay handshake y la plataforma no aplica restricciones. Este es el mismo vector que existe sin AAVP: un menor con acceso a un dispositivo no controlado. AAVP protege las puertas, no las ventanas.
+- **El menor cumple 18 años.** Los padres actualizan la franja en el DA o lo retiran. El joven presenta una credencial `OVER_18` a las plataformas. Las restricciones de cuenta se retiran.
+
+### 7.9 Compatibilidad con arquitecturas CDN y edge
+
+La credencial autocontenida es compatible con arquitecturas donde la validación ocurre en nodos edge:
+
+- El nodo edge puede validar `vg_signature` sin consultar al *origin server*.
+- La clave de verificación del VG puede distribuirse a todos los nodos edge de la plataforma.
+- El endpoint del handshake AAVP no debe cachearse: `Cache-Control: no-store`.
+- Las respuestas de contenido segmentado deben incluir `Vary` con un identificador de franja para que el CDN distinga las variantes por `age_bracket`.
+
+---
+
+## 8. Modelo de Amenazas
 
 Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 
@@ -497,7 +663,7 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 | **Compromiso del dominio del IM** | Claves de vida limitada (≤ 6 meses), TLS 1.3 + CT para la obtención de claves, key pinning por VGs, revocación bilateral | Bajo |
 | **MITM en handshake** | TLS 1.3, Certificate Transparency, ventana temporal mínima | Muy bajo |
 | **Correlación de tokens** | Rotación, nonces, `expires_at` con precisión gruesa, firmas parcialmente ciegas, tamaño fijo (331 bytes) | Muy bajo |
-| **Menor desactiva DA** | Protección a nivel de SO, PIN parental, políticas MDM | Medio |
+| **Menor desactiva DA** | Protección a nivel de SO, PIN parental, políticas MDM. Persistencia a nivel de cuenta: las restricciones no se levantan al desinstalar el DA (sección 7.7) | Bajo |
 | **Fabricación de tokens** | Firma criptográfica RSAPBSSA-SHA384 computacionalmente inviable de falsificar | Muy bajo |
 | **Implementador colude con plataforma** | El IM conoce `age_bracket` (metadato público) pero no puede vincular el token con un DA concreto. El VG también conoce `age_bracket` (es la señal que recibe). El IM no gana información adicional útil para correlación. | Muy bajo |
 | **Replay de tokens** | Nonce único + `expires_at` validado por el VG contra su propio reloj | Muy bajo |
@@ -507,8 +673,8 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 ```mermaid
 pie title Distribucion de riesgo residual
     "Muy bajo" : 5
-    "Bajo" : 4
-    "Medio" : 2
+    "Bajo" : 5
+    "Medio" : 1
 ```
 
 ### Limitaciones reconocidas
@@ -519,7 +685,7 @@ pie title Distribucion de riesgo residual
 
 ---
 
-## 8. Trabajo Futuro y Líneas Abiertas
+## 9. Trabajo Futuro y Líneas Abiertas
 
 - **Especificación formal:** Desarrollar una especificación técnica completa en formato RFC, incluyendo formatos de mensaje, procedimientos de prueba de conformidad y test vectors.
 - **Implementación de referencia:** Crear bibliotecas open source en múltiples lenguajes para Device Agent y Verification Gate.
@@ -541,12 +707,15 @@ pie title Distribucion de riesgo residual
 | **Blind Signature** | Técnica criptográfica donde un firmante puede firmar un mensaje sin conocer su contenido. |
 | **Certificate Transparency (CT)** | Estándar abierto (RFC 9162) que exige a las Autoridades de Certificación registrar todos los certificados emitidos en logs públicos auditables. Reemplaza al *certificate pinning* (deprecado) como mecanismo principal de detección de certificados fraudulentos. |
 | **Clock skew** | Diferencia de sincronización entre los relojes de dos sistemas. En AAVP, la tolerancia asimétrica (`CLOCK_SKEW_TOLERANCE_PAST = 300`, `CLOCK_SKEW_TOLERANCE_FUTURE = 60`) acomoda las divergencias entre el reloj del DA y el del VG. |
+| **Credencial de sesión** | Estructura autocontenida emitida por el VG tras validar un token AAVP. Contiene exclusivamente `age_bracket`, `session_expires_at` y la firma del VG. No requiere estado en servidor. |
 | **Device Agent (DA)** | Rol del protocolo AAVP: componente de software en el dispositivo del menor que genera y gestiona los tokens de edad. No es sinónimo de "control parental"; puede ser implementado por distintos tipos de software. |
+| **Fail-closed** | Política de seguridad donde la pérdida de señal de verificación mantiene las restricciones activas. En AAVP se aplica a nivel de cuenta: una cuenta marcada como menor conserva las restricciones aunque el DA deje de estar disponible. Solo una credencial `OVER_18` válida las retira. |
 | **Fingerprinting** | Técnica de rastreo que identifica usuarios por características únicas de su dispositivo o comportamiento. |
 | **Implementador (IM)** | Organización que desarrolla software conforme al estándar AAVP, actuando como proveedor de la funcionalidad de Device Agent. |
 | **Metadato público** | Parte del token visible al IM durante la firma parcialmente ciega, vinculada criptográficamente via derivación de clave. En AAVP: `age_bracket` y `expires_at`. |
 | **Partially Blind Signature** | Esquema de firma donde el firmante ve una parte del mensaje (metadato público) pero no el resto. En AAVP, el IM ve `age_bracket` y `expires_at` pero no el `nonce`. |
 | **RSAPBSSA** | RSA Partially Blind Signature Scheme with Appendix. Esquema concreto elegido por AAVP, basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Utiliza SHA-384 como función hash. |
+| **Self-contained** | Propiedad de una credencial que contiene toda la información necesaria para su validación sin consultar un almacén de estado externo. |
 | **`token_key_id`** | SHA-256 de la clave pública del IM. Permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas. |
 | **`token_type`** | Campo del token que identifica el esquema criptográfico utilizado. Permite agilidad criptográfica y migración futura a esquemas post-cuánticos. |
 | **Trust store** | Lista de Implementadores aceptados por un Verification Gate, junto con sus claves públicas. Cada VG mantiene su propio trust store de forma independiente. Análogo al trust store de certificados raíz de un navegador. |

@@ -34,7 +34,7 @@
 | **Modelo de confianza (registro de IMs)** | 🟡 | 3 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Pendiente: formato concreto del endpoint (E4). |
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
-| **Gestión de sesiones (VG)** | 🔴 | 3 altas | Comportamiento post-handshake no especificado: qué almacenar, cuánto tiempo, qué hacer sin token. Cada plataforma improvisa. |
+| **Gestión de sesiones (VG)** | 🟡 | 1 media (abierta), 2 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Pendiente: formato concreto del endpoint `.well-known/aavp` (E4). |
 | **Segmentación de contenido** | 🔴 | 1 alta | AAVP entrega la señal pero no define cómo verificar que las plataformas la usan. Sin framework de auditoría, la eficacia real es desconocida. |
 | **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
 
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. Ninguna área alcanza este nivel todavía. |
 
-**Distribución actual:** 2 áreas en rojo, 5 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. Quedan pendientes la gestión de sesiones y la segmentación de contenido.
+**Distribución actual:** 1 área en rojo, 6 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. La credencial de sesión autocontenida resuelve las carencias críticas de la gestión de sesiones. Queda pendiente la segmentación de contenido.
 
 ---
 
@@ -95,8 +95,8 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | ID | Problema | Sección | Precondiciones | Severidad | Mitigación propuesta |
 |----|----------|---------|----------------|-----------|---------------------|
 | I-5.1 | Descubrimiento de servicio vulnerable | [5.1](#51-descubrimiento-del-servicio) | DNS spoofing o proxy TLS malicioso | Media | `.well-known/aavp` como primario (con TLS); DNS como fallback; DNSSEC |
-| I-5.2 | Gestión de sesiones post-handshake no especificada | [5.2](#52-gestión-de-sesiones-post-handshake) | VG almacena token completo o sesión excede TTL del token | Alta | Exigir descarte del token tras validación; sesión ≤ TTL del token |
-| I-5.3 | Política de contenido no verificado ausente | [5.3](#53-política-de-contenido-no-verificado) | Plataforma permite acceso sin restricciones a sesiones sin token | Alta | Directrices RFC 2119: *fail-closed* (SHOULD), señalización (MUST), contenido explícito sin token (MUST NOT) |
+| I-5.2 | ~~Gestión de sesiones post-handshake no especificada~~ | [5.2](#52-gestión-de-sesiones-post-handshake) | ~~VG almacena token completo o sesión excede TTL del token~~ | ~~Alta~~ **Resuelta** | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL ≤ TTL del token, renovación con token independiente |
+| I-5.3 | ~~Política de contenido no verificado ausente~~ | [5.3](#53-política-de-contenido-no-verificado) | ~~Plataforma permite acceso sin restricciones a sesiones sin token~~ | ~~Alta~~ **Resuelta** | Modelo aditivo con persistencia a nivel de cuenta definido en PROTOCOL.md sección 7.7: las restricciones de franja menor persisten en la cuenta aunque el DA desaparezca; solo una credencial `OVER_18` las retira |
 | I-5.4 | Impacto en latencia del handshake | [5.4](#542-impacto-en-latencia) | Conexiones lentas (3G); primera sesión | Media | Pre-firma de tokens en background; VG como middleware en edge |
 
 ### Escenarios de ataque compuestos
@@ -175,6 +175,8 @@ Estos supuestos están documentados en PROTOCOL.md y constituyen las bases decla
 - Si la plataforma almacena el token completo en la sesión (en lugar de solo `age_bracket`), podría estar creando un identificador persistente inadvertidamente.
 - Las sesiones web tienen vulnerabilidades conocidas: *session fixation*, *session hijacking* via XSS, *CSRF*.
 - **Si falla:** Un atacante que comprometa la sesión post-handshake podría suplantar la franja de edad del usuario o, peor, acceder a contenido restringido con la sesión de un adulto.
+
+> **Estado: Fortalecido.** PROTOCOL.md sección 7 define una credencial de sesión autocontenida con descarte obligatorio del token, TTL máximo igual al TTL del token AAVP (recomendado 15-30 minutos), renovación con token criptográficamente independiente y modelo aditivo con persistencia a nivel de cuenta (las restricciones de franja menor persisten aunque el DA desaparezca; solo una credencial `OVER_18` las retira). Esto reduce significativamente la superficie de ataque de la gestión de sesiones, aunque las vulnerabilidades de sesión web estándar (*session fixation*, *XSS*) siguen siendo responsabilidad de la implementación de cada plataforma.
 
 #### S6. La auditoría de código abierto previene implementadores maliciosos
 
@@ -290,7 +292,7 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 | S2 | Hardware seguro (Enclave/TPM) | Explícito | Media-Alta | Crítico (por dispositivo) |
 | S3 | Ceguera de las firmas ciegas | Explícito | Alta | Crítico |
 | S4 | Rotación impide rastreo | Explícito | Media | Medio |
-| S5 | Sesiones post-handshake seguras | Explícito | Media | Alto |
+| S5 | Sesiones post-handshake seguras | Explícito | Media-Alta | Alto |
 | S6 | Auditoría previene IMs maliciosos | Explícito | Baja-Media | Crítico |
 | S7 | PIN parental impide desactivación | Explícito | Baja | Alto |
 | S8 | Dispositivo no comprometido | Implícito | Media | Crítico (por dispositivo) |
@@ -992,6 +994,9 @@ La respuesta de `.well-known/aavp` debe ser un documento JSON con:
 - **Sesión expira sin revalidación:** La plataforma debe transicionar a estado "no verificado" y aplicar la política correspondiente (idealmente, restricciones de la franja más conservadora).
 - **Múltiples pestañas/ventanas:** Cada pestaña puede tener su propia sesión. El DA debe poder gestionar múltiples handshakes concurrentes sin reutilizar tokens.
 
+> [!NOTE]
+> **Resolución parcial.** PROTOCOL.md sección 7 define la credencial de sesión autocontenida, el descarte obligatorio del token (sección 7.2), el TTL máximo de la credencial (sección 7.4), la persistencia de restricciones a nivel de cuenta (sección 7.7) y los escenarios de borde (sección 7.8). Las recomendaciones de esta sección de SECURITY-ANALYSIS.md están incorporadas en la especificación. Las vulnerabilidades de sesión web estándar (*session fixation*, *XSS*, *CSRF*) siguen siendo responsabilidad de cada implementación.
+
 ### 5.3 Política de contenido no verificado
 
 **El problema:** PROTOCOL.md declara que la política para sesiones no verificadas es "decisión exclusiva de cada plataforma". Esta neutralidad es problemática: sin directrices, las plataformas tomarán el camino de menor resistencia (no restringir nada), anulando el propósito del protocolo.
@@ -1407,7 +1412,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | R3 | ~~Añadir campo de versión de algoritmo~~ | ~~Alta~~ **Resuelta** | Campo `token_type` de 2 bytes incluido |
 | R4 | ~~Definir tolerancia de reloj (*clock skew*) para validación de timestamps~~ | ~~Alta~~ **Resuelta** | Tolerancia asimétrica definida: 300s pasado, 60s futuro |
 | R5 | ~~Especificar magnitud y distribución del jitter en `issued_at`~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado; `expires_at` con precisión gruesa (1h) |
-| R6 | Definir política de sesiones no verificadas (SHOULD) | Media | Sin directrices, las plataformas no restringirán contenido |
+| R6 | ~~Definir política de sesiones no verificadas (SHOULD)~~ | ~~Media~~ **Resuelta** | Modelo aditivo con persistencia a nivel de cuenta definido en PROTOCOL.md sección 7.7 |
 | R7 | Documentar los supuestos implícitos (S8-S14) | Media | Los supuestos no documentados no pueden ser evaluados por implementadores |
 | R8 | ~~Definir el mecanismo del registro de IMs~~ | ~~Media~~ **Resuelta** | Modelo de auto-publicación definido; cada IM publica en su dominio |
 | R9 | ~~Especificar el canal DA-IM (protocolo, seguridad)~~ | ~~Media~~ **Resuelta** | TLS 1.3 + CT especificados; OHTTP recomendado como opcional |

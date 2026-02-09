@@ -7,6 +7,20 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Sección 7 "Credencial de Sesión del Verification Gate" en PROTOCOL.md: credencial de sesión autocontenida emitida por el VG tras validar un token AAVP con descarte obligatorio del token, TTL de 15-30 minutos (siempre ≤ TTL del token), renovación con token AAVP independiente y no vinculable, modelo aditivo (sin DA = sin restricciones) con persistencia a nivel de cuenta (la franja menor persiste aunque el DA desaparezca; solo una credencial `OVER_18` la retira), y compatibilidad con CDN/edge.
+- Términos "Credencial de sesión", "Fail-closed" y "Self-contained" añadidos al glosario de PROTOCOL.md.
+
+### Changed
+
+- Vulnerabilidades I-5.2 (gestión de sesiones post-handshake) e I-5.3 (política de contenido no verificado) de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Recomendación R6 (política de sesiones no verificadas) de SECURITY-ANALYSIS.md marcada como resuelta.
+- Área "Gestión de sesiones (VG)" de SECURITY-ANALYSIS.md actualizada de rojo a amarillo.
+- Supuesto S5 (sesiones post-handshake seguras) fortalecido con referencia a la nueva especificación.
+- Amenaza "Menor desactiva DA" en PROTOCOL.md reclasificada de riesgo Medio a Bajo gracias a la persistencia a nivel de cuenta.
+- Secciones 7 y 8 de PROTOCOL.md renumeradas a 8 y 9 respectivamente.
+
 ## [0.6.0] - 2026-02-07
 
 ### Changed
