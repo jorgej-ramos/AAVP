@@ -355,10 +355,10 @@ if [[ -f "$REPO_ROOT/SECURITY-ANALYSIS.md" ]]; then
     ACTUAL_GREEN="${ACTUAL_GREEN:-0}"
 
     # Extract claimed counts from the summary line
-    SUMMARY_LINE=$(grep -E '[0-9]+ .reas en rojo' "$REPO_ROOT/SECURITY-ANALYSIS.md" | head -1 || echo "")
+    SUMMARY_LINE=$(grep -E '[0-9]+ .reas? en rojo' "$REPO_ROOT/SECURITY-ANALYSIS.md" | head -1 || echo "")
 
     if [[ -n "$SUMMARY_LINE" ]]; then
-      CLAIMED_RED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) .reas en rojo.*/\1/p')
+      CLAIMED_RED=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) .reas\{0,1\} en rojo.*/\1/p')
       CLAIMED_YELLOW=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) en amarillo.*/\1/p')
       CLAIMED_GREEN=$(echo "$SUMMARY_LINE" | sed -n 's/.*\([0-9][0-9]*\) en verde.*/\1/p')
 
@@ -392,6 +392,24 @@ if echo "$UNRELEASED_LINK" | grep -q "v${VERSION}\.\.\.HEAD"; then
   check "changelog_link" "Link de [Unreleased] apunta a v${VERSION}...HEAD" "pass"
 else
   check "changelog_link" "Link de [Unreleased] apunta a v${VERSION}...HEAD" "fail" "Link actual: $UNRELEASED_LINK"
+fi
+
+# ─── 11. Credencial de sesion del VG ──────────────────────────────────
+
+printf "\n\033[1m11. Credencial de sesion del VG\033[0m\n"
+
+if grep -q "Credencial de Sesión del Verification Gate" "$REPO_ROOT/PROTOCOL.md"; then
+  check "session_credential_section" "PROTOCOL.md contiene la seccion de credencial de sesion" "pass"
+else
+  check "session_credential_section" "PROTOCOL.md contiene la seccion de credencial de sesion" "fail" \
+    "Seccion 'Credencial de Sesion del Verification Gate' no encontrada"
+fi
+
+if grep -q "session_expires_at" "$REPO_ROOT/PROTOCOL.md"; then
+  check "session_expires_field" "Campo session_expires_at documentado en PROTOCOL.md" "pass"
+else
+  check "session_expires_field" "Campo session_expires_at documentado en PROTOCOL.md" "fail" \
+    "No se encontro referencia a session_expires_at"
 fi
 
 # ─── Resumen ─────────────────────────────────────────────────────────
