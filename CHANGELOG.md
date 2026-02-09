@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-09
+
 ### Added
 
 - Sección 7 "Credencial de Sesión del Verification Gate" en PROTOCOL.md: credencial de sesión autocontenida emitida por el VG tras validar un token AAVP con descarte obligatorio del token, TTL de 15-30 minutos (siempre ≤ TTL del token), renovación con token AAVP independiente y no vinculable, modelo aditivo (sin DA = sin restricciones) con persistencia a nivel de cuenta (la franja menor persiste aunque el DA desaparezca; solo una credencial `OVER_18` la retira), y compatibilidad con CDN/edge.
@@ -136,7 +138,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.3.0...v0.4.0
