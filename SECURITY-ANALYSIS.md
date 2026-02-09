@@ -31,10 +31,10 @@
 | Área | Estado | Vulnerabilidades abiertas | Resumen |
 |------|:------:|--------------------------|---------|
 | **Estructura del token** | 🟡 | 1 media (abierta), 5 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. Pendiente: especificar API criptográfica del SO para calidad del nonce (T-4.6). |
-| **Modelo de confianza (registro de IMs)** | 🟡 | 3 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Pendiente: formato concreto del endpoint (E4). |
+| **Modelo de confianza (registro de IMs)** | 🟡 | 4 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Endpoint `.well-known/aavp-issuer` especificado. |
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
-| **Gestión de sesiones (VG)** | 🟡 | 1 media (abierta), 2 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Pendiente: formato concreto del endpoint `.well-known/aavp` (E4). |
+| **Gestión de sesiones (VG)** | 🟡 | 3 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Endpoint `.well-known/aavp` especificado. |
 | **Segmentación de contenido** | 🔴 | 1 alta | AAVP entrega la señal pero no define cómo verificar que las plataformas la usan. Sin framework de auditoría, la eficacia real es desconocida. |
 | **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
 
@@ -94,7 +94,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 
 | ID | Problema | Sección | Precondiciones | Severidad | Mitigación propuesta |
 |----|----------|---------|----------------|-----------|---------------------|
-| I-5.1 | Descubrimiento de servicio vulnerable | [5.1](#51-descubrimiento-del-servicio) | DNS spoofing o proxy TLS malicioso | Media | `.well-known/aavp` como primario (con TLS); DNS como fallback; DNSSEC |
+| I-5.1 | ~~Descubrimiento de servicio vulnerable~~ | [5.1](#51-descubrimiento-del-servicio) | ~~DNS spoofing o proxy TLS malicioso~~ | ~~Media~~ **Resuelta** | Endpoints `.well-known/aavp` y `.well-known/aavp-issuer` especificados en PROTOCOL.md secciones 5.3 y 5.2.3. Cadena de prioridad: caché → HTTPS → DNS |
 | I-5.2 | ~~Gestión de sesiones post-handshake no especificada~~ | [5.2](#52-gestión-de-sesiones-post-handshake) | ~~VG almacena token completo o sesión excede TTL del token~~ | ~~Alta~~ **Resuelta** | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL ≤ TTL del token, renovación con token independiente |
 | I-5.3 | ~~Política de contenido no verificado ausente~~ | [5.3](#53-política-de-contenido-no-verificado) | ~~Plataforma permite acceso sin restricciones a sesiones sin token~~ | ~~Alta~~ **Resuelta** | Modelo aditivo con persistencia a nivel de cuenta definido en PROTOCOL.md sección 7.7: las restricciones de franja menor persisten en la cuenta aunque el DA desaparezca; solo una credencial `OVER_18` las retira |
 | I-5.4 | Impacto en latencia del handshake | [5.4](#542-impacto-en-latencia) | Conexiones lentas (3G); primera sesión | Media | Pre-firma de tokens en background; VG como middleware en edge |
@@ -952,17 +952,8 @@ PROTOCOL.md describe las responsabilidades del Verification Gate a alto nivel. E
 2. `.well-known/aavp` sobre HTTPS.
 3. DNS `_aavp` TXT como fallback.
 
-La respuesta de `.well-known/aavp` debe ser un documento JSON con:
-
-```json
-{
-  "aavp_version": "0.3",
-  "vg_endpoint": "https://platform.example/aavp/verify",
-  "accepted_ims": ["im1.example", "im2.example"],
-  "accepted_algorithms": ["rsa-blind-2048"],
-  "min_token_version": 1
-}
-```
+> [!NOTE]
+> El formato JSON de `.well-known/aavp` y `.well-known/aavp-issuer` está ahora especificado en PROTOCOL.md secciones 5.3 y 5.2.3 respectivamente. Los endpoints utilizan `accepted_token_types` (referencia al registro de `token_type` en sección 5.4) en lugar de nombres de algoritmo como identificadores.
 
 ### 5.2 Gestión de sesiones post-handshake
 
@@ -1424,7 +1415,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | E1 | Test vectors completos | Conjunto de entradas y salidas para validar implementaciones de DA, VG e IM |
 | E2 | Protocolo de auditoría formal | Framework verificable para auditar las tres partes del protocolo |
 | E3 | ~~Mecanismo de revocación de IMs~~ | **Resuelta**: Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs |
-| E4 | Especificación de `.well-known/aavp` | Formato JSON del endpoint de descubrimiento |
+| E4 | ~~Especificación de `.well-known/aavp`~~ | **Resuelta**: Endpoints `.well-known/aavp` (VG) y `.well-known/aavp-issuer` (IM) especificados en PROTOCOL.md secciones 5.3 y 5.2.3 |
 | E5 | ~~Recomendación de esquema criptográfico~~ | **Resuelta**: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) adoptado como esquema principal |
 | E6 | Política de migración de algoritmos | Procedimiento para transicionar de un esquema criptográfico a otro sin romper compatibilidad |
 | E7 | Análisis formal con ProVerif/Tamarin | Verificación formal de las propiedades de privacidad (*unlinkability*, *blindness*) |

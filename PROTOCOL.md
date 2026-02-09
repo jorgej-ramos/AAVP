@@ -66,7 +66,7 @@ La separación entre el rol (Device Agent) y su vehículo de implementación es 
 Endpoint dedicado de la plataforma digital que actúa como puerta de entrada al servicio. Valida el token AAVP y establece una sesión interna con la marca de franja de edad.
 
 **Responsabilidades del VG:**
-- Exponer un endpoint estándar (`.well-known/aavp`) o registro DNS para anunciar soporte AAVP.
+- Exponer el endpoint de descubrimiento `.well-known/aavp` y opcionalmente el registro DNS `_aavp` conforme a la sección 5.3.
 - Validar la firma criptográfica del token contra las claves públicas de Implementadores aceptados.
 - Verificar el TTL del token.
 - Extraer la franja de edad y establecer una sesión interna.
@@ -77,7 +77,7 @@ Endpoint dedicado de la plataforma digital que actúa como puerta de entrada al 
 Empresa u organización que desarrolla software que actúa como Device Agent, conforme al estándar AAVP.
 
 **Responsabilidades del IM:**
-- Publicar su clave pública en su propio dominio mediante un endpoint estándar.
+- Publicar su clave pública en su propio dominio mediante el endpoint `.well-known/aavp-issuer` conforme a la sección 5.2.3.
 - Mantener código auditable (preferentemente open source).
 - Proveer servicio de firma parcialmente ciega al Device Agent.
 - Cumplir con la especificación abierta.
@@ -372,19 +372,81 @@ El estándar recomienda firmemente — y la regulación podría exigir — que l
 
 Cada Implementador publica su material criptográfico en su propio dominio. No existe un registro centralizado: el IM es la fuente autoritativa de sus propias claves.
 
-**Canales de publicación:**
+**Endpoint primario:** `https://[dominio-IM]/.well-known/aavp-issuer`
 
-- **Primario:** Endpoint HTTPS en el dominio del IM (la ruta y formato concretos se definirán en el Internet-Draft). El endpoint se sirve sobre TLS 1.3, con integridad de certificados respaldada por Certificate Transparency (RFC 9162).
-- **Complementario:** Registro DNS TXT bajo `_aavp-keys.[dominio-IM]` con la información mínima para que un VG pueda localizar el endpoint primario.
+El endpoint se sirve sobre TLS 1.3, con integridad de certificados respaldada por Certificate Transparency (RFC 9162).
 
-**Información publicada por el IM:**
+**Respuesta JSON** (`application/json`):
 
-Para cada clave de firma activa, el IM publica como mínimo:
+```json
+{
+  "issuer": "im-provider.example",
+  "aavp_version": "0.6",
+  "signing_endpoint": "https://im-provider.example/aavp/v1/sign",
+  "keys": [
+    {
+      "token_key_id": "base64url(SHA-256 de la clave publica)",
+      "token_type": 1,
+      "public_key": "base64url(SPKI DER de la clave publica)",
+      "not_before": "2026-01-15T00:00:00Z",
+      "not_after": "2026-07-15T00:00:00Z"
+    }
+  ]
+}
+```
 
-- Clave pública (formato según el esquema criptográfico, actualmente RSAPBSSA-SHA384).
-- `token_key_id`: SHA-256 de la clave pública (coincide con el campo del token).
-- Identificador del esquema criptográfico (coincide con `token_type`).
-- Periodo de validez: fecha de inicio y fecha de expiración de la clave.
+**Campos:**
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|:-----------:|-------------|
+| `issuer` | string (hostname) | Sí | FQDN del IM. Debe coincidir con el dominio que sirve el endpoint. |
+| `aavp_version` | string | Sí | Versión del protocolo soportada. Formato `MAJOR.MINOR`. |
+| `signing_endpoint` | string (URI) | Sí | URI HTTPS del servicio de firma parcialmente ciega. Mismo dominio o subdominio de `issuer`. |
+| `keys` | array | Sí | Claves de firma activas (incluye claves en rotación). |
+| `keys[].token_key_id` | string | Sí | SHA-256 de la clave pública, codificado en base64url sin padding (43 caracteres). Coincide con el campo `token_key_id` del token. |
+| `keys[].token_type` | uint16 | Sí | Identificador del esquema criptográfico. Coincide con `token_type` del token (ver registro en sección 5.4). |
+| `keys[].public_key` | string | Sí | Clave pública en formato SPKI DER (SubjectPublicKeyInfo, RFC 5280), codificada en base64url sin padding. |
+| `keys[].not_before` | string (ISO 8601) | Sí | Inicio del periodo de validez. |
+| `keys[].not_after` | string (ISO 8601) | Sí | Fin del periodo de validez. `not_after - not_before` ≤ 180 días. |
+
+**Requisitos HTTP:**
+
+- HTTPS obligatorio (TLS 1.3, CT verificable).
+- `Cache-Control: public, max-age=86400` (24 horas, coherente con sección 5.2.5).
+- `Access-Control-Allow-Origin: *` (para DAs basados en navegador).
+- El cliente debe verificar que `issuer` coincide con el dominio del que se obtuvo el documento.
+
+**DNS complementario:** Registro TXT `_aavp-keys.[dominio-IM]`:
+
+```
+v=aavp1; url=https://im.example/.well-known/aavp-issuer
+```
+
+**Ejemplo con rotación de claves** (dos claves con solapamiento de 30 días, como en sección 5.2.4):
+
+```json
+{
+  "issuer": "im-provider.example",
+  "aavp_version": "0.6",
+  "signing_endpoint": "https://im-provider.example/aavp/v1/sign",
+  "keys": [
+    {
+      "token_key_id": "OGQ0MTNhMjI4NjRkNzBiZjAyZDdiOTlhMTVjNGUz",
+      "token_type": 1,
+      "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+      "not_before": "2026-01-01T00:00:00Z",
+      "not_after": "2026-06-30T00:00:00Z"
+    },
+    {
+      "token_key_id": "YjVmNzgyZTMxMjk4YTBkZjc0NWUxMjQzZGFkNTY3",
+      "token_type": 1,
+      "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEB...",
+      "not_before": "2026-06-01T00:00:00Z",
+      "not_after": "2026-11-30T00:00:00Z"
+    }
+  ]
+}
+```
 
 El `token_key_id` ya presente en cada token permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas.
 
@@ -435,7 +497,146 @@ flowchart TD
     G --> F
 ```
 
-### 5.3 Analogía con DMARC/DKIM
+### 5.3 Descubrimiento del Servicio
+
+Las plataformas que soportan AAVP lo anuncian mediante un endpoint de descubrimiento. El Device Agent consulta este endpoint para determinar si la plataforma acepta tokens AAVP, qué Implementadores reconoce, y a qué URL enviar el handshake.
+
+#### 5.3.1 Endpoint de descubrimiento del VG
+
+**URI:** `https://[dominio-plataforma]/.well-known/aavp`
+
+**Respuesta JSON** (`application/json`):
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|:-----------:|-------------|
+| `aavp_version` | string | Sí | Versión del protocolo soportada. Formato `MAJOR.MINOR`. |
+| `vg_endpoint` | string (URI) | Sí | URI HTTPS del endpoint de handshake donde el DA presenta tokens. Mismo dominio o subdominio del host `.well-known`. |
+| `accepted_ims` | array de objetos | Sí | Implementadores aceptados por este VG. |
+| `accepted_ims[].domain` | string (hostname) | Sí | FQDN del IM. El DA usa este dominio para localizar `.well-known/aavp-issuer`. |
+| `accepted_ims[].token_key_ids` | array de strings | No | `token_key_id` actualmente aceptados (base64url). Si se omite, se aceptan todas las claves activas del IM. |
+| `accepted_token_types` | array de uint16 | Sí | Valores de `token_type` aceptados (ver registro en sección 5.4). |
+
+**Ejemplo:**
+
+```json
+{
+  "aavp_version": "0.6",
+  "vg_endpoint": "https://platform.example/aavp/verify",
+  "accepted_ims": [
+    {
+      "domain": "qustodio.com",
+      "token_key_ids": ["OGQ0MTNhMjI4NjRkNzBiZjAyZDdiOTlhMTVjNGUz"]
+    },
+    {
+      "domain": "familylink.google.com"
+    }
+  ],
+  "accepted_token_types": [1]
+}
+```
+
+**Requisitos HTTP:**
+
+- HTTPS obligatorio.
+- `Cache-Control: public, max-age=3600` (1 hora).
+- `Access-Control-Allow-Origin: *`.
+- El DA valida que `vg_endpoint` está en el mismo dominio o subdominio del host `.well-known`.
+
+**Códigos de respuesta:**
+
+| Código | Significado | Comportamiento del DA |
+|--------|-------------|----------------------|
+| 200 | AAVP soportado | Parsear y proceder |
+| 404 | Sin soporte AAVP | Fallback a DNS; si DNS también falla, sin soporte |
+| 429 | Limitación de tasa | Reintentar con *backoff* exponencial |
+| 5xx | Error de servidor | Reintentar una vez; usar caché si disponible; fallback a DNS |
+
+#### 5.3.2 DNS como mecanismo complementario
+
+Registro TXT `_aavp.[dominio-plataforma]`:
+
+```
+v=aavp1; e=https://platform.example/aavp/verify; im=im1.example,im2.example
+```
+
+| Clave | Obligatorio | Descripción |
+|-------|:-----------:|-------------|
+| `v` | Sí | Tag de versión. Valor fijo `aavp1`. |
+| `e` | Sí | URI del endpoint de handshake (equivale a `vg_endpoint`). |
+| `im` | No | Lista de dominios de IMs aceptados, separados por comas. |
+
+El DNS es informativo: si el DA puede alcanzar `.well-known/aavp`, el documento JSON prevalece.
+
+#### 5.3.3 Prioridad de descubrimiento
+
+El DA sigue esta cadena de prioridad para detectar soporte AAVP:
+
+1. **Caché local** de plataformas conocidas (si la entrada no ha expirado).
+2. **`.well-known/aavp`** sobre HTTPS (mecanismo primario).
+3. **DNS `_aavp` TXT** como fallback.
+
+Si ningún mecanismo responde, el DA concluye que la plataforma no soporta AAVP. Un resultado negativo se cachea durante 1 hora.
+
+```mermaid
+flowchart TD
+    A[DA necesita verificar soporte AAVP] --> B{Cache local valida?}
+    B -->|Si| C[Usar datos cacheados]
+    B -->|No| D[GET .well-known/aavp]
+    D -->|200 OK| E[Parsear JSON, cachear]
+    D -->|404| F[Consultar DNS _aavp TXT]
+    D -->|Error / timeout| F
+    F -->|Registro encontrado| G[Parsear TXT, cachear]
+    F -->|Sin registro| H[Plataforma no soporta AAVP]
+    H --> I[Cachear resultado negativo 1h]
+    E --> J[Proceder con handshake]
+    G --> J
+    C --> J
+```
+
+#### 5.3.4 Flujo de conexión entre endpoints
+
+1. El DA obtiene `.well-known/aavp` de la plataforma.
+2. Lee `accepted_ims` y verifica si su IM está en la lista.
+3. Si `token_key_ids` está presente, verifica si tiene un token pre-firmado con una clave aceptada.
+4. Si necesita un token nuevo, consulta `.well-known/aavp-issuer` del IM para obtener las claves activas.
+5. Solicita firma parcialmente ciega al `signing_endpoint` del IM.
+6. Presenta el token al `vg_endpoint` de la plataforma.
+
+```mermaid
+sequenceDiagram
+    participant DA as Device Agent
+    participant VG as Verif. Gate
+    participant IM as Implementador
+
+    DA->>VG: GET .well-known/aavp
+    VG-->>DA: JSON (accepted_ims, vg_endpoint, accepted_token_types)
+
+    DA->>DA: Verifica que su IM esta en accepted_ims
+
+    DA->>IM: GET .well-known/aavp-issuer
+    IM-->>DA: JSON (keys[], signing_endpoint)
+
+    DA->>DA: Genera token, ciega nonce
+    DA->>IM: POST signing_endpoint (msg cegado + metadatos)
+    IM-->>DA: Firma parcialmente ciega
+
+    DA->>DA: Desciega firma, construye token
+    DA->>VG: POST vg_endpoint (token AAVP)
+    VG->>VG: Valida firma, extrae age_bracket
+    VG-->>DA: OK + credencial de sesion
+```
+
+### 5.4 Registro de valores de `token_type`
+
+El campo `token_type` del token y los campos `accepted_token_types` y `keys[].token_type` de los endpoints de descubrimiento comparten el mismo espacio de valores.
+
+| Valor | Esquema | Referencia | Estado |
+|-------|---------|------------|--------|
+| 0 | Reservado | — | — |
+| 1 | RSAPBSSA-SHA384 | RFC 9474, draft-irtf-cfrg-partially-blind-rsa | Activo |
+| 2-65535 | Sin asignar | — | Reservado para futuros esquemas |
+
+### 5.5 Analogía con DMARC/DKIM
 
 | Aspecto | DMARC/DKIM | AAVP |
 |---------|-----------|------|
@@ -472,7 +673,7 @@ flowchart TD
 Este proceso es **completamente transparente** para el usuario:
 
 1. El usuario abre la aplicación o accede al sitio web.
-2. El Device Agent detecta que la plataforma soporta AAVP (vía registro DNS `_aavp` o endpoint `.well-known/aavp`).
+2. El Device Agent detecta que la plataforma soporta AAVP siguiendo la cadena de descubrimiento definida en la sección 5.3.3: caché local, `.well-known/aavp` sobre HTTPS, y DNS `_aavp` TXT como fallback.
 3. El DA genera un token efímero, ciega el `nonce`, envía el mensaje cegado junto con los metadatos públicos (`age_bracket`, `expires_at`) al Implementador para firma parcialmente ciega, desciega la firma y presenta el token al Verification Gate.
 4. El VG valida la firma contra las claves públicas de los Implementadores aceptados, verifica el TTL y extrae la franja de edad.
 5. La plataforma establece una sesión conforme al modelo de credencial de sesión descrito en la sección 7.
@@ -703,6 +904,8 @@ pie title Distribucion de riesgo residual
 
 | Término | Definición |
 |---------|-----------|
+| **`.well-known/aavp`** | Endpoint de descubrimiento que una plataforma expone para anunciar soporte AAVP. Contiene la URL del handshake, los Implementadores aceptados y los esquemas criptográficos soportados. Ver sección 5.3. |
+| **`.well-known/aavp-issuer`** | Endpoint que cada Implementador expone para publicar sus claves de firma activas. Contiene la clave pública, el `token_key_id`, el periodo de validez y la URL del servicio de firma. Ver sección 5.2.3. |
 | **AAVP** | Anonymous Age Verification Protocol. El protocolo propuesto en este documento. |
 | **Blind Signature** | Técnica criptográfica donde un firmante puede firmar un mensaje sin conocer su contenido. |
 | **Certificate Transparency (CT)** | Estándar abierto (RFC 9162) que exige a las Autoridades de Certificación registrar todos los certificados emitidos en logs públicos auditables. Reemplaza al *certificate pinning* (deprecado) como mecanismo principal de detección de certificados fraudulentos. |
