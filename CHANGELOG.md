@@ -20,6 +20,10 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ### Changed
 
+- Nueva subsección "Generación del nonce" en PROTOCOL.md sección 2: APIs de CSPRNG obligatorias por plataforma, fuentes prohibidas y tests de conformidad con NIST SP 800-22.
+- Vulnerabilidad T-4.6 (calidad de fuente de aleatoriedad del nonce) de SECURITY-ANALYSIS.md marcada como resuelta.
+- Área "Estructura del token" de SECURITY-ANALYSIS.md actualizada de amarillo a verde: 6 vulnerabilidades resueltas.
+- Distribución del semáforo actualizada: 1 rojo, 5 amarillo, 1 verde.
 - Vulnerabilidades I-5.2 (gestión de sesiones post-handshake) e I-5.3 (política de contenido no verificado) de SECURITY-ANALYSIS.md marcadas como resueltas.
 - Recomendación R6 (política de sesiones no verificadas) de SECURITY-ANALYSIS.md marcada como resuelta.
 - Área "Gestión de sesiones (VG)" de SECURITY-ANALYSIS.md actualizada de rojo a amarillo.

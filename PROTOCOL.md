@@ -212,6 +212,37 @@ El token **no contiene** y **no puede contener**:
 
 Cada dato adicional es un vector potencial de *fingerprinting* y debe justificarse rigurosamente antes de incluirse en futuras versiones del protocolo.
 
+### Generación del nonce
+
+El nonce de 32 bytes debe generarse utilizando un generador de números pseudoaleatorios criptográficamente seguro (CSPRNG) proporcionado por el sistema operativo. El uso de fuentes de aleatoriedad débiles compromete las garantías de unicidad del token y puede facilitar ataques de predicción.
+
+**APIs requeridas por plataforma:**
+
+| Plataforma | API requerida | Alternativa |
+|------------|--------------|-------------|
+| iOS / macOS | `SecRandomCopyBytes` (Security.framework) | `CryptoKit` (`SymmetricKey(size:)`) |
+| Android | `java.security.SecureRandom` (respaldado por `/dev/urandom`) | — |
+| Linux | `getrandom(2)` o `getentropy()` | `/dev/urandom` |
+| Windows | `BCryptGenRandom` (BCrypt) | — |
+| Web (navegador) | `crypto.getRandomValues()` (Web Crypto API) | — |
+
+**Fuentes prohibidas:**
+
+Las siguientes fuentes de aleatoriedad producen tokens no conformes:
+
+- `Math.random()` (JavaScript) o equivalentes no criptográficos en otros lenguajes.
+- `rand()`, `random()` (C/C++ estándar).
+- Derivación a partir de timestamps, direcciones MAC o identificadores del dispositivo.
+- PRNGs inicializados con semillas predecibles o de baja entropía.
+
+**Justificación:** El espacio de 256 bits del nonce es suficiente para prevenir colisiones (SECURITY-ANALYSIS.md sección 4.6 demuestra probabilidad negligible incluso tras 10^18 tokens). Sin embargo, un PRNG débil con 32 bits de entropía efectiva reduce el espacio a 2^32 valores posibles, haciendo las colisiones probables tras ~65.000 tokens. La especificación de APIs de CSPRNG del SO garantiza que los 256 bits se utilizan en su totalidad.
+
+**Test de conformidad:** Las auditorías de implementaciones del Device Agent deben verificar:
+
+1. Que el código fuente utiliza exclusivamente las APIs de CSPRNG del SO listadas.
+2. Que una muestra de 10.000 nonces generados supera la suite de tests estadísticos NIST SP 800-22 o equivalente.
+3. Que nonces consecutivos no comparten prefijos, sufijos ni patrones detectables.
+
 ---
 
 ## 3. Rotación de Tokens

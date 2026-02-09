@@ -30,7 +30,7 @@
 
 | Área | Estado | Vulnerabilidades abiertas | Resumen |
 |------|:------:|--------------------------|---------|
-| **Estructura del token** | 🟡 | 1 media (abierta), 5 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. Pendiente: especificar API criptográfica del SO para calidad del nonce (T-4.6). |
+| **Estructura del token** | 🟢 | 6 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. APIs de CSPRNG del SO especificadas para generación del nonce. |
 | **Modelo de confianza (registro de IMs)** | 🟡 | 4 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Endpoint `.well-known/aavp-issuer` especificado. |
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
@@ -42,9 +42,9 @@
 |:---:|-------------|
 | 🔴 | Carencias de especificación críticas que impiden implementaciones seguras e interoperables. Requiere trabajo antes del Internet-Draft. |
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
-| 🟢 | Garantías criptográficas sólidas y especificación suficiente. Ninguna área alcanza este nivel todavía. |
+| 🟢 | Garantías criptográficas sólidas y especificación suficiente. |
 
-**Distribución actual:** 1 área en rojo, 6 en amarillo, 0 en verde. La adopción de Partially Blind RSA y la definición del formato binario del token (331 bytes) resuelven las carencias críticas de la estructura del token. El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. La credencial de sesión autocontenida resuelve las carencias críticas de la gestión de sesiones. Queda pendiente la segmentación de contenido.
+**Distribución actual:** 1 área en rojo, 5 en amarillo, 1 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. La credencial de sesión autocontenida resuelve las carencias críticas de la gestión de sesiones. Queda pendiente la segmentación de contenido.
 
 ---
 
@@ -88,7 +88,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | T-4.3 | ~~Sin versionado de algoritmo~~ | [4.3](#43-versionado-del-algoritmo) | ~~Migración criptográfica futura (post-cuántica)~~ | ~~Alta~~ **Resuelta** | Campo `token_type` de 2 bytes incluido en el token |
 | T-4.4 | ~~Sin canonicalización definida~~ | [4.4](#44-canonicalización) | ~~Misma estructura con codificaciones binarias diferentes~~ | ~~Alta~~ **Resuelta** | Formato fijo con offsets determinísticos; canonicalización implícita |
 | T-4.5 | ~~Jitter de `issued_at` no cuantificado~~ | [4.5](#45-precisión-del-timestamp-y-jitter) | ~~Jitter insuficiente o predecible permite correlación temporal~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado. `expires_at` con precisión gruesa (redondeo a la hora) |
-| T-4.6 | Calidad de la fuente de aleatoriedad del nonce | [4.6](#46-espacio-del-nonce-análisis-de-birthday-attack) | DA usa PRNG débil (espacio efectivo ≪ 256 bits) | Media | Requerir API criptográfica del SO; test de entropía en auditoría de conformidad |
+| T-4.6 | ~~Calidad de la fuente de aleatoriedad del nonce~~ | [4.6](#46-espacio-del-nonce-análisis-de-birthday-attack) | ~~DA usa PRNG débil (espacio efectivo ≪ 256 bits)~~ | ~~Media~~ **Resuelta** | APIs de CSPRNG del SO especificadas en PROTOCOL.md sección 2. Test de conformidad con NIST SP 800-22 |
 
 ### Carencias del modelo de implementación
 
@@ -918,6 +918,8 @@ Para un nonce de 256 bits (B = 256):
 **Riesgo real:** El riesgo no es la colisión del nonce, sino la calidad de la fuente de aleatoriedad. Si un DA usa un PRNG débil o mal inicializado (*seeded*), el espacio efectivo del nonce puede ser mucho menor que 256 bits. Un PRNG con 32 bits de entropía real produce nonces de 256 bits pero con solo 2^32 valores posibles, haciendo las colisiones probables tras ~2^16 tokens.
 
 **Recomendación:** La especificación debe requerir que el nonce se genere usando la API de aleatoriedad criptográfica del SO (`/dev/urandom`, `SecRandomCopyBytes`, `getentropy()`). Incluir un test vector que verifique la entropía de los nonces generados (ej: test de Kolmogorov-Smirnov sobre una muestra de 10,000 nonces).
+
+> **Estado: Resuelta.** PROTOCOL.md sección 2 (subsección "Generación del nonce") especifica las APIs de CSPRNG obligatorias por plataforma (`SecRandomCopyBytes`, `SecureRandom`, `getrandom(2)`, `BCryptGenRandom`, `crypto.getRandomValues()`), prohíbe fuentes débiles (`Math.random()`, `rand()`, derivación de timestamps/IDs) y define tests de conformidad con NIST SP 800-22.
 
 ---
 

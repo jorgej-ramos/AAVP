@@ -447,6 +447,25 @@ else
     "$STALE_ALGO ocurrencias de rsa-blind-2048"
 fi
 
+# ─── 13. Especificación de CSPRNG para nonce ─────────────────────────
+
+printf "\n\033[1m13. Especificacion de CSPRNG para nonce\033[0m\n"
+
+CSPRNG_APIS=("SecRandomCopyBytes" "SecureRandom" "getrandom" "BCryptGenRandom" "crypto.getRandomValues")
+FOUND_APIS=0
+for api in "${CSPRNG_APIS[@]}"; do
+  if grep -q "$api" "$REPO_ROOT/PROTOCOL.md"; then
+    FOUND_APIS=$((FOUND_APIS + 1))
+  fi
+done
+
+if [[ "$FOUND_APIS" -ge 3 ]]; then
+  check "csprng_apis" "PROTOCOL.md especifica APIs de CSPRNG del SO ($FOUND_APIS encontradas)" "pass"
+else
+  check "csprng_apis" "PROTOCOL.md especifica APIs de CSPRNG del SO" "fail" \
+    "Solo $FOUND_APIS de 5 APIs encontradas"
+fi
+
 # ─── Resumen ─────────────────────────────────────────────────────────
 
 TOTAL=$((PASS + FAIL))
