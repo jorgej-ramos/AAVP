@@ -527,6 +527,31 @@ else
     "No se encontro referencia al SAF en SECURITY-ANALYSIS.md"
 fi
 
+# ─── 15. Supuestos de seguridad y device attestation ─────────────────
+
+printf "\n\033[1m15. Supuestos de seguridad y device attestation\033[0m\n"
+
+if grep -q "Supuestos de Seguridad" "$REPO_ROOT/PROTOCOL.md"; then
+  check "security_assumptions_section" "PROTOCOL.md contiene la seccion de supuestos de seguridad" "pass"
+else
+  check "security_assumptions_section" "PROTOCOL.md contiene la seccion de supuestos de seguridad" "fail" \
+    "No se encontro 'Supuestos de Seguridad'"
+fi
+
+if grep -q "Key Attestation" "$REPO_ROOT/PROTOCOL.md" || grep -q "Integridad del Dispositivo" "$REPO_ROOT/PROTOCOL.md"; then
+  check "device_attestation_section" "PROTOCOL.md contiene la seccion de device attestation / key attestation" "pass"
+else
+  check "device_attestation_section" "PROTOCOL.md contiene la seccion de device attestation / key attestation" "fail" \
+    "No se encontro 'Key Attestation' ni 'Integridad del Dispositivo'"
+fi
+
+if grep -q "sección 4.4\|seccion 4.4\|sección 1.3\|seccion 1.3" "$REPO_ROOT/SECURITY-ANALYSIS.md"; then
+  check "security_cross_ref" "SECURITY-ANALYSIS.md referencia las nuevas secciones de PROTOCOL.md" "pass"
+else
+  check "security_cross_ref" "SECURITY-ANALYSIS.md referencia las nuevas secciones de PROTOCOL.md" "fail" \
+    "No se encontro referencia a seccion 4.4 ni seccion 1.3 en SECURITY-ANALYSIS.md"
+fi
+
 # ─── Resumen ─────────────────────────────────────────────────────────
 
 TOTAL=$((PASS + FAIL))

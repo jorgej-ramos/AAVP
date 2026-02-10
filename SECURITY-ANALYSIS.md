@@ -33,7 +33,7 @@
 | **Estructura del token** | 🟢 | 6 resueltas | Formato binario fijo de 331 bytes definido. Campo `token_type` para agilidad criptográfica. Canonicalización implícita. `issued_at` eliminado. APIs de CSPRNG del SO especificadas para generación del nonce. |
 | **Modelo de confianza (registro de IMs)** | 🟡 | 4 resueltas | Modelo de auto-publicación definido: cada IM publica claves en su dominio. Claves de vida limitada (≤ 6 meses). Revocación bilateral por VGs. Sin registro central que atacar. Endpoint `.well-known/aavp-issuer` especificado. |
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
-| **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
+| **Protección del dispositivo** | 🟡 | 3 críticas/altas (parcialmente mitigadas) | Key attestation definido como mecanismo opcional en PROTOCOL.md sección 4.4. Supuestos S2 y S8 documentados explícitamente en sección 1.3. Rotación semanal de claves del DA. Riesgo residual: root/jailbreak, dispositivos sin TEE, ataques a TEE específicos. |
 | **Gestión de sesiones (VG)** | 🟡 | 3 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Endpoint `.well-known/aavp` especificado. |
 | **Segmentación de contenido** | 🟡 | 1 alta (mitigada) | Segmentation Accountability Framework (SAF) definido en PROTOCOL.md sección 8: declaración de política firmada (SPD), logs de transparencia (PTL), protocolo de verificación abierto (OVP) y señal de cumplimiento en el handshake. Riesgo residual: el contenido dinámico y UGC dificultan la verificación exhaustiva. |
 | **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
@@ -146,6 +146,8 @@ Estos supuestos están documentados en PROTOCOL.md y constituyen las bases decla
 - Los emuladores y dispositivos rooteados pueden exponer un TEE emulado que no ofrece las mismas garantías.
 - **Si falla:** Un atacante con acceso físico al dispositivo podría extraer las claves del DA, generar tokens arbitrarios con cualquier `age_bracket` y utilizarlos en plataformas compatibles. El impacto se limita a ese dispositivo concreto, pero es crítico para su usuario.
 
+> **Estado: Parcialmente mitigada.** PROTOCOL.md sección 4.4 define key attestation como mecanismo opcional para verificar que las claves del DA residen en hardware seguro. El IM puede diferenciar entre claves hardware-backed y software-only. La rotación semanal de claves del DA (sección 4.4.4) limita la ventana de explotación. Riesgo residual: dispositivos sin TEE y ataques a TEE específicos (TrustZone CVEs).
+
 #### S3. Las firmas parcialmente ciegas impiden al IM vincular el token con el usuario
 
 **Supuesto:** El protocolo de firma parcialmente ciega (RSAPBSSA-SHA384) garantiza que el Implementador firma el token conociendo los metadatos públicos (`age_bracket`, `expires_at`) pero sin poder vincular el token resultante con el DA que lo solicitó.
@@ -214,6 +216,8 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 > [!IMPORTANT]
 > La detección de root/jailbreak es un juego del gato y el ratón. Las soluciones existentes (*SafetyNet/Play Integrity* en Android, *DeviceCheck* en iOS) requieren verificación remota contra servidores del fabricante del SO, lo que introduce una dependencia centralizada en conflicto con los principios de AAVP.
+
+> **Estado: Documentado y parcialmente mitigado.** PROTOCOL.md sección 1.3 documenta explícitamente este supuesto como limitación reconocida del protocolo. La sección 4.4 define device attestation opcional (key attestation + señales de integridad del dispositivo) como mitigación parcial. Key attestation opera a nivel DA-IM (relación bilateral) sin introducir centralización. Root/jailbreak permanece como limitación inherente: en un dispositivo completamente comprometido, todas las garantías del DA son anulables.
 
 #### S9. El canal entre DA e IM es confidencial e íntegro
 
@@ -1288,12 +1292,13 @@ sequenceDiagram
 **Mitigaciones existentes:**
 - El almacenamiento seguro (Secure Enclave/StrongBox) resiste la extracción de claves. Pero en un dispositivo rooteado, un TEE emulado no ofrece esta garantía.
 
-**Mitigaciones propuestas:**
-- *Device attestation*: el DA verifica la integridad del dispositivo antes de generar tokens. Si detecta root/jailbreak, rehúsa operar. Conflicto: detección de root es un juego del gato y el ratón; introduce dependencia en APIs del fabricante (*SafetyNet*, *Play Integrity*).
-- *Key attestation*: el IM verifica que las claves del DA residen en hardware seguro real (no emulado) antes de aceptar peticiones de firma. Disponible en Android (desde API 24) e iOS (*DeviceCheck*).
-- Rotación forzada de claves del DA con verificación de *attestation* en cada rotación.
+**Mitigaciones (especificadas en PROTOCOL.md sección 4.4):**
+- *Key attestation* (sección 4.4.2): el IM verifica que las claves del DA residen en hardware seguro real (no emulado). Un TEE emulado en un dispositivo rooteado no produce una cadena de attestation válida.
+- *Señales de integridad del dispositivo* (sección 4.4.3): el DA puede detectar root/jailbreak localmente y negarse a operar. Autocomprobación que no se transmite a terceros.
+- *Rotación semanal de claves del DA* (sección 4.4.4): fuerza re-attestation periódica, limitando la ventana de explotación.
+- Key attestation opera a nivel DA-IM (relación bilateral), resolviendo la tensión con la descentralización.
 
-**Riesgo residual:** Medio-Alto. Las mitigaciones requieren APIs de atestación del fabricante, lo que introduce una dependencia centralizada.
+**Riesgo residual:** Medio-Alto. La key attestation detecta TEE emulados, pero un dispositivo completamente comprometido puede evadir detecciones de root/jailbreak. Limitación reconocida del protocolo (PROTOCOL.md sección 1.3, S8).
 
 ### 8.3 Escenario C: Compromiso de dominio de IM + *phishing* parental
 
@@ -1370,7 +1375,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | R4 | ~~Definir tolerancia de reloj (*clock skew*) para validación de timestamps~~ | ~~Alta~~ **Resuelta** | Tolerancia asimétrica definida: 300s pasado, 60s futuro |
 | R5 | ~~Especificar magnitud y distribución del jitter en `issued_at`~~ | ~~Alta~~ **Resuelta** | `issued_at` eliminado; `expires_at` con precisión gruesa (1h) |
 | R6 | ~~Definir política de sesiones no verificadas (SHOULD)~~ | ~~Media~~ **Resuelta** | Modelo aditivo con persistencia a nivel de cuenta definido en PROTOCOL.md sección 7.7 |
-| R7 | Documentar los supuestos implícitos (S8-S14) | Media | Los supuestos no documentados no pueden ser evaluados por implementadores |
+| R7 | ~~Documentar los supuestos implícitos (S8-S14)~~ | ~~Media~~ **Resuelta** | Supuestos documentados en PROTOCOL.md sección 1.3. S8 documentado como limitación reconocida con device attestation opcional (sección 4.4) |
 | R8 | ~~Definir el mecanismo del registro de IMs~~ | ~~Media~~ **Resuelta** | Modelo de auto-publicación definido; cada IM publica en su dominio |
 | R9 | ~~Especificar el canal DA-IM (protocolo, seguridad)~~ | ~~Media~~ **Resuelta** | TLS 1.3 + CT especificados; OHTTP recomendado como opcional |
 
@@ -1410,7 +1415,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 | V4 | Degradación de protocolo | Alta | Fácil | Bajo | Alto | Parcial (requiere política de plataforma) |
 | V5 | ~~Ausencia de versionado de algoritmo~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | Campo `token_type` incluido |
 | V6 | ~~Jitter no especificado~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | `issued_at` eliminado; `expires_at` con precisión gruesa |
-| V7 | Supuestos implícitos no documentados | Media | N/A | Variable | Variable | Sí (documentar) |
+| V7 | ~~Supuestos implícitos no documentados~~ | ~~Media~~ **Resuelta** | N/A | N/A | N/A | Supuestos S1-S14 documentados en PROTOCOL.md sección 1.3 |
 | V8 | *Timing side-channels* | Media | Media | Medio | Bajo | Sí (especificar jitter y rotación) |
 | V9 | Análisis de tráfico | Media | Difícil | Medio | Bajo | Parcial (OHTTP) |
 | V10 | *Social engineering* parental | Alta | Fácil | Bajo | Alto | Parcial (UX) |

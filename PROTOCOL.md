@@ -9,9 +9,11 @@
 ## Índice
 
 - [1. Arquitectura del Protocolo](#1-arquitectura-del-protocolo)
+  - [1.3 Supuestos de Seguridad](#13-supuestos-de-seguridad)
 - [2. Estructura del Token AAVP](#2-estructura-del-token-aavp)
 - [3. Rotación de Tokens](#3-rotación-de-tokens)
 - [4. Fundamentos Criptográficos](#4-fundamentos-criptográficos)
+  - [4.4 Integridad del Dispositivo y Attestation](#44-integridad-del-dispositivo-y-attestation)
 - [5. Modelo de Confianza Descentralizado](#5-modelo-de-confianza-descentralizado)
 - [6. Flujo Operativo Detallado](#6-flujo-operativo-detallado)
 - [7. Credencial de Sesión del Verification Gate](#7-credencial-de-sesión-del-verification-gate)
@@ -124,6 +126,57 @@ sequenceDiagram
 - **Separación de contextos:** la información de edad nunca convive con el tráfico de datos de la aplicación.
 - **Compatibilidad:** las plataformas ya gestionan sesiones; AAVP solo añade un paso previo.
 - **Ventana temporal mínima para MITM:** interceptar el handshake inicial requiere comprometer TLS en una ventana muy breve. Todos los canales del protocolo (DA-VG y DA-IM) requieren TLS 1.3 o superior.
+
+### 1.3 Supuestos de Seguridad
+
+Todo protocolo criptográfico descansa sobre supuestos explícitos e implícitos. AAVP los hace explícitos para que implementadores, auditores y reguladores puedan evaluar las garantías y sus límites. Para un análisis detallado de cada supuesto, consultar [SECURITY-ANALYSIS.md](SECURITY-ANALYSIS.md) sección 1.
+
+#### Categoría A — Supuestos resueltos en la especificación
+
+Estos supuestos tienen cobertura directa en la especificación técnica.
+
+| ID | Supuesto | Nivel | Referencia |
+|----|----------|-------|------------|
+| S1 | TLS 1.3 + Certificate Transparency protege los canales DA-VG y DA-IM | Obligatorio | Secciones 4.3, 5.2.3 |
+| S3 | Las firmas parcialmente ciegas impiden vincular token con usuario | Obligatorio | Sección 4.1 |
+| S4 | La rotación de tokens impide rastreo longitudinal | Obligatorio | Sección 3 |
+| S5 | Las sesiones post-handshake son seguras | Obligatorio | Sección 7 |
+| S9 | El canal DA-IM es confidencial e íntegro | Obligatorio | Sección 4.3 |
+| S10 | Los relojes están razonablemente sincronizados (tolerancia definida) | Obligatorio | Sección 3 |
+| S11 | Cada IM publica sus claves en su propio dominio | Obligatorio | Sección 5.2.3 |
+| S14 | La revocación de IMs se produce por expiración natural y decisión bilateral | Obligatorio | Sección 5.2 |
+
+Cada supuesto está respaldado por mecanismos criptográficos o de protocolo definidos en las secciones referenciadas. Las garantías son verificables por cualquier implementador.
+
+#### Categoría B — Supuestos parcialmente resueltos
+
+Estos supuestos tienen mitigaciones parciales en la especificación pero conservan riesgo residual.
+
+| ID | Supuesto | Nivel | Estado |
+|----|----------|-------|--------|
+| S2 | Hardware seguro protege las claves del DA | Recomendado (obligatorio cuando disponible) | Key attestation opcional (sección 4.4) |
+| S6 | La auditoría open source previene IMs maliciosos | Recomendado | Sin verificación en runtime |
+| S7 | PIN parental o protección del SO impide desactivación por el menor | Depende del vehículo de implementación | Parcialmente mitigado por persistencia a nivel de cuenta (sección 7.7) |
+| S8 | El dispositivo no está comprometido (root/jailbreak) | Explícito; no garantizable por el protocolo | Device attestation opcional (sección 4.4) |
+| S12 | Las plataformas implementan correctamente la segmentación | Recomendado (con verificación pública) | SAF (sección 8) mitiga con SPD + PTL + OVP |
+
+**S2 — Hardware seguro.** Las claves del DA deben generarse en hardware seguro cuando el dispositivo lo soporta (sección 4.4.1). Key attestation (sección 4.4.2) permite al IM diferenciar entre claves hardware-backed y software-only. Riesgo residual: dispositivos sin TEE y ataques a implementaciones específicas de TEE.
+
+**S6 — Auditoría open source.** El estándar recomienda código auditable (sección 5.2.2), pero no existe verificación en runtime de que el código publicado sea el que se ejecuta. La mitigación depende de *reproducible builds* y auditorías periódicas, que están fuera del alcance del protocolo.
+
+**S7 — Protección contra desactivación.** La efectividad depende del vehículo de implementación del DA. La persistencia a nivel de cuenta (sección 7.7) mitiga parcialmente: aunque el menor desinstale el DA, las restricciones de cuenta se mantienen. Riesgo residual: dispositivos donde el DA no tiene protección a nivel de SO.
+
+**S8 — Dispositivo no comprometido.** En un dispositivo con root o jailbreak, todas las garantías del DA son anulables. La sección 4.4 define device attestation opcional (key attestation + señales de integridad) como mitigación parcial. Documentado explícitamente como limitación del protocolo (sección 4.4.5).
+
+**S12 — Segmentación correcta.** El SAF (sección 8) define infraestructura de accountability: SPD firmada, logs de transparencia (PTL) y verificación abierta (OVP). Riesgo residual: el contenido dinámico y UGC dificultan la verificación exhaustiva.
+
+#### Categoría C — Limitaciones reconocidas del protocolo
+
+| ID | Supuesto | Justificación |
+|----|----------|---------------|
+| S13 | El menor no tiene acceso a un segundo dispositivo sin DA | Limitación inherente. AAVP protege los dispositivos donde está presente. El modelo aditivo (sección 7.7) mitiga parcialmente: la cuenta conserva las restricciones aunque se acceda desde otro dispositivo con DA. Un dispositivo sin DA no genera señal AAVP. |
+
+Estas limitaciones son inherentes al modelo y no pueden resolverse sin comprometer los principios del protocolo. Para un análisis completo de cada supuesto, incluyendo escenarios de fallo e impacto, consultar [SECURITY-ANALYSIS.md](SECURITY-ANALYSIS.md).
 
 ---
 
@@ -352,6 +405,132 @@ Cada campo del token está diseñado para minimizar la información que podría 
 | Metadatos mínimos | `age_bracket`, `expires_at` | Solo dos metadatos públicos. `age_bracket` particiona el *anonymity set* en 4 grupos (inherente al propósito del protocolo). La precisión horaria de `expires_at` agrupa todos los tokens de la misma hora. |
 | Rotación frecuente | `expires_at` | Tokens de corta vida impiden seguimiento longitudinal |
 | Tamaño fijo | (todo el token) | Todos los tokens tienen exactamente 331 bytes |
+
+### 4.4 Integridad del Dispositivo y Attestation
+
+Las garantías criptográficas de AAVP dependen de que el Device Agent opere en un entorno íntegro. Si el dispositivo está comprometido (root/jailbreak), un atacante puede eludir las protecciones del DA. Esta sección define los mecanismos de integridad del dispositivo como señales de confianza opcionales que modulan — pero nunca condicionan — el acceso al protocolo.
+
+#### 4.4.1 Claves del DA en hardware seguro
+
+Las claves criptográficas del Device Agent deben generarse y almacenarse en hardware seguro cuando el dispositivo lo soporta. Las claves privadas son no exportables: todas las operaciones criptográficas ocurren dentro del entorno seguro.
+
+| Plataforma | Hardware seguro | API de generación de claves |
+|------------|----------------|---------------------------|
+| iOS / macOS | Secure Enclave | `SecKey` con `kSecAttrTokenIDSecureEnclave` |
+| Android | StrongBox / TEE | Android Keystore con `setIsStrongBoxBacked()` |
+| Windows | TPM 2.0 | CNG con `NCRYPT_PROVIDER_HANDLE` (TPM) |
+| Linux | TPM 2.0 | `tpm2-tss` / PKCS#11 |
+
+Cuando el hardware seguro no está disponible, las claves se generan en almacenamiento seguro por software (Keychain, Android Keystore sin StrongBox). El nivel de confianza resultante es menor, pero el DA sigue siendo funcional.
+
+#### 4.4.2 Key Attestation
+
+Key attestation es el mecanismo central de integridad del dispositivo en AAVP. Permite al DA demostrar al IM que sus claves criptográficas residen en hardware seguro genuino, no en un entorno emulado.
+
+**Flujo de key attestation:**
+
+```mermaid
+sequenceDiagram
+    participant DA as Device Agent
+    participant TEE as TEE / Secure Enclave
+    participant IM as Implementador
+
+    DA->>TEE: Genera par de claves
+    TEE-->>DA: Clave publica + cadena de attestation
+    DA->>IM: Registro: clave publica + cadena de attestation
+    IM->>IM: Verifica cadena contra raices conocidas
+    alt Cadena valida
+        IM->>IM: Marca clave como hardware-backed (alta confianza)
+    else Cadena invalida o ausente
+        IM->>IM: Marca clave como software-only (confianza base)
+    end
+    IM-->>DA: Registro aceptado con nivel de confianza
+```
+
+1. El DA genera un par de claves dentro del TEE.
+2. El TEE produce una cadena de certificados de attestation cuya raíz es la CA del fabricante del hardware.
+3. El DA presenta la cadena al IM junto con la petición de registro.
+4. El IM verifica la cadena contra las raíces de attestation conocidas.
+5. Si la cadena es válida: la clave se marca como hardware-backed (alta confianza). Si no: la clave se acepta como software-only (confianza base).
+
+**Mecanismos de key attestation por plataforma:**
+
+| Plataforma | Mecanismo | Cadena de confianza |
+|------------|-----------|-------------------|
+| Android (API 24+) | Key Attestation (`android.security.keystore`) | Google Hardware Attestation Root |
+| iOS / macOS | App Attest (`DCAppAttestService`) | Apple Attestation CA |
+| Windows | TPM 2.0 Key Attestation | CA del fabricante del TPM |
+
+**Restricciones de privacidad de la cadena de attestation:**
+
+| Dato | El IM puede inspeccionar | El IM no debe usar |
+|------|:-----------------------:|:-----------------:|
+| Nivel de seguridad del hardware (TEE, StrongBox, software) | Sí | — |
+| Propiedades de la clave (no exportable, uso restringido) | Sí | — |
+| Modelo del dispositivo | — | No (fingerprinting) |
+| Identificador del dispositivo | — | No (vinculación) |
+| Versión del SO | — | No (fingerprinting) |
+
+La cadena de attestation no revela la identidad del usuario. El IM solo inspecciona el nivel de seguridad del hardware y las propiedades de la clave.
+
+> [!IMPORTANT]
+> La key attestation es una **señal de confianza, no una puerta de acceso**. Un IM que rechace categóricamente peticiones sin attestation está creando una barrera que viola el principio de Estándar Abierto. El IM debe aceptar claves software-only a nivel de confianza base.
+
+#### 4.4.3 Señales de integridad del dispositivo
+
+Además de key attestation, el DA puede verificar localmente la integridad de su entorno de ejecución:
+
+- **Detección de root/jailbreak:** El DA puede negarse a operar si detecta que el dispositivo está comprometido. La detección de root es una carrera armamentística entre detectores y evasores, por lo que no puede considerarse una garantía absoluta.
+- **APIs de integridad del dispositivo** (Play Integrity en Android, App Attest en iOS): el DA puede utilizarlas como autocomprobación local. El resultado de estas comprobaciones no se transmite al IM ni al VG.
+
+**Tres decisiones de diseño resuelven la tensión con la descentralización:**
+
+1. **Key attestation opera a nivel DA-IM** (relación bilateral). No introduce ninguna autoridad central nueva: cada IM decide independientemente qué raíces de attestation acepta.
+2. **Las señales de integridad del dispositivo son autocomprobación local del DA.** No se transmiten a terceros.
+3. **No hay puerta de attestation.** La attestation modula el nivel de confianza, no el acceso al protocolo.
+
+```mermaid
+graph TD
+    A[DA genera claves] --> B{TEE disponible?}
+    B -->|Si| C[Genera en TEE + cadena de attestation]
+    B -->|No| D[Genera en almacenamiento seguro por software]
+    C --> E[IM verifica cadena]
+    D --> F[IM acepta sin attestation]
+    E --> G[Alta confianza]
+    F --> H[Confianza base]
+    G --> I[IM firma tokens]
+    H --> I
+```
+
+#### 4.4.4 Rotación de claves del DA
+
+Las claves del DA tienen una vida limitada. La rotación periódica fuerza re-attestation y acota la ventana de explotación ante un compromiso.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Generada : DA genera par de claves en TEE
+    Generada --> Registrada : IM verifica attestation
+    Registrada --> Activa : Periodo de validez alcanzado
+    Activa --> EnRotacion : Periodo de rotacion alcanzado
+    EnRotacion --> Expirada : Solapamiento agotado
+    Expirada --> [*]
+```
+
+| Parámetro | Valor recomendado | Justificación |
+|-----------|-------------------|---------------|
+| Periodo de rotación | 7 días | Limita la ventana de explotación de claves comprometidas |
+| Solapamiento mínimo | ≥ TTL máximo del token (4 horas) | Tokens firmados con la clave anterior siguen siendo verificables |
+| Periodo máximo sin rotación | 30 días | Fuerza re-attestation incluso en dispositivos con uso intermitente |
+
+Durante la rotación, el DA genera un nuevo par de claves, obtiene una nueva cadena de attestation y la registra con el IM. La clave anterior permanece válida durante el periodo de solapamiento para que los tokens ya emitidos no se invaliden prematuramente.
+
+#### 4.4.5 Supuesto explícito: root/jailbreak
+
+AAVP asume que el sistema operativo del dispositivo es íntegro. En un dispositivo con privilegios de root o jailbreak, todas las garantías del DA son anulables: un atacante puede interceptar las claves, modificar la franja de edad en memoria o inyectar tokens fabricados.
+
+Key attestation (sección 4.4.2) y las señales de integridad del dispositivo (sección 4.4.3) ofrecen detección parcial. La rotación semanal de claves (sección 4.4.4) limita la ventana de explotación. Sin embargo, un dispositivo completamente comprometido puede evadir estas mitigaciones.
+
+Esta es una **limitación reconocida del protocolo**, no un fallo. AAVP documenta explícitamente este supuesto (sección 1.3, S8) y ofrece las mitigaciones técnicas viables sin comprometer el principio de descentralización. Para un análisis completo del impacto, consultar [SECURITY-ANALYSIS.md](SECURITY-ANALYSIS.md) sección 1.2 (S8).
 
 ---
 
@@ -1201,17 +1380,20 @@ Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 | **Replay de tokens** | Nonce único + `expires_at` validado por el VG contra su propio reloj | Muy bajo |
 | **Manipulación de reloj** | Tolerancia asimétrica de `expires_at`: 300s pasado, 60s futuro; rechazo de tokens con `expires_at` excesivamente futuro | Bajo |
 | **Suplantación de `age_bracket`** | Con Partially Blind RSA, el IM puede verificar coherencia de `age_bracket` con la configuración del DA, actuando como segunda barrera de validación | Bajo |
+| **Dispositivo rooteado** | Device attestation opcional (sección 4.4): key attestation detecta TEE emulado; rotación semanal fuerza re-attestation. Limitación reconocida (sección 1.3, S8) | Medio-Alto |
 
 ```mermaid
 pie title Distribucion de riesgo residual
     "Muy bajo" : 5
     "Bajo" : 5
     "Medio" : 1
+    "Medio-Alto" : 1
 ```
 
 ### Limitaciones reconocidas
 
 - **Dispositivos no controlados:** Si un menor accede desde un dispositivo sin software que actúe como DA, AAVP no puede protegerle. El protocolo protege las puertas, no las ventanas.
+- **Dispositivos comprometidos (root/jailbreak):** En un dispositivo con privilegios de root, las garantías del DA son anulables. La key attestation (sección 4.4) ofrece detección parcial. Ver sección 1.3, supuesto S8.
 - **Calidad de la implementación:** Una implementación deficiente del DA o del VG puede anular las garantías teóricas del protocolo.
 - **Complemento, no sustituto:** AAVP es una herramienta técnica que complementa la educación digital y la supervisión familiar.
 
@@ -1244,9 +1426,11 @@ pie title Distribucion de riesgo residual
 | **Certificate Transparency (CT)** | Estándar abierto (RFC 9162) que exige a las Autoridades de Certificación registrar todos los certificados emitidos en logs públicos auditables. Reemplaza al *certificate pinning* (deprecado) como mecanismo principal de detección de certificados fraudulentos. |
 | **Clock skew** | Diferencia de sincronización entre los relojes de dos sistemas. En AAVP, la tolerancia asimétrica (`CLOCK_SKEW_TOLERANCE_PAST = 300`, `CLOCK_SKEW_TOLERANCE_FUTURE = 60`) acomoda las divergencias entre el reloj del DA y el del VG. |
 | **Credencial de sesión** | Estructura autocontenida emitida por el VG tras validar un token AAVP. Contiene exclusivamente `age_bracket`, `session_expires_at` y la firma del VG. No requiere estado en servidor. |
+| **Device attestation** | Proceso por el cual un dispositivo demuestra la integridad de su entorno de ejecución a un tercero. Incluye key attestation y señales de integridad del dispositivo. En AAVP, es un mecanismo opcional que modula la confianza, no una puerta de acceso. Ver sección 4.4. |
 | **Device Agent (DA)** | Rol del protocolo AAVP: componente de software en el dispositivo del menor que genera y gestiona los tokens de edad. No es sinónimo de "control parental"; puede ser implementado por distintos tipos de software. |
 | **Fail-closed** | Política de seguridad donde la pérdida de señal de verificación mantiene las restricciones activas. En AAVP se aplica a nivel de cuenta: una cuenta marcada como menor conserva las restricciones aunque el DA deje de estar disponible. Solo una credencial `OVER_18` válida las retira. |
 | **Fingerprinting** | Técnica de rastreo que identifica usuarios por características únicas de su dispositivo o comportamiento. |
+| **Key attestation** | Mecanismo criptográfico mediante el cual el TEE del dispositivo genera una cadena de certificados que demuestra que un par de claves fue generado dentro de hardware seguro y es no exportable. Ver sección 4.4.2. |
 | **Implementador (IM)** | Organización que desarrolla software conforme al estándar AAVP, actuando como proveedor de la funcionalidad de Device Agent. |
 | **Metadato público** | Parte del token visible al IM durante la firma parcialmente ciega, vinculada criptográficamente via derivación de clave. En AAVP: `age_bracket` y `expires_at`. |
 | **OVP** | Open Verification Protocol. Metodología abierta y estandarizada para verificar que una plataforma cumple con su SPD declarada. Cualquier parte puede ejecutar verificaciones OVP. Ver sección 8.4. |
@@ -1257,6 +1441,7 @@ pie title Distribucion de riesgo residual
 | **SPD** | Segmentation Policy Declaration. Documento JSON firmado que declara la política de segmentación de contenido de una plataforma por franja de edad. Servido en `.well-known/aavp-age-policy.json`. Ver sección 8.2. |
 | **SPT** | Signed Policy Timestamp. Prueba criptográfica emitida por un operador de log de transparencia que confirma el registro de una SPD en un momento determinado. Ver sección 8.3.2. |
 | **Self-contained** | Propiedad de una credencial que contiene toda la información necesaria para su validación sin consultar un almacén de estado externo. |
+| **TEE (Trusted Execution Environment)** | Entorno de ejecución aislado dentro del procesador que proporciona almacenamiento seguro de claves y ejecución de operaciones criptográficas. Implementaciones: Apple Secure Enclave, Android StrongBox, TPM 2.0. |
 | **`token_key_id`** | SHA-256 de la clave pública del IM. Permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas. |
 | **`token_type`** | Campo del token que identifica el esquema criptográfico utilizado. Permite agilidad criptográfica y migración futura a esquemas post-cuánticos. |
 | **Trust store** | Lista de Implementadores aceptados por un Verification Gate, junto con sus claves públicas. Cada VG mantiene su propio trust store de forma independiente. Análogo al trust store de certificados raíz de un navegador. |

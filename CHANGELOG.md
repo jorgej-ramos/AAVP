@@ -7,6 +7,20 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Sección 1.3 "Supuestos de Seguridad" en PROTOCOL.md: formalización de los 14 supuestos de seguridad (S1-S14) con niveles de requisito, agrupados en resueltos, parcialmente resueltos y limitaciones reconocidas.
+- Sección 4.4 "Integridad del Dispositivo y Attestation" en PROTOCOL.md: key attestation como mecanismo opcional para verificar claves hardware-backed, señales de integridad del dispositivo, tensión con descentralización, rotación semanal de claves del DA y documentación explícita del supuesto de root/jailbreak.
+- Términos "Device attestation", "Key attestation" y "TEE" añadidos al glosario de PROTOCOL.md.
+- Escenario "Dispositivo rooteado" añadido al modelo de amenazas de PROTOCOL.md sección 9.
+
+### Changed
+
+- Supuestos S2 y S8 de SECURITY-ANALYSIS.md marcados como parcialmente mitigados.
+- Recomendación R7 y vulnerabilidad V7 de SECURITY-ANALYSIS.md marcadas como resueltas.
+- Escenario C-B de SECURITY-ANALYSIS.md actualizado con referencia a mecanismos especificados en PROTOCOL.md sección 4.4.
+- Área "Protección del dispositivo" del semáforo de SECURITY-ANALYSIS.md actualizada con referencia a key attestation y secciones 1.3/4.4.
+
 ## [0.8.1] - 2026-02-10
 
 ### Added
