@@ -16,6 +16,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ### Changed
 
+- Áreas "Modelo de confianza" y "Gestión de sesiones" de SECURITY-ANALYSIS.md promovidas de amarillo a verde: todas las vulnerabilidades resueltas y especificación suficiente.
+- Distribución del semáforo actualizada: 0 rojo, 4 amarillo, 3 verde.
 - Supuestos S2 y S8 de SECURITY-ANALYSIS.md marcados como parcialmente mitigados.
 - Recomendación R7 y vulnerabilidad V7 de SECURITY-ANALYSIS.md marcadas como resueltas.
 - Escenario C-B de SECURITY-ANALYSIS.md actualizado con referencia a mecanismos especificados en PROTOCOL.md sección 4.4.
