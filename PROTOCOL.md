@@ -1,6 +1,6 @@
 # AAVP — Especificación Técnica del Protocolo
 
-> **v0.8.0 — Borrador Inicial — Febrero 2026**
+> **v0.8.1 — Borrador Inicial — Febrero 2026**
 >
 > Este documento describe la arquitectura, los fundamentos criptográficos y el modelo de seguridad del Anonymous Age Verification Protocol. Para una introducción accesible, consultar [README.md](README.md).
 
@@ -1269,7 +1269,7 @@ pie title Distribucion de riesgo residual
 
 <div align="center">
 
-**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.8.0
+**AAVP** · Anonymous Age Verification Protocol · Especificación Técnica · v0.8.1
 
 *Documento de trabajo — Sujeto a revisión*
 
