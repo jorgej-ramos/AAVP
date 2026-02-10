@@ -437,6 +437,13 @@ else
     "No se encontro referencia a accepted_token_types"
 fi
 
+if grep -q 'age_policy' "$REPO_ROOT/PROTOCOL.md"; then
+  check "discovery_age_policy" "Campo age_policy documentado en PROTOCOL.md" "pass"
+else
+  check "discovery_age_policy" "Campo age_policy documentado en PROTOCOL.md" "fail" \
+    "No se encontro referencia a age_policy en .well-known/aavp"
+fi
+
 # Verificar que no quedan referencias obsoletas al esquema borrador
 STALE_ALGO=$(grep -c '"rsa-blind-2048"' "$REPO_ROOT/SECURITY-ANALYSIS.md" 2>/dev/null) || true
 STALE_ALGO="${STALE_ALGO:-0}"
@@ -464,6 +471,60 @@ if [[ "$FOUND_APIS" -ge 3 ]]; then
 else
   check "csprng_apis" "PROTOCOL.md especifica APIs de CSPRNG del SO" "fail" \
     "Solo $FOUND_APIS de 5 APIs encontradas"
+fi
+
+# ─── 14. Segmentation Accountability Framework (SAF) ─────────────────
+
+printf "\n\033[1m14. Segmentation Accountability Framework (SAF)\033[0m\n"
+
+if grep -q "Segmentation Accountability Framework" "$REPO_ROOT/PROTOCOL.md"; then
+  check "saf_section" "PROTOCOL.md contiene seccion SAF" "pass"
+else
+  check "saf_section" "PROTOCOL.md contiene seccion SAF" "fail" \
+    "No se encontro 'Segmentation Accountability Framework'"
+fi
+
+if grep -q '\.well-known/aavp-age-policy' "$REPO_ROOT/PROTOCOL.md"; then
+  check "saf_spd_endpoint" "PROTOCOL.md especifica endpoint .well-known/aavp-age-policy" "pass"
+else
+  check "saf_spd_endpoint" "PROTOCOL.md especifica endpoint .well-known/aavp-age-policy" "fail" \
+    "No se encontro referencia a .well-known/aavp-age-policy"
+fi
+
+SAF_TAXONOMY=("explicit-sexual" "violence-graphic" "gambling" "substances" "self-harm" "profanity")
+SAF_TAX_FOUND=0
+for cat in "${SAF_TAXONOMY[@]}"; do
+  if grep -q "$cat" "$REPO_ROOT/PROTOCOL.md"; then
+    SAF_TAX_FOUND=$((SAF_TAX_FOUND + 1))
+  fi
+done
+
+if [[ "$SAF_TAX_FOUND" -eq 6 ]]; then
+  check "saf_taxonomy" "PROTOCOL.md define las 6 categorias de taxonomia SAF" "pass"
+else
+  check "saf_taxonomy" "PROTOCOL.md define las 6 categorias de taxonomia SAF" "fail" \
+    "Solo $SAF_TAX_FOUND de 6 categorias encontradas"
+fi
+
+if grep -q "Policy Transparency Log" "$REPO_ROOT/PROTOCOL.md"; then
+  check "saf_ptl" "PROTOCOL.md especifica Policy Transparency Log" "pass"
+else
+  check "saf_ptl" "PROTOCOL.md especifica Policy Transparency Log" "fail" \
+    "No se encontro referencia a Policy Transparency Log"
+fi
+
+if grep -q "Open Verification Protocol" "$REPO_ROOT/PROTOCOL.md"; then
+  check "saf_ovp" "PROTOCOL.md especifica Open Verification Protocol" "pass"
+else
+  check "saf_ovp" "PROTOCOL.md especifica Open Verification Protocol" "fail" \
+    "No se encontro referencia a Open Verification Protocol"
+fi
+
+if grep -q "SAF" "$REPO_ROOT/SECURITY-ANALYSIS.md" && grep -q "Segmentation Accountability Framework" "$REPO_ROOT/SECURITY-ANALYSIS.md"; then
+  check "saf_cross_ref" "SECURITY-ANALYSIS.md referencia al SAF" "pass"
+else
+  check "saf_cross_ref" "SECURITY-ANALYSIS.md referencia al SAF" "fail" \
+    "No se encontro referencia al SAF en SECURITY-ANALYSIS.md"
 fi
 
 # ─── Resumen ─────────────────────────────────────────────────────────

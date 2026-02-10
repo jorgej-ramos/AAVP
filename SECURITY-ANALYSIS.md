@@ -35,7 +35,7 @@
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas | Los supuestos sobre integridad del dispositivo (root/jailbreak, TEE, PIN parental) son razonables pero frágiles. Mitigaciones parciales disponibles con tradeoffs. |
 | **Gestión de sesiones (VG)** | 🟡 | 3 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Endpoint `.well-known/aavp` especificado. |
-| **Segmentación de contenido** | 🔴 | 1 alta | AAVP entrega la señal pero no define cómo verificar que las plataformas la usan. Sin framework de auditoría, la eficacia real es desconocida. |
+| **Segmentación de contenido** | 🟡 | 1 alta (mitigada) | Segmentation Accountability Framework (SAF) definido en PROTOCOL.md sección 8: declaración de política firmada (SPD), logs de transparencia (PTL), protocolo de verificación abierto (OVP) y señal de cumplimiento en el handshake. Riesgo residual: el contenido dinámico y UGC dificultan la verificación exhaustiva. |
 | **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
 
 | | Significado |
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. |
 
-**Distribución actual:** 1 área en rojo, 5 en amarillo, 1 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. La credencial de sesión autocontenida resuelve las carencias críticas de la gestión de sesiones. Queda pendiente la segmentación de contenido.
+**Distribución actual:** 0 áreas en rojo, 6 en amarillo, 1 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de auto-publicación de claves y la revocación bilateral resuelven las carencias del registro de IMs. La credencial de sesión autocontenida resuelve las carencias críticas de la gestión de sesiones. El Segmentation Accountability Framework (SAF) en PROTOCOL.md sección 8 mitiga la brecha de segmentación con SPD firmada, logs de transparencia (PTL) y verificación abierta (OVP). Riesgo residual: contenido dinámico y UGC dificultan la verificación exhaustiva.
 
 ---
 
@@ -61,7 +61,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | S9 | ~~Canal DA-IM no especificado~~ | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | ~~Atacante con posición de red entre DA e IM~~ | ~~Media~~ **Resuelta** | Canal DA-IM especificado en PROTOCOL.md: TLS 1.3 + CT. OHTTP recomendado como medida opcional de máxima privacidad |
 | S10 | ~~Tolerancia de reloj (*clock skew*) no definida~~ | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | ~~Reloj del dispositivo manipulado (posible sin privilegios)~~ | ~~Media~~ **Resuelta** | Tolerancia asimétrica definida en PROTOCOL.md: 300s pasado, 60s futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519) |
 | S11 | ~~Registro de IMs sin mecanismo definido~~ | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | ~~Compromiso del registro~~ | ~~Crítica~~ **Resuelta** | Modelo de auto-publicación definido en PROTOCOL.md: cada IM publica claves en su dominio sobre TLS 1.3 + CT |
-| S12 | Segmentación de contenido no verificable | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | Alta | Framework de auditoría; protocolo de certificación en 3 niveles; crawlers de verificación |
+| S12 | ~~Segmentación de contenido no verificable~~ | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | ~~Alta~~ **Mitigada** | Segmentation Accountability Framework (SAF) en PROTOCOL.md sección 8: SPD firmada + PTL + OVP + señal de cumplimiento |
 | S14 | ~~Revocación de IMs sin mecanismo definido~~ | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | ~~IM comprometido sigue activo en plataformas que no actualizan~~ | ~~Alta~~ **Resuelta** | Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs. Sin mecanismo centralizado. |
 
 ### Vectores de ataque
@@ -253,13 +253,16 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 
 #### S12. Las plataformas implementan correctamente la política de segmentación
 
+> **Estado: Mitigada.** El Segmentation Accountability Framework (SAF) en PROTOCOL.md sección 8 define mecanismos de declaración, transparencia y verificación de políticas de segmentación. Riesgo residual: la verificación de contenido dinámico (feeds algorítmicos, UGC) no puede ser exhaustiva.
+
 **Descripción:** AAVP entrega una señal de `age_bracket` fiable, pero asume que la plataforma la utiliza correctamente para restringir el contenido inapropiado.
 
 **Análisis:**
-- PROTOCOL.md declara que el protocolo es "deliberadamente agnóstico" respecto a la política de contenido. Esto deja la eficacia real del sistema enteramente en manos de cada plataforma.
-- No existe ningún mecanismo dentro del protocolo para verificar que la segmentación se aplica correctamente.
-- Las plataformas tienen incentivos económicos para maximizar el *engagement*, lo que puede entrar en conflicto con una segmentación restrictiva.
-- **Impacto si falla:** El protocolo funciona correctamente a nivel criptográfico, pero no cumple su objetivo práctico de proteger a los menores. La señal de edad se convierte en un *rubber stamp* sin efecto real.
+- PROTOCOL.md sección 8 define el SAF con cuatro componentes: (1) Segmentation Policy Declaration (SPD) como compromiso público firmado y máquina-legible, (2) Policy Transparency Logs (PTL) para trazabilidad append-only de las políticas, (3) Open Verification Protocol (OVP) para verificación descentralizada del cumplimiento, y (4) señal de cumplimiento en el handshake para que el DA informe al usuario.
+- Las plataformas tienen incentivos económicos para maximizar el *engagement*, lo que puede entrar en conflicto con una segmentación restrictiva. La SPD pública hace observable cualquier relajación de la política.
+- Los PTL proporcionan trazabilidad histórica: una plataforma no puede cambiar su política retroactivamente sin que quede registrado.
+- El OVP permite a cualquier parte verificar el cumplimiento de una plataforma con su SPD declarada.
+- **Riesgo residual:** La verificación de contenido dinámico (feeds algorítmicos, recomendaciones personalizadas, UGC) no puede ser exhaustiva. Una plataforma puede declarar una política restrictiva y no implementarla completamente. Este riesgo es detectable vía OVP pero no prevenible por el protocolo. La imposición efectiva corresponde a los marcos regulatorios (DSA, AADC, OSA, COPPA).
 
 #### S13. El menor no tiene acceso a un segundo dispositivo sin DA
 
@@ -299,7 +302,7 @@ Estos supuestos son necesarios para que el protocolo funcione correctamente pero
 | S9 | Canal DA-IM confidencial | Implícito | No evaluable | Medio |
 | S10 | Sincronización de relojes | Implícito | Media | Medio |
 | S11 | Auto-publicación de claves por IM | Explícito | Alta | Medio (compromiso de dominio) |
-| S12 | Segmentación correcta por plataformas | Implícito | Baja | Alto |
+| S12 | Segmentación correcta por plataformas | Implícito | Media | Alto |
 | S13 | Sin segundo dispositivo sin DA | Implícito | Muy baja | Medio |
 | S14 | Revocación bilateral por VGs | Explícito | Alta | Medio (ventana de caché) |
 
@@ -1162,7 +1165,7 @@ Test:
 
 ## 7. Verificación de la segmentación de contenido
 
-AAVP entrega una señal de edad fiable. Pero la eficacia del sistema depende de que las plataformas utilicen esa señal para segmentar efectivamente el contenido. Esta sección analiza cómo verificar que la segmentación funciona.
+AAVP entrega una señal de edad fiable. Pero la eficacia del sistema depende de que las plataformas utilicen esa señal para segmentar efectivamente el contenido. PROTOCOL.md sección 8 define el Segmentation Accountability Framework (SAF) como respuesta formalizada a esta brecha. Esta sección analiza el problema, la solución adoptada y el riesgo residual.
 
 ### 7.1 El problema de la "última milla"
 
@@ -1178,93 +1181,54 @@ flowchart LR
     style G fill:#f99,stroke:#333
 ```
 
-AAVP controla las fases A y B con garantías criptográficas. La fase C-D está enteramente fuera de su control. La señal de edad puede ser:
+AAVP controla las fases A y B con garantías criptográficas. La fase C-D está fuera de su control directo. La señal de edad puede ser:
 
 - **Ignorada:** La plataforma recibe `age_bracket` pero no modifica su contenido.
 - **Mal aplicada:** La plataforma bloquea contenido inocuo o permite contenido inapropiado.
 - **Aplicada selectivamente:** La plataforma segmenta ciertas secciones pero no otras (ej: bloquea contenido explícito en búsqueda pero no en feeds algorítmicos).
 
-Este es un problema estructural, no técnico. AAVP no puede resolver por diseño lo que depende de la política de cada plataforma. Sin embargo, puede definir mecanismos de verificación.
+Este es un problema estructural, no técnico. AAVP no puede forzar la segmentación correcta, pero puede proporcionar infraestructura de accountability (detección), análoga a Certificate Transparency para certificados TLS.
 
-### 7.2 Framework de verificación
+### 7.2 Solución adoptada: Segmentation Accountability Framework (SAF)
 
-#### 7.2.1 Test automatizado
+PROTOCOL.md sección 8 define el SAF con cuatro componentes:
 
-Propuesta de un sistema de *crawling* automatizado para verificar la segmentación:
+| Componente | Función | Análogo en CT |
+|------------|---------|---------------|
+| **SPD** (Segmentation Policy Declaration) | Compromiso público, firmado y máquina-legible de la política de segmentación | Certificado emitido |
+| **PTL** (Policy Transparency Log) | Registro append-only donde se registran las SPDs | Log de Certificate Transparency |
+| **OVP** (Open Verification Protocol) | Metodología abierta para verificar cumplimiento | Auditoría de certificados |
+| **Señal de cumplimiento** | Indicador en el handshake sobre el estado de la política | SCT (*Signed Certificate Timestamp*) |
 
-**Metodología:**
-1. Un *crawler* accede a la plataforma con tokens de cada franja de edad (`UNDER_13`, `AGE_13_15`, `AGE_16_17`, `OVER_18`).
-2. Para cada franja, recopila:
-   - Catálogo de contenido accesible.
-   - Resultados de búsquedas predefinidas (términos que deberían estar restringidos).
-   - Recomendaciones algorítmicas.
-   - Publicidad mostrada.
-3. Compara los catálogos entre franjas.
+El framework define además tres niveles de conformidad (Básico, Intermedio, Avanzado) verificables por cualquier parte sin autoridad central de certificación.
 
-**Métricas:**
+### 7.3 Análisis de la mitigación
 
-| Métrica | Descripción | Objetivo |
-|---------|-------------|---------|
-| **Ratio de contenido restringido** | % de contenido explícito accesible por franja | `UNDER_13`: 0%, `OVER_18`: 100% |
-| **Delta entre franjas** | Diferencia de contenido entre franjas adyacentes | > 0 (cada franja tiene menos restricciones que la anterior) |
-| **Falsos negativos** | Contenido inapropiado accesible en franja restringida | < 1% |
-| **Falsos positivos** | Contenido apropiado bloqueado en franja permisiva | < 5% |
+**Fortalezas del SAF:**
+- La SPD firmada convierte la política de segmentación en un compromiso público verificable, no una declaración de intenciones.
+- Los PTL proporcionan trazabilidad histórica: una plataforma no puede relajar su política retroactivamente sin que quede registrado.
+- El OVP descentralizado permite a cualquier organización o individuo auditar el cumplimiento.
+- La señal de cumplimiento en el handshake permite al DA informar al usuario sobre la transparencia de la plataforma.
+- Los tres niveles de conformidad son verificables sin autoridad central, coherente con el principio de descentralización.
 
-**Limitaciones del test automatizado:**
-- El contenido dinámico (feeds algorítmicos) varía por usuario, hora y contexto. El *crawler* solo ve una instantánea.
-- Las plataformas pueden detectar y tratar de forma diferente el tráfico de *crawlers*.
-- La clasificación de "contenido inapropiado" es subjetiva y varía por cultura y jurisdicción.
+**Debilidades residuales:**
+- El SAF mide declaraciones y su cumplimiento observable, pero no puede forzar la implementación correcta. La imposición efectiva corresponde a los marcos regulatorios.
+- El OVP verifica instantáneas representativas, no la totalidad del contenido.
+- Las plataformas pueden cumplir su SPD para contenido estático pero no para recomendaciones algorítmicas.
 
-#### 7.2.2 Auditoría periódica por terceros
-
-Propuesta de auditoría semestral independiente:
-
-1. **Alcance:** Verificar que la plataforma segmenta contenido de acuerdo con las franjas AAVP.
-2. **Metodología:** Combinación de test automatizado (crawling) y revisión manual de muestras.
-3. **Informe público:** El resultado de la auditoría se publica como parte del compromiso de transparencia de la plataforma.
-4. **Evaluación continua:** Métricas de segmentación monitorizadas de forma continua, no solo en auditorías puntuales.
-
-#### 7.2.3 Transparencia de políticas de segmentación
-
-Las plataformas que implementen AAVP deben publicar:
-
-- **Política de segmentación:** Documento público que describe qué contenido se restringe para cada franja.
-- **Taxonomía de contenido:** Clasificación del contenido de la plataforma en categorías (explícito, violento, sugerente, neutro, educativo).
-- **Mapeo franja-categoría:** Qué categorías de contenido están disponibles para cada franja AAVP.
-
-### 7.3 Protocolo de certificación (opcional)
-
-Se propone un esquema voluntario de certificación con tres niveles:
-
-| Nivel | Nombre | Requisitos |
-|-------|--------|-----------|
-| **Nivel 1** | Básico | La plataforma implementa un VG conforme y acepta tokens AAVP válidos |
-| **Nivel 2** | Intermedio | Nivel 1 + la plataforma segmenta contenido según `age_bracket` con política documentada |
-| **Nivel 3** | Avanzado | Nivel 2 + la plataforma se somete a auditoría semestral por un tercero independiente y publica los resultados |
-
-**Sello de conformidad:** Un indicador público (ej: badge en la web, entrada en un registro) que informa a los usuarios y reguladores del nivel de conformidad de la plataforma.
-
-**Mecanismo de queja y revocación:**
-- Cualquier parte puede reportar que una plataforma no cumple su nivel declarado.
-- Un comité de verificación (compuesto por auditores independientes, no por una "autoridad AAVP") evalúa la queja.
-- Si la queja es fundada, la plataforma pierde su certificación hasta que corrija los problemas.
-
-> [!NOTE]
-> Este protocolo de certificación es voluntario y no implica una autoridad central. El comité de verificación es un servicio prestado por auditores independientes, no una entidad de gobierno del protocolo. Esto es coherente con el principio de descentralización.
-
-### 7.4 Límites de la verificación
+### 7.4 Riesgo residual documentado
 
 #### Contenido dinámico
 
-Los *feeds* algorítmicos y los sistemas de recomendación generan contenido personalizado que es difícil de auditar:
+Los *feeds* algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar:
 
-- El contenido mostrado a un usuario depende de su historial de interacciones, que no existe para un *crawler* de auditoría.
+- El contenido mostrado a un usuario depende de su historial de interacciones, que no existe para un verificador OVP.
 - Las plataformas podrían segmentar correctamente el contenido estático pero no el dinámico (recomendaciones, tendencias, "Explorar").
 - Las redes sociales basadas en contenido generado por usuarios (UGC) enfrentan un problema de clasificación: un post puede pasar de "neutro" a "explícito" en función de los comentarios que recibe.
 
 #### Contenido generado por usuarios
 
-- Es imposible clasificar el 100% del contenido generado por usuarios en tiempo real.
+- Es imposible clasificar el 100% del UGC en tiempo real.
 - Los sistemas de moderación (ML, filtros de contenido) tienen tasas de error inherentes.
 - AAVP proporciona la señal de edad; la plataforma decide qué hacer con ella. Si la plataforma tiene una moderación de contenido deficiente, AAVP no la soluciona.
 
@@ -1272,7 +1236,7 @@ Los *feeds* algorítmicos y los sistemas de recomendación generan contenido per
 
 - Una segmentación excesivamente agresiva puede privar a los menores de contenido educativo, informativo o de salud.
 - La segmentación no debe ser un mecanismo de censura sino de adaptación: el contenido se adapta, no se elimina.
-- Las plataformas deben permitir excepciones documentadas (ej: contenido educativo sobre salud sexual accesible para `AGE_16_17` aunque contenga terminología explícita).
+- La taxonomía mínima del SAF (6 categorías) no pretende ser exhaustiva; es extensible con prefijo `x-` para legislaciones locales.
 
 ---
 
@@ -1430,7 +1394,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | I2 | Detección de root/jailbreak sin centralización | Diseñar un mecanismo de atestación del dispositivo que no dependa de APIs de fabricantes |
 | I3 | Protocolo de auditoría automatizado | Herramientas de verificación continua de conformidad para DA, VG e IM |
 | I4 | Análisis de tráfico resistente | Evaluar la viabilidad de integrar OHTTP o técnicas de *traffic padding* en el protocolo |
-| I5 | Framework de segmentación verificable | Estándar para que las plataformas publiquen y verifiquen sus políticas de segmentación |
+| I5 | ~~Framework de segmentación verificable~~ | ~~Estándar para que las plataformas publiquen y verifiquen sus políticas de segmentación~~ Especificación del SAF definida en PROTOCOL.md sección 8. Pendiente: implementación de referencia del PTL y herramientas OVP |
 | I6 | Multi-IM y firmas umbral | Explorar esquemas donde la firma requiera la cooperación de múltiples IMs, eliminando el riesgo de IM único comprometido |
 | I7 | Tokens *offline* | Mecanismo para generar tokens válidos sin conectividad al IM, preservando las garantías de seguridad |
 
@@ -1450,7 +1414,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 | V8 | *Timing side-channels* | Media | Media | Medio | Bajo | Sí (especificar jitter y rotación) |
 | V9 | Análisis de tráfico | Media | Difícil | Medio | Bajo | Parcial (OHTTP) |
 | V10 | *Social engineering* parental | Alta | Fácil | Bajo | Alto | Parcial (UX) |
-| V11 | Segmentación no verificable | Alta | N/A | Bajo | Crítico | Sí (framework de auditoría) |
+| V11 | ~~Segmentación no verificable~~ | ~~Alta~~ **Mitigada** | N/A | Bajo | Alto | SAF: SPD + PTL + OVP definidos en PROTOCOL.md sección 8 |
 
 ---
 

@@ -7,6 +7,20 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Sección 8 "Segmentation Accountability Framework (SAF)" en PROTOCOL.md: declaración de política de segmentación firmada (SPD) en `.well-known/aavp-age-policy.json`, logs de transparencia (PTL) inspirados en Certificate Transparency, protocolo de verificación abierto (OVP) y señal de cumplimiento en el handshake. Taxonomía de contenido mínima con 6 categorías extensibles. Tres niveles de conformidad.
+- Campo opcional `age_policy` en endpoint `.well-known/aavp` de PROTOCOL.md.
+- Términos SAF, SPD, PTL, SPT y OVP añadidos al glosario de PROTOCOL.md.
+
+### Changed
+
+- Área "Segmentación de contenido" de SECURITY-ANALYSIS.md actualizada de rojo a amarillo: SAF mitiga la brecha de verificación con riesgo residual en contenido dinámico.
+- Distribución del semáforo actualizada: 0 rojo, 6 amarillo, 1 verde.
+- Vulnerabilidad V11 (segmentación no verificable) y supuesto S12 de SECURITY-ANALYSIS.md marcados como mitigados.
+- Sección 7 de SECURITY-ANALYSIS.md reescrita para referenciar el SAF formalizado.
+- Secciones 8 y 9 de PROTOCOL.md renumeradas a 9 y 10 respectivamente.
+
 ## [0.7.0] - 2026-02-09
 
 ### Added

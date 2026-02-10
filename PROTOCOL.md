@@ -15,8 +15,9 @@
 - [5. Modelo de Confianza Descentralizado](#5-modelo-de-confianza-descentralizado)
 - [6. Flujo Operativo Detallado](#6-flujo-operativo-detallado)
 - [7. Credencial de Sesión del Verification Gate](#7-credencial-de-sesión-del-verification-gate)
-- [8. Modelo de Amenazas](#8-modelo-de-amenazas)
-- [9. Trabajo Futuro y Líneas Abiertas](#9-trabajo-futuro-y-líneas-abiertas)
+- [8. Segmentation Accountability Framework (SAF)](#8-segmentation-accountability-framework-saf)
+- [9. Modelo de Amenazas](#9-modelo-de-amenazas)
+- [10. Trabajo Futuro y Líneas Abiertas](#10-trabajo-futuro-y-líneas-abiertas)
 - [Glosario](#glosario)
 
 ---
@@ -546,6 +547,7 @@ Las plataformas que soportan AAVP lo anuncian mediante un endpoint de descubrimi
 | `accepted_ims[].domain` | string (hostname) | Sí | FQDN del IM. El DA usa este dominio para localizar `.well-known/aavp-issuer`. |
 | `accepted_ims[].token_key_ids` | array de strings | No | `token_key_id` actualmente aceptados (base64url). Si se omite, se aceptan todas las claves activas del IM. |
 | `accepted_token_types` | array de uint16 | Sí | Valores de `token_type` aceptados (ver registro en sección 5.4). |
+| `age_policy` | string (URI) | No | URI del documento de Segmentation Policy Declaration (SPD). Si se omite, la plataforma no publica política de segmentación verificable. Ver sección 8. |
 
 **Ejemplo:**
 
@@ -562,7 +564,8 @@ Las plataformas que soportan AAVP lo anuncian mediante un endpoint de descubrimi
       "domain": "familylink.google.com"
     }
   ],
-  "accepted_token_types": [1]
+  "accepted_token_types": [1],
+  "age_policy": "https://platform.example/.well-known/aavp-age-policy.json"
 }
 ```
 
@@ -884,7 +887,304 @@ La credencial autocontenida es compatible con arquitecturas donde la validación
 
 ---
 
-## 8. Modelo de Amenazas
+## 8. Segmentation Accountability Framework (SAF)
+
+### 8.1 Motivación y alcance
+
+AAVP entrega una señal de edad fiable (`age_bracket`) con garantías criptográficas. Pero la eficacia del sistema depende de que las plataformas utilicen esa señal para segmentar efectivamente el contenido. Sin un mecanismo de verificación, la señal de edad podría convertirse en un *rubber stamp* sin efecto real.
+
+```mermaid
+flowchart LR
+    A[DA genera token] --> B[VG valida token]
+    B --> C[Plataforma recibe age_bracket]
+    C --> D{Plataforma segmenta contenido?}
+    D -->|Si, correctamente| E[Menor protegido]
+    D -->|Parcialmente| F[Proteccion incompleta]
+    D -->|No| G[Sin proteccion]
+    style D fill:#ff9,stroke:#333
+    style G fill:#f99,stroke:#333
+```
+
+AAVP controla las fases A y B con garantías criptográficas. La fase C-D está fuera de su control directo. El Segmentation Accountability Framework (SAF) aborda esta brecha con un enfoque de **accountability** (detección), no de **enforcement** (imposición):
+
+- **Qué puede hacer AAVP:** Definir infraestructura para que las plataformas declaren públicamente sus políticas de segmentación, registrarlas de forma transparente e inmutable, y permitir que cualquier parte verifique su cumplimiento.
+- **Qué no puede hacer AAVP:** Forzar a una plataforma a segmentar correctamente. La imposición corresponde a los marcos regulatorios (DSA, AADC, OSA, COPPA).
+
+El enfoque es análogo a **Certificate Transparency** (RFC 6962): CT no impide que una CA emita un certificado fraudulento, pero garantiza que cualquier emisión queda registrada y es detectable. Del mismo modo, SAF no impide que una plataforma ignore la señal de edad, pero garantiza que su política declarada es pública, auditable y verificable.
+
+### 8.2 Segmentation Policy Declaration (SPD)
+
+La Segmentation Policy Declaration es un documento JSON firmado que declara la política de segmentación de contenido de una plataforma por franja de edad. Es un compromiso público y máquina-legible.
+
+#### 8.2.1 Endpoint
+
+**URI:** `https://[dominio-plataforma]/.well-known/aavp-age-policy.json`
+
+**Requisitos HTTP:**
+
+- HTTPS obligatorio (TLS 1.3).
+- `Cache-Control: public, max-age=86400` (24 horas).
+- `Access-Control-Allow-Origin: *`.
+- Content-Type: `application/json`.
+
+**Códigos de respuesta:**
+
+| Código | Significado | Comportamiento del DA |
+|--------|-------------|----------------------|
+| 200 | SPD disponible | Parsear, verificar firma y procesar |
+| 404 | Sin SPD publicada | La plataforma no publica política de segmentación verificable |
+| 429 | Limitación de tasa | Reintentar con *backoff* exponencial |
+| 5xx | Error de servidor | Reintentar una vez; usar caché si disponible |
+
+#### 8.2.2 Esquema JSON
+
+| Campo | Tipo | Obligatorio | Descripción |
+|-------|------|:-----------:|-------------|
+| `spd_version` | string | Sí | Versión del esquema SPD. Valor actual: `"1.0"`. |
+| `platform` | string (hostname) | Sí | FQDN de la plataforma. Debe coincidir con el dominio que sirve el endpoint. |
+| `published` | string (ISO 8601) | Sí | Fecha de publicación de esta versión de la política. |
+| `taxonomy_version` | string | Sí | Identificador de la taxonomía de contenido utilizada. Ver sección 8.2.3. |
+| `segmentation` | objeto | Sí | Mapa de franjas de edad a reglas de segmentación. Cada clave es un código de franja (`UNDER_13`, `AGE_13_15`, `AGE_16_17`, `OVER_18`). |
+| `segmentation[bracket].restricted` | array de strings | Sí | Categorías de contenido bloqueadas completamente para esta franja. |
+| `segmentation[bracket].adapted` | array de strings | Sí | Categorías de contenido modificado o reducido para esta franja. |
+| `segmentation[bracket].unrestricted` | array de strings | Sí | Categorías sin restricciones para esta franja. Valor `"*"` indica todas las categorías. |
+| `policy_url` | string (URI) | Sí | URI de la política de segmentación legible para humanos. |
+| `spts` | array de objetos | No | Signed Policy Timestamps obtenidos de logs de transparencia. Ver sección 8.3. |
+| `signature` | string | Sí | Firma RSASSA-PKCS1-v1_5 con SHA-256 sobre el JSON canónico (sin el propio campo `signature`), codificada en base64url. La clave de firma es la misma clave del VG. |
+
+**Ejemplo completo:**
+
+```json
+{
+  "spd_version": "1.0",
+  "platform": "example.com",
+  "published": "2026-02-01T00:00:00Z",
+  "taxonomy_version": "aavp-content-taxonomy-v1",
+  "segmentation": {
+    "UNDER_13": {
+      "restricted": ["explicit-sexual", "violence-graphic", "gambling", "substances", "self-harm"],
+      "adapted": ["profanity"],
+      "unrestricted": []
+    },
+    "AGE_13_15": {
+      "restricted": ["explicit-sexual", "violence-graphic", "gambling"],
+      "adapted": ["substances", "self-harm", "profanity"],
+      "unrestricted": []
+    },
+    "AGE_16_17": {
+      "restricted": ["explicit-sexual"],
+      "adapted": ["violence-graphic", "gambling"],
+      "unrestricted": ["substances", "self-harm", "profanity"]
+    },
+    "OVER_18": {
+      "unrestricted": ["*"]
+    }
+  },
+  "policy_url": "https://example.com/age-policy",
+  "spts": [
+    {
+      "log_id": "base64url(SHA-256 de la clave publica del log)",
+      "timestamp": "2026-02-01T00:01:00Z",
+      "signature": "base64url(...)"
+    }
+  ],
+  "signature": "base64url(...)"
+}
+```
+
+#### 8.2.3 Taxonomía de contenido
+
+SAF define una taxonomía mínima de categorías de contenido. Las plataformas deben mapear su contenido a estas categorías como mínimo.
+
+| Categoría | Código | Descripción |
+|-----------|--------|-------------|
+| Sexual explícito | `explicit-sexual` | Contenido con actividad sexual explícita |
+| Violencia gráfica | `violence-graphic` | Representaciones gráficas de violencia o gore |
+| Juego con dinero real | `gambling` | Juegos de azar con apuestas de dinero real |
+| Sustancias | `substances` | Promoción o representación de alcohol, tabaco o drogas |
+| Autolesiones | `self-harm` | Contenido que promueve autolesiones o suicidio |
+| Lenguaje explícito | `profanity` | Lenguaje vulgar o profanidades intensas |
+
+**Extensibilidad:** Las plataformas pueden añadir categorías adicionales con el prefijo `x-` (ej: `x-de-jugendschutz` para el JMStV alemán, `x-uk-vsc` para las categorías de la BBFC). Las categorías extendidas no afectan a la interoperabilidad: los verificadores que no las reconozcan las ignoran.
+
+**Tres niveles de acción por categoría y franja:**
+
+| Nivel | Significado |
+|-------|-------------|
+| `restricted` | Contenido bloqueado completamente para esta franja |
+| `adapted` | Contenido modificado o reducido (ej: filtros, versiones editadas, avisos) |
+| `unrestricted` | Sin restricciones para esta franja |
+
+#### 8.2.4 Firma de la SPD
+
+La SPD se firma con la clave del VG para garantizar su integridad y autenticidad.
+
+- **Algoritmo:** RSASSA-PKCS1-v1_5 con SHA-256 sobre el JSON canónico.
+- **JSON canónico:** El documento SPD completo sin el campo `signature`, serializado con claves ordenadas alfabéticamente, sin espacios ni saltos de línea (RFC 8785, JSON Canonicalization Scheme).
+- **Campo `signature`:** Resultado de la firma codificado en base64url sin padding.
+- **Verificación:** El DA o cualquier monitor puede verificar la firma utilizando la clave pública del VG obtenida de `.well-known/aavp` o del trust store del IM.
+
+### 8.3 Policy Transparency Log (PTL)
+
+#### 8.3.1 Arquitectura
+
+El Policy Transparency Log es un registro append-only, inspirado en Certificate Transparency (RFC 6962), donde se registran las SPDs de las plataformas. Múltiples logs independientes operan en paralelo, garantizando la descentralización.
+
+```mermaid
+graph LR
+    P1[Plataforma 1] -->|SPD| L1[Log Operator A]
+    P1 -->|SPD| L2[Log Operator B]
+    P2[Plataforma 2] -->|SPD| L1
+    P2 -->|SPD| L2
+    L1 -->|SPT| P1
+    L2 -->|SPT| P1
+    L1 -.->|lectura| M1[Monitor 1]
+    L2 -.->|lectura| M2[Monitor 2]
+    L1 -.->|lectura| DA[Device Agent]
+    M1 -.->|alerta| PUB[Publico]
+    M2 -.->|alerta| PUB
+```
+
+**Principios:**
+- **Descentralización:** Cualquier organización puede operar un log. No existe un log oficial ni obligatorio.
+- **Append-only:** Las entradas no se pueden modificar ni eliminar una vez registradas.
+- **Verificabilidad:** Cualquier parte puede verificar la inclusión de una SPD en el log.
+
+#### 8.3.2 Estructura del log
+
+Cada log mantiene un **árbol Merkle append-only** donde cada hoja contiene:
+
+- La SPD completa.
+- Timestamp de registro en el log.
+- Firma del operador del log sobre la entrada.
+
+**Signed Policy Timestamp (SPT):**
+
+Al registrar una SPD, el log emite un SPT como prueba criptográfica de registro:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `log_id` | string | SHA-256 de la clave pública del log, codificado en base64url. |
+| `timestamp` | string (ISO 8601) | Momento en que el log registró la SPD. |
+| `signature` | string | Firma del operador del log sobre la SPD + timestamp, codificada en base64url. |
+
+La plataforma incluye los SPTs obtenidos en su SPD (campo `spts`), demostrando que la política ha sido registrada en logs de transparencia.
+
+#### 8.3.3 Requisitos para operadores de log
+
+| Requisito | Descripción |
+|-----------|-------------|
+| **Disponibilidad** | El log debe estar accesible públicamente sobre HTTPS. |
+| **Retención** | Las entradas deben conservarse al menos 2 años. |
+| **Auditoría** | El log debe exponer una API de consulta que permita verificar la inclusión de cualquier SPD (Merkle inclusion proof). |
+| **Consistencia** | El log debe proporcionar pruebas de consistencia (Merkle consistency proof) para demostrar que no ha eliminado ni modificado entradas. |
+
+#### 8.3.4 Rol de monitor
+
+Los monitores son entidades independientes que observan los logs de transparencia para detectar anomalías:
+
+- **Cambios de política:** Detectar cuándo una plataforma modifica su SPD (endurecimiento o relajación de restricciones).
+- **Inconsistencias:** Detectar si una plataforma presenta SPDs diferentes a diferentes observadores (*split-view attack*).
+- **Ausencia de registro:** Alertar cuando una plataforma declara una `age_policy` en `.well-known/aavp` pero no registra su SPD en ningún log.
+
+Cualquier organización o individuo puede operar un monitor. No se requiere autorización ni registro.
+
+### 8.4 Open Verification Protocol (OVP)
+
+#### 8.4.1 Metodología
+
+El Open Verification Protocol define una metodología estandarizada para verificar que una plataforma cumple con su SPD declarada:
+
+1. El verificador obtiene la SPD de la plataforma desde `.well-known/aavp-age-policy.json`.
+2. Accede a la plataforma con tokens AAVP válidos de cada franja de edad (`UNDER_13`, `AGE_13_15`, `AGE_16_17`, `OVER_18`).
+3. Para cada franja, evalúa la accesibilidad de contenido de cada categoría de la taxonomía.
+4. Compara los resultados observados contra la política declarada en la SPD.
+
+#### 8.4.2 Métricas de cumplimiento
+
+| Métrica | Descripción | Objetivo |
+|---------|-------------|---------|
+| **Ratio de consistencia** | % de categorías donde el comportamiento observado coincide con la SPD declarada | > 95% |
+| **Delta entre franjas** | Diferencia de contenido restringido entre franjas adyacentes | > 0 (cada franja tiene menos restricciones que la anterior) |
+| **Falsos negativos** | Contenido declarado como `restricted` que resulta accesible | < 1% |
+| **Falsos positivos** | Contenido declarado como `unrestricted` que resulta bloqueado | < 5% |
+
+#### 8.4.3 Verificadores
+
+- **Descentralizado:** Cualquier organización o individuo puede ejecutar verificaciones OVP. No se requiere autorización.
+- **Implementación de referencia:** Se publicará una herramienta open-source de verificación OVP como trabajo futuro (ver sección 10).
+- **Limitaciones del crawling:** El contenido dinámico (feeds algorítmicos, recomendaciones personalizadas) y el contenido generado por usuarios (UGC) dificultan la verificación exhaustiva. OVP mide una instantánea representativa, no la totalidad del contenido.
+
+### 8.5 Señal de cumplimiento
+
+#### 8.5.1 Extensión del handshake
+
+El VG puede incluir opcionalmente en su respuesta al handshake AAVP información sobre su política de segmentación:
+
+- **Hash de la SPD:** SHA-256 del JSON canónico de la SPD actual, codificado en base64url.
+- **SPTs:** Lista de Signed Policy Timestamps que prueban el registro en logs de transparencia.
+
+```mermaid
+sequenceDiagram
+    participant DA as Device Agent
+    participant VG as Verif. Gate
+
+    DA->>VG: Token AAVP
+    VG->>VG: Valida token, extrae age_bracket
+    VG-->>DA: OK + credencial + spd_hash + spts
+
+    DA->>DA: Obtiene SPD desde .well-known/aavp-age-policy.json
+    DA->>DA: Verifica SHA-256(SPD) == spd_hash
+    DA->>DA: Verifica SPTs contra claves de logs conocidos
+
+    alt SPD verificada y registrada en logs
+        DA->>DA: Politica verificada
+    else SPD sin registro en logs
+        DA->>DA: Politica sin log
+    else Sin SPD
+        DA->>DA: Sin politica
+    end
+```
+
+#### 8.5.2 Indicadores para el usuario
+
+El DA puede presentar al usuario un indicador de cumplimiento con tres estados:
+
+| Estado | Significado | Condición |
+|--------|-------------|-----------|
+| **Política verificada** | La plataforma tiene una SPD firmada y registrada en al menos un log de transparencia | SPD válida + al menos 1 SPT verificable |
+| **Política sin log** | La plataforma tiene una SPD firmada pero no registrada en logs de transparencia | SPD válida + 0 SPTs |
+| **Sin política** | La plataforma no publica SPD | Campo `age_policy` ausente en `.well-known/aavp` o SPD no disponible |
+
+El DA **no clasifica contenido** ni juzga la calidad de la política declarada. Solo informa al usuario sobre la transparencia de la plataforma respecto a su compromiso de segmentación.
+
+### 8.6 Niveles de conformidad
+
+SAF define tres niveles de conformidad para plataformas que implementan AAVP:
+
+| Nivel | Nombre | Requisitos |
+|-------|--------|-----------|
+| **Nivel 1** | Básico | La plataforma implementa un VG conforme y acepta tokens AAVP válidos. |
+| **Nivel 2** | Intermedio | Nivel 1 + la plataforma publica una SPD firmada en `.well-known/aavp-age-policy.json` con política de segmentación documentada. |
+| **Nivel 3** | Avanzado | Nivel 2 + la SPD está registrada en al menos un PTL y la plataforma se somete a verificación OVP periódica (resultados públicos). |
+
+**Sin autoridad central de certificación:** Los niveles de conformidad son verificables por cualquier parte utilizando los mecanismos definidos en este framework. No existe una entidad que "otorgue" la certificación. Una plataforma cumple un nivel si las condiciones son verificablemente ciertas.
+
+### 8.7 Límites y riesgo residual
+
+SAF define la infraestructura de accountability, pero no elimina todos los riesgos:
+
+- **Contenido dinámico:** Los feeds algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar. Una plataforma puede cumplir su SPD para contenido estático pero no para recomendaciones dinámicas.
+- **Contenido generado por usuarios (UGC):** Es imposible clasificar el 100% del UGC en tiempo real. Los sistemas de moderación tienen tasas de error inherentes.
+- **Segmentación no es censura:** La segmentación adapta el contenido a la franja de edad, no lo elimina. Las plataformas deben permitir excepciones documentadas (ej: contenido educativo sobre salud sexual para `AGE_16_17`).
+- **Declarar y no cumplir:** Una plataforma puede publicar una SPD restrictiva y no implementarla. Este riesgo es detectable vía OVP pero no prevenible por el protocolo.
+
+> [!IMPORTANT]
+> AAVP define la infraestructura de accountability. La imposición efectiva corresponde a los marcos regulatorios (DSA, AADC, OSA, COPPA).
+
+---
+
+## 9. Modelo de Amenazas
 
 Todo protocolo de seguridad debe analizar honestamente sus vectores de ataque:
 
@@ -917,7 +1217,7 @@ pie title Distribucion de riesgo residual
 
 ---
 
-## 9. Trabajo Futuro y Líneas Abiertas
+## 10. Trabajo Futuro y Líneas Abiertas
 
 - **Especificación formal:** Desarrollar una especificación técnica completa en formato RFC, incluyendo formatos de mensaje, procedimientos de prueba de conformidad y test vectors.
 - **Implementación de referencia:** Crear bibliotecas open source en múltiples lenguajes para Device Agent y Verification Gate.
@@ -928,6 +1228,8 @@ pie title Distribucion de riesgo residual
 - **Gobernanza del estándar:** Definir un modelo de gobernanza comunitaria para la evolución del protocolo, potencialmente bajo el W3C o el IETF.
 - **Migración post-cuántica:** El campo `token_type` permite adoptar esquemas de firma ciega post-cuánticos cuando estén estandarizados. Las firmas basadas en retículos (*lattice-based blind signatures*) son la línea de investigación más prometedora. Los estándares NIST PQC actuales (ML-KEM, ML-DSA, SLH-DSA) no cubren firmas ciegas.
 - **Registro IANA:** Registrar los valores de `token_type` y la extensión `age_bracket` en los registros IANA correspondientes cuando se formalice el Internet-Draft.
+- **Implementación de referencia del PTL:** Crear una implementación open-source de un operador de Policy Transparency Log conforme a la sección 8.3.
+- **Herramientas OVP:** Publicar una herramienta open-source de verificación OVP (sección 8.4) que permita a cualquier parte auditar el cumplimiento de plataformas con sus SPDs.
 
 ---
 
@@ -947,8 +1249,13 @@ pie title Distribucion de riesgo residual
 | **Fingerprinting** | Técnica de rastreo que identifica usuarios por características únicas de su dispositivo o comportamiento. |
 | **Implementador (IM)** | Organización que desarrolla software conforme al estándar AAVP, actuando como proveedor de la funcionalidad de Device Agent. |
 | **Metadato público** | Parte del token visible al IM durante la firma parcialmente ciega, vinculada criptográficamente via derivación de clave. En AAVP: `age_bracket` y `expires_at`. |
+| **OVP** | Open Verification Protocol. Metodología abierta y estandarizada para verificar que una plataforma cumple con su SPD declarada. Cualquier parte puede ejecutar verificaciones OVP. Ver sección 8.4. |
 | **Partially Blind Signature** | Esquema de firma donde el firmante ve una parte del mensaje (metadato público) pero no el resto. En AAVP, el IM ve `age_bracket` y `expires_at` pero no el `nonce`. |
+| **PTL** | Policy Transparency Log. Registro append-only, inspirado en Certificate Transparency (RFC 6962), donde se registran las SPDs de las plataformas. Múltiples logs independientes operan en paralelo. Ver sección 8.3. |
 | **RSAPBSSA** | RSA Partially Blind Signature Scheme with Appendix. Esquema concreto elegido por AAVP, basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Utiliza SHA-384 como función hash. |
+| **SAF** | Segmentation Accountability Framework. Marco de declaración, transparencia y verificación de políticas de segmentación por edad. Define SPD, PTL, OVP y señal de cumplimiento. Ver sección 8. |
+| **SPD** | Segmentation Policy Declaration. Documento JSON firmado que declara la política de segmentación de contenido de una plataforma por franja de edad. Servido en `.well-known/aavp-age-policy.json`. Ver sección 8.2. |
+| **SPT** | Signed Policy Timestamp. Prueba criptográfica emitida por un operador de log de transparencia que confirma el registro de una SPD en un momento determinado. Ver sección 8.3.2. |
 | **Self-contained** | Propiedad de una credencial que contiene toda la información necesaria para su validación sin consultar un almacén de estado externo. |
 | **`token_key_id`** | SHA-256 de la clave pública del IM. Permite al VG identificar qué clave usar para verificar la firma sin probar todas las claves conocidas. |
 | **`token_type`** | Campo del token que identifica el esquema criptográfico utilizado. Permite agilidad criptográfica y migración futura a esquemas post-cuánticos. |
