@@ -36,7 +36,7 @@
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas (parcialmente mitigadas) | Key attestation definido como mecanismo opcional en PROTOCOL.md sección 4.4. Supuestos S2 y S8 documentados explícitamente en sección 1.3. Rotación semanal de claves del DA. Riesgo residual: root/jailbreak, dispositivos sin TEE, ataques a TEE específicos. |
 | **Gestión de sesiones (VG)** | 🟢 | 3 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Endpoint `.well-known/aavp` especificado. |
 | **Segmentación de contenido** | 🟢 | 1 resuelta | SAF definido en PROTOCOL.md sección 8: SPD firmada con campo opcional `ugc_handling`, PTL, OVP con metodología de muestreo estratificado (sección 8.4.4) con requisitos estadísticos (IC 95%, tamaños de muestra). Métricas diferenciadas para contenido curado, algorítmico y UGC. |
-| **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
+| **Resistencia a análisis de tráfico** | 🟢 | 2 resueltas | Canal DA-IM especificado (TLS 1.3 + CT). Mitigaciones formalizadas en PROTOCOL.md sección 4.5: pre-firma con desacoplamiento temporal, padding a 2 KiB, jitter obligatorio 0-300s, OHTTP recomendado (RFC 9458). Privacy partitioning (RFC 9614). |
 
 | | Significado |
 |:---:|-------------|
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. |
 
-**Distribución actual:** 0 áreas en rojo, 3 en amarillo, 4 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de confianza alcanza verde: auto-publicación de claves en dominio propio, claves de vida limitada (≤ 6 meses), revocación bilateral por VGs y endpoint `.well-known/aavp-issuer` especificado (4/4 vulnerabilidades resueltas). La gestión de sesiones alcanza verde: credencial de sesión autocontenida con descarte obligatorio del token, TTL corto, persistencia a nivel de cuenta y endpoint `.well-known/aavp` especificado (3/3 vulnerabilidades resueltas). La segmentación de contenido alcanza verde: SAF con SPD firmada (campo opcional `ugc_handling`), PTL, OVP con metodología de muestreo estratificado (sección 8.4.4) con requisitos estadísticos (IC 95%, tamaños de muestra) y métricas diferenciadas para contenido curado, algorítmico y UGC (V11 resuelta).
+**Distribución actual:** 0 áreas en rojo, 2 en amarillo, 5 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de confianza alcanza verde: auto-publicación de claves en dominio propio, claves de vida limitada (≤ 6 meses), revocación bilateral por VGs y endpoint `.well-known/aavp-issuer` especificado (4/4 vulnerabilidades resueltas). La gestión de sesiones alcanza verde: credencial de sesión autocontenida con descarte obligatorio del token, TTL corto, persistencia a nivel de cuenta y endpoint `.well-known/aavp` especificado (3/3 vulnerabilidades resueltas). La segmentación de contenido alcanza verde: SAF con SPD firmada (campo opcional `ugc_handling`), PTL, OVP con metodología de muestreo estratificado (sección 8.4.4) con requisitos estadísticos (IC 95%, tamaños de muestra) y métricas diferenciadas para contenido curado, algorítmico y UGC (V11 resuelta). La resistencia a análisis de tráfico alcanza verde: mitigaciones formalizadas en PROTOCOL.md sección 4.5 con pre-firma y desacoplamiento temporal, padding de mensajes a 2 KiB, jitter obligatorio 0-300s y OHTTP recomendado (V9 resuelta).
 
 ---
 
@@ -74,7 +74,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | V-2.4 | ~~Ataque al registro de IMs~~ Compromiso del dominio del IM | [2.4](#24-ataque-al-registro-de-implementadores) | Compromiso del dominio de un IM individual (certificados TLS, DNS) | ~~Crítica~~ **Media** | Auto-publicación elimina registro central. Claves de vida limitada (≤ 6 meses), TLS 1.3 + CT, key pinning por VGs, revocación bilateral |
 | V-2.5 | Exfiltración de claves del DA | [2.5](#25-exfiltración-de-claves-del-da) | Acceso físico al dispositivo o control remoto con root | Alta | Operaciones criptográficas dentro del enclave; *key attestation*; rotación semanal de claves |
 | V-2.6 | Degradación de protocolo (*fail-open*) | [2.6](#26-degradación-de-protocolo) | Bloqueo selectivo del handshake AAVP (firewall, proxy, DNS sinkhole) | Alta | Política *fail-closed* (contenido restringido por defecto); señalización al usuario; directrices RFC 2119 para sesiones no verificadas |
-| V-2.7 | Análisis de tráfico | [2.7](#27-análisis-de-tráfico) | Observador de red (ISP, estado) con visibilidad DA-IM y DA-VG | Media | *Traffic padding*; pre-firma de tokens; OHTTP (RFC 9458) para DA-IM |
+| V-2.7 | Análisis de tráfico | [2.7](#27-análisis-de-tráfico) | Observador de red (ISP, estado) con visibilidad DA-IM y DA-VG | Media | **Resuelta**: pre-firma con desacoplamiento temporal, padding a 2 KiB, jitter 0-300s, OHTTP recomendado (PROTOCOL.md sección 4.5) |
 | V-2.8 | *Token harvesting* | [2.8](#28-token-harvesting) | VG que retiene tokens completos (operador de plataforma popular) | Media | VG debe destruir token tras extraer `age_bracket`; tokens de un solo uso |
 | V-2.9 | Manipulación del reloj del dispositivo | [2.9](#29-manipulación-del-reloj-del-dispositivo) | Capacidad de modificar hora del sistema (sin privilegios en la mayoría de SO) | Media | VG valida `expires_at` contra su propio reloj; rechazar tokens con `expires_at` excesivamente futuro |
 | V-2.10 | *Social engineering* parental | [2.10](#210-social-engineering-parental) | Relación de confianza con los padres; capacidad persuasiva del menor | Alta | Autenticación fuerte (biometría del SO); *cooldown* 24h tras cambio de franja; notificaciones al padre |
@@ -480,12 +480,13 @@ flowchart TD
 - Si el DA contacta al IM inmediatamente antes de presentar el token al VG, la secuencia temporal (petición al IM → petición al VG) es una señal correlacionable.
 - La dirección IP del DA es visible tanto para el IM como para el VG (a menos que se use una capa de anonimización).
 
-**Mitigaciones propuestas:**
-- *Traffic padding*: el handshake AAVP debe ser indistinguible en tamaño de otros intercambios HTTP estándar.
-- Desacoplar temporalmente la firma del IM de la presentación al VG: el DA podría pre-firmar tokens en momentos aleatorios y almacenarlos localmente para presentarlos después.
-- Considerar *oblivious HTTP* (OHTTP, RFC 9458) como capa de transporte para el canal DA-IM.
+**Mitigaciones (especificadas en PROTOCOL.md sección 4.5):**
+- Pre-firma con desacoplamiento temporal (sección 4.5.1): el DA obtiene tokens en momentos independientes del acceso a plataformas. Ventana mínima de 5 minutos entre obtención y presentación.
+- Padding de mensajes a 2 KiB (sección 4.5.2): el handshake AAVP es indistinguible en tamaño de otros intercambios HTTP estándar.
+- Jitter obligatorio (sección 4.5.3): retardo uniforme 0-300s antes de la primera presentación a un nuevo VG.
+- OHTTP recomendado (sección 4.5.4): Oblivious HTTP (RFC 9458) para el canal DA-IM, interponiendo un relay que oculte la IP del DA.
 
-**Riesgo residual:** Bajo-Medio. Las mitigaciones de análisis de tráfico son costosas y complejas. El riesgo residual es aceptable para la mayoría de los modelos de amenazas, pero relevante frente a adversarios con capacidad de vigilancia masiva.
+**Riesgo residual:** Bajo. Las mitigaciones están especificadas en PROTOCOL.md sección 4.5. El riesgo residual se limita a adversarios con capacidad de vigilancia masiva (estados, ISPs) que observen simultáneamente tráfico de múltiples nodos de la red.
 
 ### 2.8 *Token harvesting*
 
@@ -552,7 +553,7 @@ flowchart TD
 | 2.4 | Compromiso del dominio del IM | Medio | Bajo |
 | 2.5 | Exfiltración de claves del DA | Alto | Medio |
 | 2.6 | Degradación de protocolo | Alto | Alto |
-| 2.7 | Análisis de tráfico | Medio | Bajo-Medio |
+| 2.7 | Análisis de tráfico | Medio | Bajo |
 | 2.8 | *Token harvesting* | Medio | Bajo |
 | 2.9 | Manipulación del reloj | Medio | Bajo |
 | 2.10 | *Social engineering* parental | Alto | Medio |
@@ -1337,13 +1338,13 @@ flowchart TD
 - La dirección IP del usuario es visible en ambas conexiones (a menos que se use VPN/Tor/OHTTP).
 - Un adversario que observe el tráfico del IM y del VG puede correlacionar sesiones con alta probabilidad.
 
-**Mitigaciones propuestas:**
-- Pre-firma de tokens: el DA contacta al IM en momentos aleatorios (no inmediatamente antes de usar el token), rompiendo la correlación temporal.
-- *Traffic mixing*: el handshake AAVP debe ser indistinguible del tráfico HTTP regular en tamaño y patrón.
-- Uso de *oblivious HTTP* (OHTTP, RFC 9458) para el canal DA-IM, de modo que el IM no conozca la IP del DA.
-- Documentar en la especificación que AAVP no protege contra adversarios con capacidad de vigilancia masiva de red, y que los usuarios en esa situación deben usar medidas de anonimización de red adicionales.
+**Mitigaciones (especificadas en PROTOCOL.md sección 4.5):**
+- Pre-firma con desacoplamiento temporal (sección 4.5.1): el DA obtiene tokens en momentos independientes del acceso a plataformas. Ventana mínima de 5 minutos entre obtención y presentación.
+- Padding de mensajes a 2 KiB (sección 4.5.2): el handshake AAVP es indistinguible del tráfico HTTP regular en tamaño.
+- Jitter obligatorio (sección 4.5.3): retardo uniforme 0-300s antes de la primera presentación a un nuevo VG.
+- OHTTP recomendado (sección 4.5.4): Oblivious HTTP (RFC 9458) para el canal DA-IM, interponiendo un relay que oculte la IP del DA.
 
-**Riesgo residual:** Medio. La protección completa contra análisis de tráfico requiere anonimización de red, que está fuera del alcance de AAVP pero puede recomendarse como capa adicional.
+**Riesgo residual:** Bajo. Las mitigaciones están formalizadas en PROTOCOL.md sección 4.5. El riesgo residual se limita a adversarios con capacidad de vigilancia masiva que observen simultáneamente tráfico de múltiples nodos de la red.
 
 ### 8.5 Tabla resumen de escenarios compuestos
 
@@ -1352,7 +1353,7 @@ flowchart TD
 | A | IM comprometido + plataforma cómplice | Baja | Crítico | Medio |
 | B | Dispositivo rooteado + replay | Media | Crítico (por dispositivo) | Medio-Alto |
 | C | Dominio de IM comprometido + phishing | Baja | Medio | Bajo |
-| D | Análisis de tráfico + correlación | Media-Alta | Medio | Medio |
+| D | Análisis de tráfico + correlación | Media-Alta | Medio | Bajo |
 
 ---
 
@@ -1393,7 +1394,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | I1 | Firmas ciegas post-cuánticas | Investigar esquemas de firmas ciegas basados en retículos (*lattice-based*) aptos para AAVP |
 | I2 | Detección de root/jailbreak sin centralización | Diseñar un mecanismo de atestación del dispositivo que no dependa de APIs de fabricantes |
 | I3 | Protocolo de auditoría automatizado | Herramientas de verificación continua de conformidad para DA, VG e IM |
-| I4 | Análisis de tráfico resistente | Evaluar la viabilidad de integrar OHTTP o técnicas de *traffic padding* en el protocolo |
+| I4 | ~~Análisis de tráfico resistente~~ | **Resuelta**: mitigaciones especificadas en PROTOCOL.md sección 4.5 (pre-firma, padding, jitter, OHTTP) |
 | I5 | ~~Framework de segmentación verificable~~ | **Resuelta**: SAF definido en PROTOCOL.md sección 8 con metodología de muestreo OVP (sección 8.4.4) y `ugc_handling` en SPD. Pendiente: implementación de referencia del PTL y herramientas OVP |
 | I6 | Multi-IM y firmas umbral | Explorar esquemas donde la firma requiera la cooperación de múltiples IMs, eliminando el riesgo de IM único comprometido |
 | I7 | Tokens *offline* | Mecanismo para generar tokens válidos sin conectividad al IM, preservando las garantías de seguridad |
@@ -1412,7 +1413,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 | V6 | ~~Jitter no especificado~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | `issued_at` eliminado; `expires_at` con precisión gruesa |
 | V7 | ~~Supuestos implícitos no documentados~~ | ~~Media~~ **Resuelta** | N/A | N/A | N/A | Supuestos S1-S14 documentados en PROTOCOL.md sección 1.3 |
 | V8 | *Timing side-channels* | Media | Media | Medio | Bajo | Sí (especificar jitter y rotación) |
-| V9 | Análisis de tráfico | Media | Difícil | Medio | Bajo | Parcial (OHTTP) |
+| V9 | ~~Análisis de tráfico~~ | ~~Media~~ **Resuelta** | N/A | N/A | N/A | PROTOCOL.md sección 4.5: pre-firma, padding, jitter, OHTTP |
 | V10 | *Social engineering* parental | Alta | Fácil | Bajo | Alto | Parcial (UX) |
 | V11 | ~~Segmentación no verificable~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | SAF con metodología de muestreo OVP formalizada (sección 8.4.4) y `ugc_handling` en SPD |
 

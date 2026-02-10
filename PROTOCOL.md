@@ -364,8 +364,8 @@ sequenceDiagram
 La firma parcialmente ciega garantiza que el IM no puede vincular el token finalizado con la petición de firma (*blindness*). Sin embargo, el canal de transporte puede filtrar metadatos que comprometan esta propiedad:
 
 - **Requisito mínimo:** El canal DA-IM requiere TLS 1.3 o superior. El DA verifica la cadena de certificados del IM contra los certificados raíz del sistema operativo. La integridad de los certificados se respalda con Certificate Transparency (RFC 9162).
-- **Metadatos de red:** Incluso con TLS, el IM observa la dirección IP del DA, su *fingerprint* TLS (JA3/JA4) y los patrones temporales de las peticiones. Estas fugas son inherentes al transporte TCP/IP y se mitigan parcialmente con la rotación de tokens y la precisión gruesa de `expires_at`.
-- **Recomendación para máxima privacidad:** Las implementaciones que busquen minimizar la fuga de metadatos de red pueden utilizar Oblivious HTTP (RFC 9458) para el canal DA-IM, interponiendo un relay que oculte la IP del DA al IM. Esta medida es opcional y queda fuera del alcance mínimo del protocolo.
+- **Metadatos de red:** Incluso con TLS, el IM observa la dirección IP del DA, su *fingerprint* TLS (JA3/JA4) y los patrones temporales de las peticiones. Estas fugas son inherentes al transporte TCP/IP y se mitigan con las medidas de resistencia al análisis de tráfico definidas en la sección 4.5.
+- **Resistencia al análisis de tráfico:** Las implementaciones deben aplicar las medidas definidas en la sección 4.5: pre-firma con desacoplamiento temporal (4.5.1), padding de mensajes (4.5.2), jitter en la presentación (4.5.3) y, opcionalmente, Oblivious HTTP (RFC 9458) para el canal DA-IM (4.5.4).
 
 > [!NOTE]
 > El canal DA-VG tiene los mismos requisitos de TLS. La diferencia es que en DA-VG el token ya está finalizado y no contiene datos vinculables con el DA, por lo que la fuga de metadatos de red tiene menor impacto en la privacidad.
@@ -531,6 +531,60 @@ AAVP asume que el sistema operativo del dispositivo es íntegro. En un dispositi
 Key attestation (sección 4.4.2) y las señales de integridad del dispositivo (sección 4.4.3) ofrecen detección parcial. La rotación semanal de claves (sección 4.4.4) limita la ventana de explotación. Sin embargo, un dispositivo completamente comprometido puede evadir estas mitigaciones.
 
 Esta es una **limitación reconocida del protocolo**, no un fallo. AAVP documenta explícitamente este supuesto (sección 1.3, S8) y ofrece las mitigaciones técnicas viables sin comprometer el principio de descentralización. Para un análisis completo del impacto, consultar [SECURITY-ANALYSIS.md](SECURITY-ANALYSIS.md) sección 1.2 (S8).
+
+### 4.5 Resistencia al Análisis de Tráfico
+
+AAVP opera sobre la red pública y está sujeto a análisis de tráfico por observadores con posición privilegiada (ISP, entidades estatales). Esta sección define las mitigaciones incorporadas en el protocolo para dificultar la correlación de sesiones.
+
+La arquitectura de AAVP implementa *privacy partitioning* (RFC 9614): el IM conoce la franja de edad pero no la plataforma de destino; el VG conoce la plataforma pero no la identidad del usuario. Ninguna entidad individual tiene acceso a ambos datos simultáneamente.
+
+#### 4.5.1 Pre-firma y desacoplamiento temporal
+
+El DA debe desacoplar temporalmente la obtención de tokens firmados de su presentación al VG. El patrón "petición al IM → petición al VG" en un intervalo corto (~100-500 ms) es una señal correlacionable.
+
+**Requisitos:**
+
+- El DA debe obtener tokens firmados en momentos independientes del acceso a plataformas (background refresh). Los tokens se almacenan localmente en el keychain del dispositivo.
+- El DA puede solicitar múltiples tokens en una sola interacción con el IM (batch issuance), reduciendo la frecuencia de contacto.
+- Entre la obtención de un token y su presentación al VG debe existir un intervalo mínimo. El DA no debe contactar al IM y al VG en la misma ventana temporal de 5 minutos.
+
+Este patrón es coherente con la emisión por lotes de Privacy Pass (draft-ietf-privacypass-batched-tokens) y con la implementación de Apple Private Access Tokens.
+
+#### 4.5.2 Padding de mensajes a tamaño fijo
+
+Las peticiones y respuestas del protocolo AAVP deben ser indistinguibles en tamaño de llamadas HTTP/API estándar.
+
+**Requisitos:**
+
+- Los cuerpos de las peticiones y respuestas HTTP del handshake AAVP deben rellenarse (padding) hasta un múltiplo de 2048 bytes (2 KiB).
+- El padding consiste en bytes aleatorios añadidos en un campo `padding` del JSON o como bytes adicionales en el cuerpo HTTP, ignorados por el receptor.
+- El receptor debe ignorar el campo `padding` sin error.
+
+El tamaño del token AAVP es fijo (331 bytes), lo que facilita que los intercambios padded sean indistinguibles de respuestas API típicas.
+
+#### 4.5.3 Jitter obligatorio en la presentación
+
+El DA debe introducir un retardo aleatorio antes de presentar un token al VG.
+
+**Requisitos:**
+
+- Jitter uniforme entre 0 y 300 segundos antes de la primera presentación de un token a un nuevo VG.
+- El jitter se aplica solo cuando el DA no tiene una credencial de sesión válida para la plataforma. Las renovaciones posteriores no requieren jitter adicional (el desacoplamiento temporal de la sección 4.5.1 es suficiente).
+
+#### 4.5.4 Oblivious HTTP para máxima privacidad
+
+Las implementaciones que busquen minimizar la fuga de metadatos de red deben utilizar Oblivious HTTP (RFC 9458) para el canal DA-IM.
+
+La arquitectura OHTTP interpone un relay entre el DA y el IM:
+
+- El relay observa la IP del DA pero no puede leer el contenido de la petición (cifrado con la clave pública del IM).
+- El IM lee la petición pero solo observa la IP del relay.
+- Ninguna entidad individual observa simultáneamente la identidad del usuario (IP) y el contenido de la petición (firma ciega).
+
+Operadores de relay OHTTP están disponibles en producción (Cloudflare Privacy Gateway, Fastly). Las propiedades de privacidad de OHTTP han sido formalmente verificadas.
+
+> [!NOTE]
+> OHTTP protege contra el IM y contra observadores de red entre el DA y el relay. No protege contra un relay que coluda con el IM. La no-colusión entre relay e IM es un requisito de confianza explícito (RFC 9614, sección 4).
 
 ---
 
@@ -810,7 +864,7 @@ flowchart TD
 
 1. El DA obtiene `.well-known/aavp` de la plataforma.
 2. Lee `accepted_ims` y verifica si su IM está en la lista.
-3. Si `token_key_ids` está presente, verifica si tiene un token pre-firmado con una clave aceptada.
+3. Si tiene un token pre-firmado válido (obtenido previamente via la estrategia de desacoplamiento temporal de la sección 4.5.1) con una clave aceptada por el VG (`token_key_ids`), lo utiliza directamente sin contactar al IM.
 4. Si necesita un token nuevo, consulta `.well-known/aavp-issuer` del IM para obtener las claves activas.
 5. Solicita firma parcialmente ciega al `signing_endpoint` del IM.
 6. Presenta el token al `vg_endpoint` de la plataforma.
@@ -1475,8 +1529,11 @@ pie title Distribucion de riesgo residual
 | **Key attestation** | Mecanismo criptográfico mediante el cual el TEE del dispositivo genera una cadena de certificados que demuestra que un par de claves fue generado dentro de hardware seguro y es no exportable. Ver sección 4.4.2. |
 | **Implementador (IM)** | Organización que desarrolla software conforme al estándar AAVP, actuando como proveedor de la funcionalidad de Device Agent. |
 | **Metadato público** | Parte del token visible al IM durante la firma parcialmente ciega, vinculada criptográficamente via derivación de clave. En AAVP: `age_bracket` y `expires_at`. |
+| **Oblivious HTTP (OHTTP)** | Protocolo (RFC 9458) que interpone un relay entre cliente y servidor para ocultar la identidad del cliente al servidor. En AAVP, medida opcional para el canal DA-IM. Ver sección 4.5.4. |
 | **OVP** | Open Verification Protocol. Metodología abierta y estandarizada para verificar que una plataforma cumple con su SPD declarada. Cualquier parte puede ejecutar verificaciones OVP. Ver sección 8.4. |
 | **Partially Blind Signature** | Esquema de firma donde el firmante ve una parte del mensaje (metadato público) pero no el resto. En AAVP, el IM ve `age_bracket` y `expires_at` pero no el `nonce`. |
+| **Pre-firma (pre-signing)** | Estrategia donde el DA obtiene tokens firmados del IM en momentos independientes de su uso, almacenándolos localmente para presentarlos después al VG. Rompe la correlación temporal entre emisión y presentación. Ver sección 4.5.1. |
+| **Privacy partitioning** | Principio arquitectónico (RFC 9614) de distribuir datos entre múltiples partes de modo que ninguna entidad individual posea tanto la identidad del usuario como el contenido de su actividad. |
 | **PTL** | Policy Transparency Log. Registro append-only, inspirado en Certificate Transparency (RFC 6962), donde se registran las SPDs de las plataformas. Múltiples logs independientes operan en paralelo. Ver sección 8.3. |
 | **RSAPBSSA** | RSA Partially Blind Signature Scheme with Appendix. Esquema concreto elegido por AAVP, basado en RFC 9474 y draft-irtf-cfrg-partially-blind-rsa. Utiliza SHA-384 como función hash. |
 | **SAF** | Segmentation Accountability Framework. Marco de declaración, transparencia y verificación de políticas de segmentación por edad. Define SPD, PTL, OVP y señal de cumplimiento. Ver sección 8. |
