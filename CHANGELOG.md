@@ -13,11 +13,20 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Sección 4.4 "Integridad del Dispositivo y Attestation" en PROTOCOL.md: key attestation como mecanismo opcional para verificar claves hardware-backed, señales de integridad del dispositivo, tensión con descentralización, rotación semanal de claves del DA y documentación explícita del supuesto de root/jailbreak.
 - Términos "Device attestation", "Key attestation" y "TEE" añadidos al glosario de PROTOCOL.md.
 - Escenario "Dispositivo rooteado" añadido al modelo de amenazas de PROTOCOL.md sección 9.
+- Subsección 8.4.4 "Metodología de muestreo" en PROTOCOL.md: muestreo estratificado con requisitos estadísticos (intervalos de confianza, tamaños de muestra) para contenido curado, algorítmico y UGC. Inspirado en YouTube VVR, ISO 2859 y auditorías DSA.
+- Campo opcional `ugc_handling` en el esquema SPD de PROTOCOL.md: declaración del enfoque de moderación de UGC (automatizado, humano, híbrido) y tiempo de respuesta objetivo.
+- Sección 4.5 "Resistencia al Análisis de Tráfico" en PROTOCOL.md: pre-firma con desacoplamiento temporal, padding de mensajes a 2 KiB, jitter obligatorio en presentación, OHTTP (RFC 9458) recomendado. Referencia a RFC 9614 (privacy partitioning).
+- Términos "Oblivious HTTP", "Privacy partitioning" y "Pre-firma" añadidos al glosario de PROTOCOL.md.
 
 ### Changed
 
 - Áreas "Modelo de confianza" y "Gestión de sesiones" de SECURITY-ANALYSIS.md promovidas de amarillo a verde: todas las vulnerabilidades resueltas y especificación suficiente.
-- Distribución del semáforo actualizada: 0 rojo, 4 amarillo, 3 verde.
+- Área "Segmentación de contenido" de SECURITY-ANALYSIS.md promovida de amarillo a verde: metodología de muestreo OVP formalizada, campo `ugc_handling` en SPD, V11 resuelta.
+- Área "Resistencia a análisis de tráfico" de SECURITY-ANALYSIS.md promovida de amarillo a verde: pre-firma, padding, jitter y OHTTP especificados en PROTOCOL.md sección 4.5, V9 resuelta.
+- Distribución del semáforo actualizada: 0 rojo, 2 amarillo, 5 verde.
+- Vulnerabilidad V9 (análisis de tráfico) marcada como resuelta.
+- Vulnerabilidad V11 (segmentación no verificable) marcada como resuelta.
+- Línea de investigación I4 (análisis de tráfico resistente) marcada como resuelta.
 - Supuestos S2 y S8 de SECURITY-ANALYSIS.md marcados como parcialmente mitigados.
 - Recomendación R7 y vulnerabilidad V7 de SECURITY-ANALYSIS.md marcadas como resueltas.
 - Escenario C-B de SECURITY-ANALYSIS.md actualizado con referencia a mecanismos especificados en PROTOCOL.md sección 4.4.

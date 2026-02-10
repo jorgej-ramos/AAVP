@@ -552,6 +552,56 @@ else
     "No se encontro referencia a seccion 4.4 ni seccion 1.3 en SECURITY-ANALYSIS.md"
 fi
 
+# ─── 16. Resistencia al análisis de tráfico ──────────────────────────
+
+printf "\n\033[1m16. Resistencia al analisis de trafico\033[0m\n"
+
+if grep -q "Pre-firma" "$REPO_ROOT/PROTOCOL.md" && grep -q "desacoplamiento temporal" "$REPO_ROOT/PROTOCOL.md"; then
+  check "traffic_presigning" "PROTOCOL.md especifica pre-firma / desacoplamiento temporal" "pass"
+else
+  check "traffic_presigning" "PROTOCOL.md especifica pre-firma / desacoplamiento temporal" "fail" \
+    "No se encontro referencia a pre-firma o desacoplamiento temporal"
+fi
+
+if grep -q "padding" "$REPO_ROOT/PROTOCOL.md" && grep -q "2048 bytes" "$REPO_ROOT/PROTOCOL.md"; then
+  check "traffic_padding" "PROTOCOL.md especifica padding de mensajes" "pass"
+else
+  check "traffic_padding" "PROTOCOL.md especifica padding de mensajes" "fail" \
+    "No se encontro referencia a padding de mensajes"
+fi
+
+if grep -q "RFC 9458" "$REPO_ROOT/PROTOCOL.md"; then
+  check "traffic_ohttp" "PROTOCOL.md referencia RFC 9458 (OHTTP)" "pass"
+else
+  check "traffic_ohttp" "PROTOCOL.md referencia RFC 9458 (OHTTP)" "fail" \
+    "No se encontro referencia a RFC 9458"
+fi
+
+if grep -q "RFC 9614" "$REPO_ROOT/PROTOCOL.md"; then
+  check "traffic_privacy_partitioning" "PROTOCOL.md referencia RFC 9614 (privacy partitioning)" "pass"
+else
+  check "traffic_privacy_partitioning" "PROTOCOL.md referencia RFC 9614 (privacy partitioning)" "fail" \
+    "No se encontro referencia a RFC 9614"
+fi
+
+# ─── 17. Metodología de muestreo OVP ────────────────────────────────
+
+printf "\n\033[1m17. Metodologia de muestreo OVP\033[0m\n"
+
+if grep -q "muestreo estratificado" "$REPO_ROOT/PROTOCOL.md" || grep -q "Metodología de muestreo" "$REPO_ROOT/PROTOCOL.md"; then
+  check "ovp_sampling" "PROTOCOL.md especifica metodologia de muestreo OVP" "pass"
+else
+  check "ovp_sampling" "PROTOCOL.md especifica metodologia de muestreo OVP" "fail" \
+    "No se encontro referencia a muestreo estratificado ni metodologia de muestreo"
+fi
+
+if grep -q "ugc_handling" "$REPO_ROOT/PROTOCOL.md"; then
+  check "ovp_ugc_handling" "PROTOCOL.md especifica ugc_handling en SPD" "pass"
+else
+  check "ovp_ugc_handling" "PROTOCOL.md especifica ugc_handling en SPD" "fail" \
+    "No se encontro referencia a ugc_handling"
+fi
+
 # ─── Resumen ─────────────────────────────────────────────────────────
 
 TOTAL=$((PASS + FAIL))
