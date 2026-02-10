@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-10
+
 ### Added
 
 - Sección 8 "Segmentation Accountability Framework (SAF)" en PROTOCOL.md: declaración de política de segmentación firmada (SPD) en `.well-known/aavp-age-policy.json`, logs de transparencia (PTL) inspirados en Certificate Transparency, protocolo de verificación abierto (OVP) y señal de cumplimiento en el handshake. Taxonomía de contenido mínima con 6 categorías extensibles. Tres niveles de conformidad.
@@ -152,7 +154,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.4.0...v0.5.0
