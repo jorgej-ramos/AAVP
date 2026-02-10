@@ -7,6 +7,10 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Modelo formal del SAF en Tamarin Prover (`formal/aavp-saf.spthy`): verifica unforgeability de SPD y SPT, propiedad append-only del log, detectabilidad de cambios de politica y split-view, y consistencia del handshake. 7 lemmas, 12 reglas.
+
 ## [0.8.0] - 2026-02-10
 
 ### Added

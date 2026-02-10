@@ -1,0 +1,279 @@
+/*
+ * AAVP — Anonymous Age Verification Protocol
+ * Formal verification model for the Segmentation Accountability Framework (SAF)
+ *
+ * This model captures the security properties of SAF's transparency
+ * infrastructure (PROTOCOL.md section 8):
+ *
+ *   - SPD unforgeability: a verified SPD implies the VG signed it
+ *   - SPT unforgeability: a verified SPT implies the log registered it
+ *   - Append-only log:    every monitor observation corresponds to a
+ *                          legitimate prior registration
+ *   - Policy change detectability: changes are registrable and detectable
+ *   - Split-view detectability:    conflicting SPDs across logs are detectable
+ *   - Handshake consistency: the SPD hash in the handshake matches a
+ *                            published SPD (if VG key is not compromised)
+ *
+ * Abstraction choices:
+ *   - Uses Tamarin's built-in signing and hashing (no custom equational
+ *     theory). This models RSASSA-PKCS1-v1_5 + SHA-256 for SPD signatures
+ *     and log operator signatures.
+ *   - Merkle tree is abstracted: the append-only property is structural
+ *     via persistent facts (!LogEntry). Tamarin never consumes persistent
+ *     facts, so append-only holds by construction.
+ *   - OVP (Open Verification Protocol) is not modeled. It is a testing
+ *     methodology, not a cryptographic protocol.
+ *   - The VG signs h(spd_content), modeling the real protocol's signature
+ *     over the canonical JSON hash.
+ *   - The log operator signs <h(spd_content), timestamp>, modeling the
+ *     SPT structure from section 8.3.2.
+ *
+ * Protocol roles:
+ *   VG  — Verification Gate (signs and publishes SPD)
+ *   Log — Policy Transparency Log operator (registers SPDs, issues SPTs)
+ *   DA  — Device Agent (verifies handshake extension)
+ *   Monitor — Independent observer of logs
+ *
+ * Run:  tamarin-prover --prove formal/aavp-saf.spthy
+ */
+
+theory AAVP_SAF
+begin
+
+builtins: signing, hashing
+
+
+/* ============================================================
+ * KEY SETUP
+ * ============================================================ */
+
+// VG generates a signing key pair and publishes the public key.
+rule VG_KeyGen:
+  [ Fr(~sk) ]
+  --[ VGKeyGen($vg, pk(~sk)) ]->
+  [ !VGSecretKey($vg, ~sk),
+    !VGPublicKey($vg, pk(~sk)),
+    Out(pk(~sk)) ]
+
+// Key compromise: adversary obtains the VG's secret key.
+rule VG_KeyReveal:
+  [ !VGSecretKey(vg, sk) ]
+  --[ VGKeyRevealed(vg) ]->
+  [ Out(sk) ]
+
+// Log operator generates a signing key pair and publishes the public key.
+rule Log_KeyGen:
+  [ Fr(~sk) ]
+  --[ LogKeyGen($log, pk(~sk)) ]->
+  [ !LogSecretKey($log, ~sk),
+    !LogPublicKey($log, pk(~sk)),
+    Out(pk(~sk)) ]
+
+// Key compromise: adversary obtains the log operator's secret key.
+rule Log_KeyReveal:
+  [ !LogSecretKey(log, sk) ]
+  --[ LogKeyRevealed(log) ]->
+  [ Out(sk) ]
+
+
+/* ============================================================
+ * SPD CREATION AND SIGNING
+ * ============================================================
+ *
+ * The VG creates a Segmentation Policy Declaration (SPD) and signs
+ * its hash. In the real protocol, the signature covers the SHA-256
+ * of the canonical JSON. Here, spd_content abstracts the full JSON
+ * and sign(h(spd_content), sk) models RSASSA-PKCS1-v1_5 + SHA-256.
+ */
+
+// VG generates fresh SPD content and signs its hash.
+rule VG_SignSPD:
+  [ !VGSecretKey($vg, ~sk),
+    Fr(~spd_content) ]
+  --[ VGSignedSPD($vg, ~spd_content, sign(h(~spd_content), ~sk)) ]->
+  [ VG_HasSignedSPD($vg, ~spd_content, sign(h(~spd_content), ~sk)) ]
+
+// VG publishes the SPD (content + signature) on the network.
+// The SPD becomes a persistent published artifact.
+rule VG_PublishSPD:
+  [ VG_HasSignedSPD(vg, spd_content, spd_sig) ]
+  --[ VGPublishedSPD(vg, spd_content) ]->
+  [ !PublishedSPD(vg, spd_content, spd_sig),
+    Out(<vg, spd_content, spd_sig>) ]
+
+
+/* ============================================================
+ * POLICY TRANSPARENCY LOG
+ * ============================================================
+ *
+ * The log operator receives an SPD from the network, verifies the
+ * VG's signature, and registers it. The log entry is a persistent
+ * fact (!LogEntry) — Tamarin never consumes persistent facts, so
+ * the append-only property holds by construction.
+ *
+ * The SPT (Signed Policy Timestamp) contains:
+ *   - log_id: h(pk(sk_log))  (SHA-256 of the log's public key)
+ *   - timestamp: fresh value
+ *   - signature: sign(<h(spd_content), ts>, sk_log)
+ */
+
+// Log receives SPD from network, verifies VG signature, registers entry,
+// and issues an SPT.
+rule Log_RegisterSPD:
+  [ !LogSecretKey($log, ~sk_log),
+    !VGPublicKey(vg, pk_vg),
+    In(<vg, spd_content, spd_sig>),
+    Fr(~ts) ]
+  --[ Eq(verify(spd_sig, h(spd_content), pk_vg), true),
+      LogRegistered($log, vg, spd_content, ~ts),
+      SPTIssued($log, vg, spd_content, ~ts) ]->
+  [ !LogEntry($log, vg, spd_content, ~ts),
+    Out(<h(pk(~sk_log)), ~ts, sign(<h(spd_content), ~ts>, ~sk_log)>) ]
+
+
+/* ============================================================
+ * HANDSHAKE EXTENSION
+ * ============================================================
+ *
+ * Section 8.5: The VG includes the SPD hash in its handshake
+ * response. The DA verifies:
+ *   (1) spd_hash matches h(spd_content) from the actual SPD
+ *   (2) SPD signature is valid against the VG's public key
+ *   (3) log_id matches h(pk_log) for a known log
+ *   (4) SPT signature is valid against the log's public key
+ */
+
+// VG sends the hash of its current SPD as a handshake extension.
+rule VG_HandshakeResponse:
+  [ !PublishedSPD(vg, spd_content, spd_sig) ]
+  --[ VGHandshake(vg, h(spd_content)) ]->
+  [ Out(<vg, h(spd_content)>) ]
+
+// DA receives handshake extension, fetches SPD and SPT from network,
+// and verifies all four conditions.
+rule DA_VerifyHandshake:
+  [ !VGPublicKey(vg, pk_vg),
+    !LogPublicKey(log, pk_log),
+    In(<vg, spd_hash>),
+    In(<vg, spd_content, spd_sig>),
+    In(<log_id, ts, spt_sig>) ]
+  --[ Eq(spd_hash, h(spd_content)),
+      Eq(verify(spd_sig, h(spd_content), pk_vg), true),
+      Eq(log_id, h(pk_log)),
+      Eq(verify(spt_sig, <h(spd_content), ts>, pk_log), true),
+      DAVerifiedHandshake(vg, spd_content, log, ts) ]->
+  [ ]
+
+
+/* ============================================================
+ * MONITOR
+ * ============================================================
+ *
+ * Monitors are independent entities that observe logs to detect
+ * anomalies (section 8.3.4). They read persistent log entries
+ * (non-destructive, consistent with append-only semantics).
+ */
+
+// Monitor reads a log entry.
+rule Monitor_ObserveLog:
+  [ !LogEntry(log, vg, spd, ts) ]
+  --[ MonitorObserved(log, vg, spd, ts) ]->
+  [ ]
+
+// Monitor detects a policy change: two entries for the same VG
+// in the same log with different SPD content.
+rule Monitor_DetectPolicyChange:
+  [ !LogEntry(log, vg, spd1, ts1),
+    !LogEntry(log, vg, spd2, ts2) ]
+  --[ Neq(spd1, spd2),
+      PolicyChangeDetected(vg, spd1, spd2) ]->
+  [ ]
+
+// Monitor detects a split-view: two entries for the same VG
+// in different logs with different SPD content.
+rule Monitor_DetectSplitView:
+  [ !LogEntry(log1, vg, spd1, ts1),
+    !LogEntry(log2, vg, spd2, ts2) ]
+  --[ Neq(spd1, spd2),
+      Neq(log1, log2),
+      SplitViewDetected(vg, log1, spd1, log2, spd2) ]->
+  [ ]
+
+
+/* ============================================================
+ * RESTRICTIONS
+ * ============================================================ */
+
+restriction Equality:
+  "All x y #i. Eq(x, y) @ i ==> x = y"
+
+restriction Inequality:
+  "All x y #i. Neq(x, y) @ i ==> not(x = y)"
+
+
+/* ============================================================
+ * LEMMAS
+ * ============================================================ */
+
+// Sanity check: the full SAF flow can execute to completion.
+// VG signs SPD, log registers it, DA verifies handshake with SPD + SPT.
+lemma executability:
+  exists-trace
+  "Ex vg spd_content log ts #i.
+    DAVerifiedHandshake(vg, spd_content, log, ts) @ i"
+
+// SPD unforgeability: if a DA verifies an SPD signature against an
+// honest VG's key, then the VG must have signed that SPD.
+lemma spd_unforgeability:
+  all-traces
+  "All vg spd_content log ts #i.
+    DAVerifiedHandshake(vg, spd_content, log, ts) @ i
+    & not(Ex #c. VGKeyRevealed(vg) @ c)
+    ==> (Ex sig #j. VGSignedSPD(vg, spd_content, sig) @ j & j < i)"
+
+// SPT unforgeability: if a DA verifies an SPT against an honest log's
+// key, then the log must have registered that SPD.
+lemma spt_unforgeability:
+  all-traces
+  "All vg spd_content log ts #i.
+    DAVerifiedHandshake(vg, spd_content, log, ts) @ i
+    & not(Ex #c. LogKeyRevealed(log) @ c)
+    ==> (Ex #j. LogRegistered(log, vg, spd_content, ts) @ j & j < i)"
+
+// Append-only: every observation by a monitor corresponds to a
+// legitimate prior registration by the log.
+lemma append_only:
+  all-traces
+  "All log vg spd ts #i.
+    MonitorObserved(log, vg, spd, ts) @ i
+    ==> (Ex #j. LogRegistered(log, vg, spd, ts) @ j & j < i)"
+
+// Policy change detectability: there exists a trace where a VG
+// publishes two different SPDs and a monitor detects the change.
+// (exists-trace because Tamarin does not force rule execution;
+// the property is that detection preconditions are satisfiable.)
+lemma policy_change_detectability:
+  exists-trace
+  "Ex vg spd1 spd2 #i.
+    PolicyChangeDetected(vg, spd1, spd2) @ i
+    & not(spd1 = spd2)"
+
+// Split-view detectability: there exists a trace where a VG
+// registers different SPDs in different logs and a monitor detects it.
+lemma split_view_detectability:
+  exists-trace
+  "Ex vg log1 spd1 log2 spd2 #i.
+    SplitViewDetected(vg, log1, spd1, log2, spd2) @ i
+    & not(spd1 = spd2)
+    & not(log1 = log2)"
+
+// Handshake consistency: if a DA verifies the handshake and the VG's
+// key is not compromised, then the SPD was published by the VG.
+lemma handshake_consistency:
+  all-traces
+  "All vg spd_content log ts #i.
+    DAVerifiedHandshake(vg, spd_content, log, ts) @ i
+    & not(Ex #c. VGKeyRevealed(vg) @ c)
+    ==> (Ex #j. VGPublishedSPD(vg, spd_content) @ j & j < i)"
+
+end

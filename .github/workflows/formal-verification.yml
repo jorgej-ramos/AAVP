@@ -36,6 +36,13 @@ jobs:
             infsec/tamarin-prover \
             --diff --prove /data/aavp-unlinkability.spthy
 
+      - name: Run SAF proofs (SPD/SPT unforgeability, transparency)
+        run: |
+          docker run --rm -e LANG=C.UTF-8 \
+            -v "${{ github.workspace }}/formal:/data" \
+            infsec/tamarin-prover \
+            --prove /data/aavp-saf.spthy
+
   badge:
     needs: verify
     runs-on: ubuntu-latest
