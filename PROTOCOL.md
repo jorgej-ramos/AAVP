@@ -1128,6 +1128,10 @@ La Segmentation Policy Declaration es un documento JSON firmado que declara la p
 | `segmentation[bracket].adapted` | array de strings | Sí | Categorías de contenido modificado o reducido para esta franja. |
 | `segmentation[bracket].unrestricted` | array de strings | Sí | Categorías sin restricciones para esta franja. Valor `"*"` indica todas las categorías. |
 | `policy_url` | string (URI) | Sí | URI de la política de segmentación legible para humanos. |
+| `ugc_handling` | objeto | No | Declaración del enfoque de la plataforma para la moderación de contenido generado por usuarios. |
+| `ugc_handling.moderation` | string | Sí (si `ugc_handling` presente) | Enfoque de moderación: `"automated"`, `"human"`, `"hybrid"`. |
+| `ugc_handling.response_target` | string | Sí (si `ugc_handling` presente) | Tiempo objetivo para actuar sobre contenido reportado. Formato ISO 8601 duration (ej: `"PT4H"` = 4 horas). |
+| `ugc_handling.description` | string | No | Descripción libre del enfoque de moderación, legible para humanos. |
 | `spts` | array de objetos | No | Signed Policy Timestamps obtenidos de logs de transparencia. Ver sección 8.3. |
 | `signature` | string | Sí | Firma RSASSA-PKCS1-v1_5 con SHA-256 sobre el JSON canónico (sin el propio campo `signature`), codificada en base64url. La clave de firma es la misma clave del VG. |
 
@@ -1160,6 +1164,11 @@ La Segmentation Policy Declaration es un documento JSON firmado que declara la p
     }
   },
   "policy_url": "https://example.com/age-policy",
+  "ugc_handling": {
+    "moderation": "hybrid",
+    "response_target": "PT4H",
+    "description": "ML classification pre-publish + human review queue"
+  },
   "spts": [
     {
       "log_id": "base64url(SHA-256 de la clave publica del log)",
@@ -1292,7 +1301,40 @@ El Open Verification Protocol define una metodología estandarizada para verific
 
 - **Descentralizado:** Cualquier organización o individuo puede ejecutar verificaciones OVP. No se requiere autorización.
 - **Implementación de referencia:** Se publicará una herramienta open-source de verificación OVP como trabajo futuro (ver sección 10).
-- **Limitaciones del crawling:** El contenido dinámico (feeds algorítmicos, recomendaciones personalizadas) y el contenido generado por usuarios (UGC) dificultan la verificación exhaustiva. OVP mide una instantánea representativa, no la totalidad del contenido.
+- **Limitaciones del crawling:** El contenido dinámico (feeds algorítmicos, recomendaciones personalizadas) y el contenido generado por usuarios (UGC) dificultan la verificación exhaustiva. La metodología de muestreo (sección 8.4.4) aborda esta limitación con rigor estadístico.
+
+#### 8.4.4 Metodología de muestreo
+
+La verificación exhaustiva de todo el contenido de una plataforma es inviable. El OVP adopta un enfoque de **muestreo estratificado** con rigor estadístico, coherente con las prácticas establecidas en control de calidad (ISO 2859) y auditoría de contenido (YouTube Violative View Rate, auditorías DSA).
+
+**Estratos de muestreo:**
+
+Los verificadores deben muestrear contenido de forma estratificada, con estratos alineados a la taxonomía SPD y al tipo de contenido:
+
+| Estrato | Descripción | Metodología |
+|---------|-------------|-------------|
+| **Contenido curado** | Catálogo, contenido editorial, secciones fijas | Muestreo aleatorio por categoría SPD |
+| **Contenido algorítmico** | Feeds, recomendaciones, tendencias, "Explorar" | Muestreo con múltiples perfiles, momentos y contextos |
+| **UGC** | Contenido generado por usuarios | Muestreo post-publicación; medir tiempo de actuación sobre contenido no conforme |
+
+**Requisitos estadísticos de los informes OVP:**
+
+| Requisito | Descripción |
+|-----------|-------------|
+| **Tamaño de muestra** | Documentar el tamaño de muestra por estrato y categoría |
+| **Intervalo de confianza** | Reportar resultados con intervalo de confianza del 95% |
+| **Margen de error** | Declarar margen de error por métrica |
+| **Periodo** | Duración mínima de la auditoría: no una instantánea única sino muestreo en múltiples momentos |
+
+**Métricas diferenciadas por tipo de contenido:**
+
+| Tipo de contenido | Métrica principal | Objetivo |
+|-------------------|------------------|---------|
+| Curado | Consistencia con SPD | > 99% |
+| Algorítmico | Consistencia con SPD (con IC 95%) | > 95% |
+| UGC | Tiempo de actuación sobre contenido no conforme | Dentro del `response_target` de la SPD |
+
+La distinción entre contenido curado, algorítmico y UGC sigue el patrón de la industria de ratings (ESRB, IARC): se evalúa la plataforma por sus compromisos de proceso y cumplimiento verificable, no por la clasificación instantánea de cada pieza de contenido.
 
 ### 8.5 Señal de cumplimiento
 
@@ -1353,8 +1395,8 @@ SAF define tres niveles de conformidad para plataformas que implementan AAVP:
 
 SAF define la infraestructura de accountability, pero no elimina todos los riesgos:
 
-- **Contenido dinámico:** Los feeds algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar. Una plataforma puede cumplir su SPD para contenido estático pero no para recomendaciones dinámicas.
-- **Contenido generado por usuarios (UGC):** Es imposible clasificar el 100% del UGC en tiempo real. Los sistemas de moderación tienen tasas de error inherentes.
+- **Contenido dinámico:** Los feeds algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar. La metodología de muestreo del OVP (sección 8.4.4) aborda este riesgo con muestreo estratificado del contenido algorítmico, requiriendo múltiples perfiles y momentos de observación. El riesgo residual es inherente a la personalización: el contenido mostrado depende del historial de interacciones del usuario.
+- **Contenido generado por usuarios (UGC):** La clasificación exhaustiva de UGC en tiempo real es inviable. El OVP mide el cumplimiento de UGC como **tiempo de actuación** ante contenido no conforme, coherente con el campo `ugc_handling.response_target` de la SPD. Los sistemas de moderación tienen tasas de error inherentes que el OVP documenta estadísticamente.
 - **Segmentación no es censura:** La segmentación adapta el contenido a la franja de edad, no lo elimina. Las plataformas deben permitir excepciones documentadas (ej: contenido educativo sobre salud sexual para `AGE_16_17`).
 - **Declarar y no cumplir:** Una plataforma puede publicar una SPD restrictiva y no implementarla. Este riesgo es detectable vía OVP pero no prevenible por el protocolo.
 

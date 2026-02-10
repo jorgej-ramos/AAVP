@@ -35,7 +35,7 @@
 | **Criptografía (firmas parcialmente ciegas)** | 🟡 | 1 alta (futura) | Esquema seleccionado: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa). Campo `token_type` permite migración post-cuántica. Sin riesgo inmediato. |
 | **Protección del dispositivo** | 🟡 | 3 críticas/altas (parcialmente mitigadas) | Key attestation definido como mecanismo opcional en PROTOCOL.md sección 4.4. Supuestos S2 y S8 documentados explícitamente en sección 1.3. Rotación semanal de claves del DA. Riesgo residual: root/jailbreak, dispositivos sin TEE, ataques a TEE específicos. |
 | **Gestión de sesiones (VG)** | 🟢 | 3 resueltas | Credencial de sesión autocontenida definida en PROTOCOL.md sección 7: descarte obligatorio del token, TTL corto (15-30 min), modelo aditivo con persistencia a nivel de cuenta. Endpoint `.well-known/aavp` especificado. |
-| **Segmentación de contenido** | 🟡 | 1 alta (mitigada) | Segmentation Accountability Framework (SAF) definido en PROTOCOL.md sección 8: declaración de política firmada (SPD), logs de transparencia (PTL), protocolo de verificación abierto (OVP) y señal de cumplimiento en el handshake. Riesgo residual: el contenido dinámico y UGC dificultan la verificación exhaustiva. |
+| **Segmentación de contenido** | 🟢 | 1 resuelta | SAF definido en PROTOCOL.md sección 8: SPD firmada con campo opcional `ugc_handling`, PTL, OVP con metodología de muestreo estratificado (sección 8.4.4) con requisitos estadísticos (IC 95%, tamaños de muestra). Métricas diferenciadas para contenido curado, algorítmico y UGC. |
 | **Resistencia a análisis de tráfico** | 🟡 | 1 media, 1 resuelta | Canal DA-IM especificado (TLS 1.3 + CT). Fuga residual de metadatos de red (IP, timing) mitigable con OHTTP opcional. |
 
 | | Significado |
@@ -44,7 +44,7 @@
 | 🟡 | Riesgos identificados con mitigaciones viables propuestas o parcialmente implementadas. Aceptable para la fase actual de borrador. |
 | 🟢 | Garantías criptográficas sólidas y especificación suficiente. |
 
-**Distribución actual:** 0 áreas en rojo, 4 en amarillo, 3 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de confianza alcanza verde: auto-publicación de claves en dominio propio, claves de vida limitada (≤ 6 meses), revocación bilateral por VGs y endpoint `.well-known/aavp-issuer` especificado (4/4 vulnerabilidades resueltas). La gestión de sesiones alcanza verde: credencial de sesión autocontenida con descarte obligatorio del token, TTL corto, persistencia a nivel de cuenta y endpoint `.well-known/aavp` especificado (3/3 vulnerabilidades resueltas). El Segmentation Accountability Framework (SAF) en PROTOCOL.md sección 8 mitiga la brecha de segmentación con SPD firmada, logs de transparencia (PTL) y verificación abierta (OVP). Riesgo residual: contenido dinámico y UGC dificultan la verificación exhaustiva.
+**Distribución actual:** 0 áreas en rojo, 3 en amarillo, 4 en verde. La estructura del token alcanza verde: formato binario fijo de 331 bytes, agilidad criptográfica, canonicalización implícita, eliminación de `issued_at` y APIs de CSPRNG del SO especificadas (6/6 vulnerabilidades resueltas). El modelo de confianza alcanza verde: auto-publicación de claves en dominio propio, claves de vida limitada (≤ 6 meses), revocación bilateral por VGs y endpoint `.well-known/aavp-issuer` especificado (4/4 vulnerabilidades resueltas). La gestión de sesiones alcanza verde: credencial de sesión autocontenida con descarte obligatorio del token, TTL corto, persistencia a nivel de cuenta y endpoint `.well-known/aavp` especificado (3/3 vulnerabilidades resueltas). La segmentación de contenido alcanza verde: SAF con SPD firmada (campo opcional `ugc_handling`), PTL, OVP con metodología de muestreo estratificado (sección 8.4.4) con requisitos estadísticos (IC 95%, tamaños de muestra) y métricas diferenciadas para contenido curado, algorítmico y UGC (V11 resuelta).
 
 ---
 
@@ -61,7 +61,7 @@ Esta tabla consolida todas las debilidades, vectores de ataque y carencias de es
 | S9 | ~~Canal DA-IM no especificado~~ | [1.2](#s9-el-canal-entre-da-e-im-es-confidencial-e-íntegro) | ~~Atacante con posición de red entre DA e IM~~ | ~~Media~~ **Resuelta** | Canal DA-IM especificado en PROTOCOL.md: TLS 1.3 + CT. OHTTP recomendado como medida opcional de máxima privacidad |
 | S10 | ~~Tolerancia de reloj (*clock skew*) no definida~~ | [1.2](#s10-los-relojes-del-da-y-el-vg-están-razonablemente-sincronizados) | ~~Reloj del dispositivo manipulado (posible sin privilegios)~~ | ~~Media~~ **Resuelta** | Tolerancia asimétrica definida en PROTOCOL.md: 300s pasado, 60s futuro. Coherente con Kerberos (RFC 4120) y JWT (RFC 7519) |
 | S11 | ~~Registro de IMs sin mecanismo definido~~ | [1.2](#s11-el-registro-de-implementadores-es-resistente-a-manipulación) | ~~Compromiso del registro~~ | ~~Crítica~~ **Resuelta** | Modelo de auto-publicación definido en PROTOCOL.md: cada IM publica claves en su dominio sobre TLS 1.3 + CT |
-| S12 | ~~Segmentación de contenido no verificable~~ | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | ~~Alta~~ **Mitigada** | Segmentation Accountability Framework (SAF) en PROTOCOL.md sección 8: SPD firmada + PTL + OVP + señal de cumplimiento |
+| S12 | ~~Segmentación de contenido no verificable~~ | [1.2](#s12-las-plataformas-implementan-correctamente-la-política-de-segmentación) | Plataforma ignora o aplica mal la señal de `age_bracket` | ~~Alta~~ **Resuelta** | SAF en PROTOCOL.md sección 8: SPD firmada + PTL + OVP con metodología de muestreo (sección 8.4.4) + `ugc_handling` en SPD |
 | S14 | ~~Revocación de IMs sin mecanismo definido~~ | [1.2](#s14-la-revocación-de-implementadores-se-propaga-a-tiempo) | ~~IM comprometido sigue activo en plataformas que no actualizan~~ | ~~Alta~~ **Resuelta** | Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs. Sin mecanismo centralizado. |
 
 ### Vectores de ataque
@@ -1214,27 +1214,22 @@ El framework define además tres niveles de conformidad (Básico, Intermedio, Av
 - El OVP descentralizado permite a cualquier organización o individuo auditar el cumplimiento.
 - La señal de cumplimiento en el handshake permite al DA informar al usuario sobre la transparencia de la plataforma.
 - Los tres niveles de conformidad son verificables sin autoridad central, coherente con el principio de descentralización.
+- El OVP define una metodología de muestreo estratificado con requisitos estadísticos (intervalos de confianza, tamaños de muestra), coherente con las prácticas establecidas en la industria (YouTube VVR, ISO 2859).
+- La SPD puede declarar opcionalmente el enfoque de moderación de UGC (`ugc_handling`), siguiendo el patrón de ESRB "Interactive Elements".
 
 **Debilidades residuales:**
 - El SAF mide declaraciones y su cumplimiento observable, pero no puede forzar la implementación correcta. La imposición efectiva corresponde a los marcos regulatorios.
-- El OVP verifica instantáneas representativas, no la totalidad del contenido.
-- Las plataformas pueden cumplir su SPD para contenido estático pero no para recomendaciones algorítmicas.
+- El muestreo estadístico del OVP cubre contenido curado, algorítmico y UGC con métricas diferenciadas, pero el riesgo residual es inherente a la personalización (el contenido algorítmico depende del historial de cada usuario).
 
 ### 7.4 Riesgo residual documentado
 
 #### Contenido dinámico
 
-Los *feeds* algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar:
-
-- El contenido mostrado a un usuario depende de su historial de interacciones, que no existe para un verificador OVP.
-- Las plataformas podrían segmentar correctamente el contenido estático pero no el dinámico (recomendaciones, tendencias, "Explorar").
-- Las redes sociales basadas en contenido generado por usuarios (UGC) enfrentan un problema de clasificación: un post puede pasar de "neutro" a "explícito" en función de los comentarios que recibe.
+Los *feeds* algorítmicos y los sistemas de recomendación generan contenido personalizado difícil de auditar. La metodología de muestreo del OVP (PROTOCOL.md sección 8.4.4) aborda este riesgo con muestreo estratificado del contenido algorítmico, requiriendo múltiples perfiles, momentos y contextos de observación. El riesgo residual es verificable con muestreo estadístico, pero inherente a la personalización: el contenido mostrado depende del historial de interacciones del usuario, que no existe para un verificador OVP.
 
 #### Contenido generado por usuarios
 
-- Es imposible clasificar el 100% del UGC en tiempo real.
-- Los sistemas de moderación (ML, filtros de contenido) tienen tasas de error inherentes.
-- AAVP proporciona la señal de edad; la plataforma decide qué hacer con ella. Si la plataforma tiene una moderación de contenido deficiente, AAVP no la soluciona.
+La clasificación exhaustiva de UGC en tiempo real es inviable. El OVP mide el cumplimiento de UGC como **tiempo de actuación** ante contenido no conforme, coherente con el campo `ugc_handling.response_target` de la SPD (PROTOCOL.md sección 8.2.2). Los sistemas de moderación (ML, filtros de contenido) tienen tasas de error inherentes que el OVP documenta estadísticamente. AAVP proporciona la señal de edad y la infraestructura de accountability; la imposición efectiva corresponde a los marcos regulatorios.
 
 #### Equilibrio entre segmentación y censura
 
@@ -1399,7 +1394,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | I2 | Detección de root/jailbreak sin centralización | Diseñar un mecanismo de atestación del dispositivo que no dependa de APIs de fabricantes |
 | I3 | Protocolo de auditoría automatizado | Herramientas de verificación continua de conformidad para DA, VG e IM |
 | I4 | Análisis de tráfico resistente | Evaluar la viabilidad de integrar OHTTP o técnicas de *traffic padding* en el protocolo |
-| I5 | ~~Framework de segmentación verificable~~ | ~~Estándar para que las plataformas publiquen y verifiquen sus políticas de segmentación~~ Especificación del SAF definida en PROTOCOL.md sección 8. Pendiente: implementación de referencia del PTL y herramientas OVP |
+| I5 | ~~Framework de segmentación verificable~~ | **Resuelta**: SAF definido en PROTOCOL.md sección 8 con metodología de muestreo OVP (sección 8.4.4) y `ugc_handling` en SPD. Pendiente: implementación de referencia del PTL y herramientas OVP |
 | I6 | Multi-IM y firmas umbral | Explorar esquemas donde la firma requiera la cooperación de múltiples IMs, eliminando el riesgo de IM único comprometido |
 | I7 | Tokens *offline* | Mecanismo para generar tokens válidos sin conectividad al IM, preservando las garantías de seguridad |
 
@@ -1419,7 +1414,7 @@ Clasificación de las vulnerabilidades identificadas por severidad, inspirada en
 | V8 | *Timing side-channels* | Media | Media | Medio | Bajo | Sí (especificar jitter y rotación) |
 | V9 | Análisis de tráfico | Media | Difícil | Medio | Bajo | Parcial (OHTTP) |
 | V10 | *Social engineering* parental | Alta | Fácil | Bajo | Alto | Parcial (UX) |
-| V11 | ~~Segmentación no verificable~~ | ~~Alta~~ **Mitigada** | N/A | Bajo | Alto | SAF: SPD + PTL + OVP definidos en PROTOCOL.md sección 8 |
+| V11 | ~~Segmentación no verificable~~ | ~~Alta~~ **Resuelta** | N/A | N/A | N/A | SAF con metodología de muestreo OVP formalizada (sección 8.4.4) y `ugc_handling` en SPD |
 
 ---
 
