@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-11
+
 ### Added
 
 - Sección 1.3 "Supuestos de Seguridad" en PROTOCOL.md: formalización de los 14 supuestos de seguridad (S1-S14) con niveles de requisito, agrupados en resueltos, parcialmente resueltos y limitaciones reconocidas.
@@ -185,7 +187,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.6.0...v0.7.0
