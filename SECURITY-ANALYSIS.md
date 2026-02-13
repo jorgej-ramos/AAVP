@@ -1055,7 +1055,10 @@ Para la primera sesión, el handshake añade 200-900 ms. En conexiones lentas (3
 
 ## 6. Protocolo de auditoría de implementaciones
 
-Para que AAVP sea creíble, las implementaciones de sus tres roles (DA, VG, IM) deben ser verificables. Esta sección define un framework de auditoría.
+> [!NOTE]
+> Esta sección contiene el análisis de seguridad preliminar que motivó la formalización del marco de conformidad. Los requisitos normativos se encuentran en PROTOCOL.md sección 9. Las checklists y tests descritos a continuación han sido incorporados como requisitos numerados (DA-01 a DA-12, VG-01 a VG-14, IM-01 a IM-11) en la especificación.
+
+Para que AAVP sea creíble, las implementaciones de sus tres roles (DA, VG, IM) deben ser verificables. Esta sección define el análisis que fundamenta el framework de auditoría formalizado en PROTOCOL.md sección 9.
 
 ### 6.1 Auditoría de Implementadores (IM)
 
@@ -1380,11 +1383,11 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 | # | Especificación | Descripción |
 |---|----------------|-------------|
 | E1 | ~~Test vectors completos~~ | **Parcialmente resuelta**: Vectores estructurales (codificación y validación) completos en `test-vectors/`. Vectores criptográficos (firma parcialmente ciega) con estructura definida, pendientes de computar valores con implementación de referencia RSAPBSSA-SHA384 |
-| E2 | Protocolo de auditoría formal | Framework verificable para auditar las tres partes del protocolo |
+| E2 | ~~Protocolo de auditoría formal~~ | **Resuelta**: Marco de conformidad y auditoría definido en PROTOCOL.md sección 9 con requisitos numerados por rol (DA-01 a DA-12, VG-01 a VG-14, IM-01 a IM-11), tres niveles de conformidad (Funcional, Verificado, Auditado), test de ceguera, informes agregados y verificación operacional continua |
 | E3 | ~~Mecanismo de revocación de IMs~~ | **Resuelta**: Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs |
 | E4 | ~~Especificación de `.well-known/aavp`~~ | **Resuelta**: Endpoints `.well-known/aavp` (VG) y `.well-known/aavp-issuer` (IM) especificados en PROTOCOL.md secciones 5.3 y 5.2.3 |
 | E5 | ~~Recomendación de esquema criptográfico~~ | **Resuelta**: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) adoptado como esquema principal |
-| E6 | Política de migración de algoritmos | Procedimiento para transicionar de un esquema criptográfico a otro sin romper compatibilidad |
+| E6 | ~~Política de migración de algoritmos~~ | **Resuelta**: Registro de `token_type` con metadatos completos (sección 5.4), política de agilidad criptográfica y migración de cinco fases (sección 5.5), protección contra ataques de degradación (5.5.5) y consideraciones post-cuánticas (5.5.6) en PROTOCOL.md |
 | E7 | Análisis formal con ProVerif/Tamarin | Verificación formal de las propiedades de privacidad (*unlinkability*, *blindness*) |
 
 ### 9.3 Líneas de investigación abiertas (largo plazo)

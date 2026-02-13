@@ -14,6 +14,19 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - `test-vectors/token-validation.json`: 14 vectores de lógica de validación del VG (clock skew, expiración, campos inválidos, tamaño incorrecto, authenticator manipulado).
 - `test-vectors/issuance-protocol.json`: 4 vectores del flujo completo de emisión con firma parcialmente ciega RSAPBSSA-SHA384, incluyendo clave RSA-2048 de test, valores intermedios del protocolo y ejemplo de `.well-known/aavp-issuer`.
 - `test-vectors/README.md`: documentación del formato, convenciones, metodología de generación y fuentes de referencia (RFC 9474, RFC 9578, draft-irtf-cfrg-cryptography-specification, NIST ACVP).
+- Sección 5.5 "Agilidad Criptográfica y Migración de Algoritmos" en PROTOCOL.md: política de migración de cinco fases (publicación, adopción, solapamiento, deprecación, retirada) inspirada en DNSSEC (RFC 6781), TLS 1.3 (RFC 8446) y WebPKI. Incluye procedimiento de selección de `token_type` por el DA, responsabilidades por actor, protección contra ataques de degradación y consideraciones post-cuánticas (NIST SP 800-227, RFC 9794).
+- Sección 9 "Protocolo de Conformidad y Auditoría" en PROTOCOL.md (E2 de SECURITY-ANALYSIS.md): marco de conformidad descentralizado con requisitos numerados por rol (DA-01 a DA-12, VG-01 a VG-14, IM-01 a IM-11), tres categorías (obligatorio, recomendado, opcional) siguiendo RFC 2119. Metodología de verificación: test vectors automatizados, test de ceguera del IM, tests de interoperabilidad. Tres niveles de conformidad (Funcional, Verificado, Auditado). Verificación operacional continua: monitorización de endpoints, linting de tokens, informes agregados tipo DMARC. Fuentes: FIDO Alliance, OpenID Connect, NIST CAVP/ACVP, Privacy Pass (RFC 9578), PCI DSS, Certificate Transparency (RFC 6962), CA/Browser Forum, ISO 17065, RFC 9700.
+
+### Changed
+
+- Sección 5.4 "Registro de valores de `token_type`" en PROTOCOL.md ampliada con metadatos de esquema (hash, tamaño de clave, tamaño de firma), segmentación del espacio de valores por rangos (RSA, curvas elípticas, post-cuánticos), principio de inmutabilidad y referencia a registro IANA (RFC 8126).
+- Sección 5.5 anterior (Analogía con DMARC/DKIM) renumerada a 5.6.
+- Secciones 9 (Modelo de Amenazas) y 10 (Trabajo Futuro) de PROTOCOL.md renumeradas a 10 y 11 respectivamente.
+- Entrada de trabajo futuro "Migración post-cuántica" en PROTOCOL.md actualizada con referencia a la sección 5.5.
+- Entrada de trabajo futuro "Especificación formal" en PROTOCOL.md actualizada con referencia al marco de conformidad (sección 9) y test vectors.
+- Entrada de glosario `token_type` en PROTOCOL.md actualizada con referencia a secciones 5.4 y 5.5. Nueva entrada de glosario "Conformidad".
+- Sección 6 de SECURITY-ANALYSIS.md anotada como análisis preliminar incorporado en PROTOCOL.md sección 9.
+- Especificaciones E2 y E6 de SECURITY-ANALYSIS.md marcadas como resueltas.
 
 ## [0.9.0] - 2026-02-11
 
