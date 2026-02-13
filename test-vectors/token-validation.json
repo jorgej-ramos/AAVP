@@ -1,0 +1,241 @@
+{
+  "title": "AAVP Token Validation Test Vectors",
+  "description": "Vectores para verificar la logica de validacion del Verification Gate. Cada vector define un token, el tiempo de referencia del VG y el resultado esperado. Basado en PROTOCOL.md secciones 2 y 3.",
+  "reference": "PROTOCOL.md seccion 3 (Rotacion de Tokens)",
+  "constants": {
+    "CLOCK_SKEW_TOLERANCE_PAST": 300,
+    "CLOCK_SKEW_TOLERANCE_FUTURE": 60,
+    "MAX_TTL_HOURS": 4,
+    "VALID_TOKEN_TYPES": [
+      1
+    ],
+    "VALID_AGE_BRACKETS": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "TOKEN_SIZE_BYTES": 331
+  },
+  "authenticator_note": "Estos vectores verifican la logica de validacion estructural y temporal. El authenticator es un placeholder; la verificacion criptografica de firma se cubre en issuance-protocol.json. Un VG en produccion debe verificar tambien la firma.",
+  "vectors": [
+    {
+      "name": "Token valido — expira en 3 horas",
+      "description": "Token con expires_at 3 horas en el futuro. Dentro del TTL maximo de 4h. Debe ser aceptado.",
+      "token_hex": "00016ac8c58271784dc71e6cc4af4b96102ad22e7d7eacf715a2e62f7921796d2faf68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772341200,
+        "expires_at_iso": "2026-03-01T05:00:00Z"
+      },
+      "expected_result": "valid",
+      "expected_age_bracket": "OVER_18"
+    },
+    {
+      "name": "Token recien expirado — 0 segundos (dentro de tolerancia)",
+      "description": "Token cuyo expires_at coincide exactamente con el tiempo del VG. Diferencia = 0s <= 300s. Debe ser aceptado.",
+      "token_hex": "0001df7dbeb0ce2fc3b141907cce88d085a9c893fa6aa62b44e7a54497446f8743e768865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a39da057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772330400,
+        "expires_at_iso": "2026-03-01T02:00:00Z"
+      },
+      "time_difference_seconds": 0,
+      "expected_result": "valid",
+      "expected_age_bracket": "OVER_18"
+    },
+    {
+      "name": "Token expirado hace 1 hora — fuera de tolerancia de clock skew",
+      "description": "Token con expires_at 1 hora (3600s) antes del tiempo del VG. Diferencia = 3600s > 300s de tolerancia. Debe ser rechazado. Nota: con precision gruesa de 1 hora, los tokens expirados en la hora anterior siempre exceden la tolerancia de 300s.",
+      "token_hex": "0001b6a1a75d6d9319e1803db77ee5d246ae25e3ed7d02fdbf460777dfc2f8c0faf568865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf010000000069a38f9057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "AGE_13_15",
+        "age_bracket_value": 1,
+        "expires_at": 1772326800,
+        "expires_at_iso": "2026-03-01T01:00:00Z"
+      },
+      "time_difference_seconds": 3600,
+      "expected_result": "invalid",
+      "expected_error": "token_expired"
+    },
+    {
+      "name": "Token con expires_at excesivamente futuro — 5 horas",
+      "description": "Token con expires_at 5 horas en el futuro. Supera el TTL maximo de 4h + 60s de tolerancia. Indica un reloj manipulado o token fabricado. Debe ser rechazado.",
+      "token_hex": "000186a3b406d1271e827deaae852246e84aa6092f6360c809ab8dfe230963b7426368865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3e3f057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772348400,
+        "expires_at_iso": "2026-03-01T07:00:00Z"
+      },
+      "time_difference_seconds": -18000,
+      "expected_result": "invalid",
+      "expected_error": "expires_at_too_far_future"
+    },
+    {
+      "name": "Token con expires_at en el limite del TTL maximo — exactamente 4 horas",
+      "description": "Token con expires_at exactamente 4 horas en el futuro. Esta en el limite del TTL maximo permitido. La tolerancia futura de 60s no se necesita. Debe ser aceptado.",
+      "token_hex": "00015e2616337f389a8ce889164e3baffb3399156e0088bae5c7a5996de1aa8b426768865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf020000000069a3d5e057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "AGE_16_17",
+        "age_bracket_value": 2,
+        "expires_at": 1772344800,
+        "expires_at_iso": "2026-03-01T06:00:00Z"
+      },
+      "time_difference_seconds": -14400,
+      "expected_result": "valid",
+      "expected_age_bracket": "AGE_16_17"
+    },
+    {
+      "name": "age_bracket invalido — valor 0x04 fuera de rango",
+      "description": "Token con age_bracket = 0x04, que no corresponde a ninguna franja definida (UNDER_13=0, AGE_13_15=1, AGE_16_17=2, OVER_18=3). Debe ser rechazado.",
+      "token_hex": "0001697248032920663eaf31a2b8a5bf2720c4a4e7b5805d5f93fc721a0977209bf968865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf040000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket_value": 4,
+        "expires_at": 1772341200
+      },
+      "expected_result": "invalid",
+      "expected_error": "invalid_age_bracket"
+    },
+    {
+      "name": "token_type reservado — valor 0x0000",
+      "description": "Token con token_type = 0 (reservado segun PROTOCOL.md seccion 5.4). El VG no debe aceptar token_types no reconocidos.",
+      "token_hex": "0000bafedc7f7cb2a792527578c8370b9c5b93ce9bd84ff414925f8872185b80f75b68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 0,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772341200
+      },
+      "expected_result": "invalid",
+      "expected_error": "unsupported_token_type"
+    },
+    {
+      "name": "token_type no asignado — valor 0x0002",
+      "description": "Token con token_type = 2, que esta reservado para futuros esquemas pero no tiene asignacion actual. El VG debe rechazar token_types que no estan en su lista accepted_token_types.",
+      "token_hex": "0002e78b575a9593c492f57c06955ff34751b466ce4f027648cbc564186284162acd68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 2,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772341200
+      },
+      "expected_result": "invalid",
+      "expected_error": "unsupported_token_type"
+    },
+    {
+      "name": "Token truncado — 330 bytes",
+      "description": "Token de 330 bytes (falta el ultimo byte del authenticator). Todas las implementaciones conformes deben producir tokens de exactamente 331 bytes. Un token de tamano diferente es invalido.",
+      "token_hex": "000194e317f962b75caf4e541cd77103218b2992cef8912511daadd0397f62700ceb68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17",
+      "token_size": 330,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "expected_result": "invalid",
+      "expected_error": "invalid_token_size"
+    },
+    {
+      "name": "Token con bytes extra — 332 bytes",
+      "description": "Token de 332 bytes (un byte extra al final). Todas las implementaciones conformes deben producir tokens de exactamente 331 bytes.",
+      "token_hex": "0001b4a99beb0ea9e7acbab77b834cf6c8abd2754a28e6fbdf09b69b31d468366ec368865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17efff",
+      "token_size": 332,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "expected_result": "invalid",
+      "expected_error": "invalid_token_size"
+    },
+    {
+      "name": "Authenticator manipulado — bit invertido",
+      "description": "Token de 331 bytes con el primer bit del authenticator invertido. La verificacion de firma debe fallar. Este vector verifica que el VG no acepta tokens con firmas alteradas.",
+      "token_hex": "000157311e432f72bcdaf04907a60f6acfa6629e2c5efd96845473186a6a2d20b73868865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3c7d0d7e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772341200
+      },
+      "tampered_byte_offset": 75,
+      "tampered_field": "authenticator",
+      "expected_result": "invalid",
+      "expected_error": "signature_verification_failed"
+    },
+    {
+      "name": "Token vacio — 0 bytes",
+      "description": "Cadena vacia presentada como token. El VG debe rechazarlo sin intentar parsear campos.",
+      "token_hex": "",
+      "token_size": 0,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "expected_result": "invalid",
+      "expected_error": "invalid_token_size"
+    },
+    {
+      "name": "Token valido UNDER_13 — verificacion de extraccion de franja",
+      "description": "Token valido con franja UNDER_13. Verifica que el VG extrae correctamente age_bracket = 0 como UNDER_13.",
+      "token_hex": "0001d8bad490782d10c50eeedaaf71d33fe8d3f930e38d6f588766e60c0dd0efdbea68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf000000000069a3b9c057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "UNDER_13",
+        "age_bracket_value": 0,
+        "expires_at": 1772337600,
+        "expires_at_iso": "2026-03-01T04:00:00Z"
+      },
+      "expected_result": "valid",
+      "expected_age_bracket": "UNDER_13"
+    },
+    {
+      "name": "expires_at = 0 (epoch Unix) — claramente expirado",
+      "description": "Token con expires_at = 0 (1970-01-01T00:00:00Z). Expirado hace mas de 56 años respecto al tiempo de test. Debe ser rechazado.",
+      "token_hex": "000180a511856159807cf4b75eeb8b47e3217c85b71c247df168810556179a4e4a2f68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf03000000000000000057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "token_size": 331,
+      "vg_current_time": 1772330400,
+      "vg_current_time_iso": "2026-03-01T02:00:00Z",
+      "parsed_fields": {
+        "token_type": 1,
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 0,
+        "expires_at_iso": "1970-01-01T00:00:00Z"
+      },
+      "expected_result": "invalid",
+      "expected_error": "token_expired"
+    }
+  ]
+}

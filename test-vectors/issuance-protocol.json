@@ -1,0 +1,496 @@
+{
+  "title": "AAVP Issuance Protocol Test Vectors",
+  "description": "Vectores del flujo completo de emision de tokens AAVP mediante firma parcialmente ciega RSAPBSSA-SHA384. Cada vector documenta los seis pasos del protocolo: preparacion, cegamiento, derivacion de clave, firma ciega, finalizacion y verificacion.",
+  "reference": "PROTOCOL.md seccion 4.1 (Firmas Parcialmente Ciegas)",
+  "cryptographic_scheme": {
+    "name": "RSAPBSSA-SHA384",
+    "base_rfc": "RFC 9474 (RSA Blind Signatures)",
+    "extension": "draft-irtf-cfrg-partially-blind-rsa",
+    "hash_function": "SHA-384",
+    "mgf": "MGF1-SHA384",
+    "salt_length": 0,
+    "variant": "RSABSSA-SHA384-PSSZERO-Deterministic",
+    "key_derivation": "HKDF-SHA384 desde clave maestra con metadatos publicos",
+    "signature_size_bytes": 256,
+    "references": [
+      "https://www.rfc-editor.org/rfc/rfc9474.html",
+      "https://datatracker.ietf.org/doc/draft-irtf-cfrg-partially-blind-rsa/"
+    ]
+  },
+  "test_im_key": {
+    "description": "Clave RSA-2048 de test del Implementador. Generada exclusivamente para estos vectores de test. No usar en produccion.",
+    "algorithm": "RSA",
+    "key_size_bits": 2048,
+    "n": "deeb38cfa184281eee07142527e4bc39f7d5aba3b9b4acfc5202a1f3e2f02c5f41677ba9fa8c2345cb3ebf7b80c48626b3a6f191909cbcfafd64b5ca92ad5c5c2b32b57660abc2783f5d9093a9a7d1057330fe09a992324dffca3a6469bae4817573e6ad419f926c5074cb1fa6818c95ce376b339056a6a0800bd5b4f7ff2be0981df5c558842d054a61c9c180bfd02abe5cec6e07e05160739fd64734186b8f01b6489f4d33177100bb5c12c629f3f4f4bcb3a39abd776834491101ff554aabddc9abea1820b6039c4aca86141a9d2295e113d8203a976ee0cc210b7912a917b4ab4366b6c4c787672c5e9d6f29a97ea184111b3893b0403e8a0fbf155b4545",
+    "e": "10001",
+    "d": "24196980ce422d911cb0cec559998415cb19b20af886d6c0a1b34570ce5e608128814e986f37847ac7f8286022b1309c51d98623318d005990f15f3327dfa52653e489585b3d5567cdb324379570d4bb9234ebdebab42f2b4c71fe54c67e7a84b0758d749f3ced24573f22a9c47814412a3cf5424b6c8cdd4eff1ba38bc9a9dc0eb0303ac02074ebc70d88c1ad0df5ae6e82ccc2c2e461d8b9281835fbbe411e77d41878cb02cdca7494bde3eb5ba51f6e751f464ad2671f501703520b9c7cf7f6f971303b4d29903213f58290146e1eeeea49944b44b265a9d622ec09f0824d7f03d8ecaa4374ca90776b2bf6e4d72b6c915bfbf82286ce62014f639aa833bd",
+    "p": "faaa76e6b37407e625d4c023fa90e23b4dc35a285adff2ff31181ad47b94acd4fe74f63042dff2cf590f0097284fabff96daf8562c23ace0a239f73f2fcf967e1059fb672084654221d23004f6e6925c8f75ae618adfa5017c271328165c2eb17293e01c25283bfdb9eadb316a6c1d669323855700f7a4e0816ea384c479fe8b",
+    "q": "e3a99a0e52f91ba2e4ef751227ce23045932534d484a9280ee600b3103e98a5da73e217856eb79696b4af1a58269be4bc79176545a3fea91d127113ea6be8b3bea34088ffb1f7143428dd71bd69fd5ea34ccb0a2ae5232f179e059b28b0dfc0d37f3bce9f54d5a7349336f6a857b17637116435275407500ec142d45eacd956f",
+    "spki_der_hex": "30820122300d06092a864886f70d01010105000382010f003082010a0282010100deeb38cfa184281eee07142527e4bc39f7d5aba3b9b4acfc5202a1f3e2f02c5f41677ba9fa8c2345cb3ebf7b80c48626b3a6f191909cbcfafd64b5ca92ad5c5c2b32b57660abc2783f5d9093a9a7d1057330fe09a992324dffca3a6469bae4817573e6ad419f926c5074cb1fa6818c95ce376b339056a6a0800bd5b4f7ff2be0981df5c558842d054a61c9c180bfd02abe5cec6e07e05160739fd64734186b8f01b6489f4d33177100bb5c12c629f3f4f4bcb3a39abd776834491101ff554aabddc9abea1820b6039c4aca86141a9d2295e113d8203a976ee0cc210b7912a917b4ab4366b6c4c787672c5e9d6f29a97ea184111b3893b0403e8a0fbf155b45450203010001",
+    "token_key_id_hex": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
+    "token_key_id_base64url": "__6pup76c1CAzxr3NGJZlO0FbBxPlKjYL0Z2oBerLHw",
+    "public_key_base64url": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3us4z6GEKB7uBxQlJ-S8OffVq6O5tKz8UgKh8-LwLF9BZ3up-owjRcs-v3uAxIYms6bxkZCcvPr9ZLXKkq1cXCsytXZgq8J4P12Qk6mn0QVzMP4JqZIyTf_KOmRpuuSBdXPmrUGfkmxQdMsfpoGMlc43azOQVqaggAvVtPf_K-CYHfXFWIQtBUphycGAv9AqvlzsbgfgUWBzn9ZHNBhrjwG2SJ9NMxdxALtcEsYp8_T0vLOjmr13aDRJEQH_VUqr3cmr6hggtgOcSsqGFBqdIpXhE9ggOpdu4MwhC3kSqRe0q0NmtsTHh2csXp1vKal-oYQRGziTsEA-ig-_FVtFRQIDAQAB",
+    "well_known_aavp_issuer_example": {
+      "note": "Ejemplo de como apareceria esta clave en el endpoint .well-known/aavp-issuer del IM (PROTOCOL.md seccion 5.2.3).",
+      "issuer": "test-im.example",
+      "aavp_version": "0.9",
+      "signing_endpoint": "https://test-im.example/aavp/v1/sign",
+      "keys": [
+        {
+          "token_key_id": "__6pup76c1CAzxr3NGJZlO0FbBxPlKjYL0Z2oBerLHw",
+          "token_type": 1,
+          "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3us4z6GEKB7uBxQlJ-S8OffVq6O5tKz8UgKh8-LwLF9BZ3up-owjRcs-v3uAxIYms6bxkZCcvPr9ZLXKkq1cXCsytXZgq8J4P12Qk6mn0QVzMP4JqZIyTf_KOmRpuuSBdXPmrUGfkmxQdMsfpoGMlc43azOQVqaggAvVtPf_K-CYHfXFWIQtBUphycGAv9AqvlzsbgfgUWBzn9ZHNBhrjwG2SJ9NMxdxALtcEsYp8_T0vLOjmr13aDRJEQH_VUqr3cmr6hggtgOcSsqGFBqdIpXhE9ggOpdu4MwhC3kSqRe0q0NmtsTHh2csXp1vKal-oYQRGziTsEA-ig-_FVtFRQIDAQAB",
+          "not_before": "2026-01-01T00:00:00Z",
+          "not_after": "2026-06-30T00:00:00Z"
+        }
+      ]
+    }
+  },
+  "generation_status": {
+    "structural_fields": "complete",
+    "cryptographic_values": "awaiting_reference_implementation",
+    "note": "Los campos marcados como TO_BE_COMPUTED requieren una implementacion conforme de RSAPBSSA-SHA384 con soporte de partially blind signatures. Las implementaciones de referencia listadas en README.md pueden usarse para computar estos valores."
+  },
+  "vectors": [
+    {
+      "name": "Emision de token OVER_18",
+      "description": "Flujo completo de emision de un token con franja OVER_18 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
+      "status": "awaiting_reference_implementation",
+      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "step_1_prepare": {
+        "description": "El DA construye los campos del token y los metadatos publicos.",
+        "token_type": 1,
+        "nonce": "a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-over18')",
+        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "expires_at": 1772330400,
+        "expires_at_iso": "2026-03-01T02:00:00Z",
+        "message_to_sign": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
+        "message_to_sign_size": 75,
+        "public_metadata": "030000000069a39da0",
+        "public_metadata_size": 9,
+        "public_metadata_fields": {
+          "age_bracket": "03",
+          "expires_at": "0000000069a39da0"
+        }
+      },
+      "step_2_blind": {
+        "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
+        "function": "Blind(pk', prepared_msg, metadata)",
+        "inputs": {
+          "public_key": "pk' (derivada en step_3)",
+          "prepared_msg": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
+          "metadata": "030000000069a39da0"
+        },
+        "outputs": {
+          "blinded_msg": "TO_BE_COMPUTED",
+          "blinding_inverse_inv": "TO_BE_COMPUTED"
+        },
+        "randomness": {
+          "blinding_factor_r": "TO_BE_COMPUTED",
+          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+        }
+      },
+      "step_3_derive_key": {
+        "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
+        "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
+        "inputs": {
+          "master_secret_key": "sk (del test_im_key)",
+          "metadata": "030000000069a39da0",
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-030000000069a39da0"
+        },
+        "outputs": {
+          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
+          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
+        },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+      },
+      "step_4_blind_sign": {
+        "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
+        "function": "BlindSign(sk', blinded_msg, metadata)",
+        "im_observes": {
+          "age_bracket": "OVER_18",
+          "expires_at": "2026-03-01T02:00:00Z",
+          "client_ip": "(visible pero no parte del protocolo)"
+        },
+        "im_cannot_observe": [
+          "nonce",
+          "identidad del DA",
+          "plataforma de destino"
+        ],
+        "inputs": {
+          "derived_private_key": "sk' (de step_3)",
+          "blinded_msg": "(de step_2)"
+        },
+        "outputs": {
+          "blind_sig": "TO_BE_COMPUTED"
+        }
+      },
+      "step_5_finalize": {
+        "description": "El DA desciega la firma para obtener el authenticator valido.",
+        "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
+        "inputs": {
+          "derived_public_key": "pk' (de step_3)",
+          "blind_sig": "(de step_4)",
+          "blinding_inverse": "inv (de step_2)",
+          "original_message": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
+          "metadata": "030000000069a39da0"
+        },
+        "outputs": {
+          "authenticator": "TO_BE_COMPUTED",
+          "authenticator_size": 256
+        }
+      },
+      "step_6_verify": {
+        "description": "El VG verifica la firma del token completo.",
+        "function": "Verify(pk', msg, metadata, authenticator)",
+        "vg_procedure": [
+          "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
+          "2. Extraer metadata del token: age_bracket (offset 66) y expires_at (offset 67)",
+          "3. Derivar pk' = DerivePublicKey(pk, metadata)",
+          "4. Extraer msg = token[0:75] (todo excepto authenticator)",
+          "5. Extraer authenticator = token[75:331]",
+          "6. Verificar: Verify(pk', msg, metadata, authenticator)"
+        ],
+        "expected_result": "valid"
+      },
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "TO_BE_COMPUTED",
+        "token_size": 331
+      }
+    },
+    {
+      "name": "Emision de token UNDER_13",
+      "description": "Flujo completo de emision de un token con franja UNDER_13 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
+      "status": "awaiting_reference_implementation",
+      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "step_1_prepare": {
+        "description": "El DA construye los campos del token y los metadatos publicos.",
+        "token_type": 1,
+        "nonce": "e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-under13')",
+        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
+        "age_bracket": "UNDER_13",
+        "age_bracket_value": 0,
+        "expires_at": 1775001600,
+        "expires_at_iso": "2026-04-01T00:00:00Z",
+        "message_to_sign": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
+        "message_to_sign_size": 75,
+        "public_metadata": "000000000069cc6000",
+        "public_metadata_size": 9,
+        "public_metadata_fields": {
+          "age_bracket": "00",
+          "expires_at": "0000000069cc6000"
+        }
+      },
+      "step_2_blind": {
+        "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
+        "function": "Blind(pk', prepared_msg, metadata)",
+        "inputs": {
+          "public_key": "pk' (derivada en step_3)",
+          "prepared_msg": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
+          "metadata": "000000000069cc6000"
+        },
+        "outputs": {
+          "blinded_msg": "TO_BE_COMPUTED",
+          "blinding_inverse_inv": "TO_BE_COMPUTED"
+        },
+        "randomness": {
+          "blinding_factor_r": "TO_BE_COMPUTED",
+          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+        }
+      },
+      "step_3_derive_key": {
+        "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
+        "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
+        "inputs": {
+          "master_secret_key": "sk (del test_im_key)",
+          "metadata": "000000000069cc6000",
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-000000000069cc6000"
+        },
+        "outputs": {
+          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
+          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
+        },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+      },
+      "step_4_blind_sign": {
+        "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
+        "function": "BlindSign(sk', blinded_msg, metadata)",
+        "im_observes": {
+          "age_bracket": "UNDER_13",
+          "expires_at": "2026-04-01T00:00:00Z",
+          "client_ip": "(visible pero no parte del protocolo)"
+        },
+        "im_cannot_observe": [
+          "nonce",
+          "identidad del DA",
+          "plataforma de destino"
+        ],
+        "inputs": {
+          "derived_private_key": "sk' (de step_3)",
+          "blinded_msg": "(de step_2)"
+        },
+        "outputs": {
+          "blind_sig": "TO_BE_COMPUTED"
+        }
+      },
+      "step_5_finalize": {
+        "description": "El DA desciega la firma para obtener el authenticator valido.",
+        "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
+        "inputs": {
+          "derived_public_key": "pk' (de step_3)",
+          "blind_sig": "(de step_4)",
+          "blinding_inverse": "inv (de step_2)",
+          "original_message": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
+          "metadata": "000000000069cc6000"
+        },
+        "outputs": {
+          "authenticator": "TO_BE_COMPUTED",
+          "authenticator_size": 256
+        }
+      },
+      "step_6_verify": {
+        "description": "El VG verifica la firma del token completo.",
+        "function": "Verify(pk', msg, metadata, authenticator)",
+        "vg_procedure": [
+          "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
+          "2. Extraer metadata del token: age_bracket (offset 66) y expires_at (offset 67)",
+          "3. Derivar pk' = DerivePublicKey(pk, metadata)",
+          "4. Extraer msg = token[0:75] (todo excepto authenticator)",
+          "5. Extraer authenticator = token[75:331]",
+          "6. Verificar: Verify(pk', msg, metadata, authenticator)"
+        ],
+        "expected_result": "valid"
+      },
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "TO_BE_COMPUTED",
+        "token_size": 331
+      }
+    },
+    {
+      "name": "Emision de token AGE_13_15",
+      "description": "Flujo completo de emision de un token con franja AGE_13_15 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
+      "status": "awaiting_reference_implementation",
+      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "step_1_prepare": {
+        "description": "El DA construye los campos del token y los metadatos publicos.",
+        "token_type": 1,
+        "nonce": "df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1315')",
+        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
+        "age_bracket": "AGE_13_15",
+        "age_bracket_value": 1,
+        "expires_at": 1781524800,
+        "expires_at_iso": "2026-06-15T12:00:00Z",
+        "message_to_sign": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
+        "message_to_sign_size": 75,
+        "public_metadata": "01000000006a2fe940",
+        "public_metadata_size": 9,
+        "public_metadata_fields": {
+          "age_bracket": "01",
+          "expires_at": "000000006a2fe940"
+        }
+      },
+      "step_2_blind": {
+        "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
+        "function": "Blind(pk', prepared_msg, metadata)",
+        "inputs": {
+          "public_key": "pk' (derivada en step_3)",
+          "prepared_msg": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
+          "metadata": "01000000006a2fe940"
+        },
+        "outputs": {
+          "blinded_msg": "TO_BE_COMPUTED",
+          "blinding_inverse_inv": "TO_BE_COMPUTED"
+        },
+        "randomness": {
+          "blinding_factor_r": "TO_BE_COMPUTED",
+          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+        }
+      },
+      "step_3_derive_key": {
+        "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
+        "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
+        "inputs": {
+          "master_secret_key": "sk (del test_im_key)",
+          "metadata": "01000000006a2fe940",
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-01000000006a2fe940"
+        },
+        "outputs": {
+          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
+          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
+        },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+      },
+      "step_4_blind_sign": {
+        "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
+        "function": "BlindSign(sk', blinded_msg, metadata)",
+        "im_observes": {
+          "age_bracket": "AGE_13_15",
+          "expires_at": "2026-06-15T12:00:00Z",
+          "client_ip": "(visible pero no parte del protocolo)"
+        },
+        "im_cannot_observe": [
+          "nonce",
+          "identidad del DA",
+          "plataforma de destino"
+        ],
+        "inputs": {
+          "derived_private_key": "sk' (de step_3)",
+          "blinded_msg": "(de step_2)"
+        },
+        "outputs": {
+          "blind_sig": "TO_BE_COMPUTED"
+        }
+      },
+      "step_5_finalize": {
+        "description": "El DA desciega la firma para obtener el authenticator valido.",
+        "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
+        "inputs": {
+          "derived_public_key": "pk' (de step_3)",
+          "blind_sig": "(de step_4)",
+          "blinding_inverse": "inv (de step_2)",
+          "original_message": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
+          "metadata": "01000000006a2fe940"
+        },
+        "outputs": {
+          "authenticator": "TO_BE_COMPUTED",
+          "authenticator_size": 256
+        }
+      },
+      "step_6_verify": {
+        "description": "El VG verifica la firma del token completo.",
+        "function": "Verify(pk', msg, metadata, authenticator)",
+        "vg_procedure": [
+          "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
+          "2. Extraer metadata del token: age_bracket (offset 66) y expires_at (offset 67)",
+          "3. Derivar pk' = DerivePublicKey(pk, metadata)",
+          "4. Extraer msg = token[0:75] (todo excepto authenticator)",
+          "5. Extraer authenticator = token[75:331]",
+          "6. Verificar: Verify(pk', msg, metadata, authenticator)"
+        ],
+        "expected_result": "valid"
+      },
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "TO_BE_COMPUTED",
+        "token_size": 331
+      }
+    },
+    {
+      "name": "Emision de token AGE_16_17",
+      "description": "Flujo completo de emision de un token con franja AGE_16_17 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
+      "status": "awaiting_reference_implementation",
+      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "step_1_prepare": {
+        "description": "El DA construye los campos del token y los metadatos publicos.",
+        "token_type": 1,
+        "nonce": "23ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1617')",
+        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
+        "age_bracket": "AGE_16_17",
+        "age_bracket_value": 2,
+        "expires_at": 1773561600,
+        "expires_at_iso": "2026-03-15T08:00:00Z",
+        "message_to_sign": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
+        "message_to_sign_size": 75,
+        "public_metadata": "020000000069b66700",
+        "public_metadata_size": 9,
+        "public_metadata_fields": {
+          "age_bracket": "02",
+          "expires_at": "0000000069b66700"
+        }
+      },
+      "step_2_blind": {
+        "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
+        "function": "Blind(pk', prepared_msg, metadata)",
+        "inputs": {
+          "public_key": "pk' (derivada en step_3)",
+          "prepared_msg": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
+          "metadata": "020000000069b66700"
+        },
+        "outputs": {
+          "blinded_msg": "TO_BE_COMPUTED",
+          "blinding_inverse_inv": "TO_BE_COMPUTED"
+        },
+        "randomness": {
+          "blinding_factor_r": "TO_BE_COMPUTED",
+          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+        }
+      },
+      "step_3_derive_key": {
+        "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
+        "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
+        "inputs": {
+          "master_secret_key": "sk (del test_im_key)",
+          "metadata": "020000000069b66700",
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-020000000069b66700"
+        },
+        "outputs": {
+          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
+          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
+        },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+      },
+      "step_4_blind_sign": {
+        "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
+        "function": "BlindSign(sk', blinded_msg, metadata)",
+        "im_observes": {
+          "age_bracket": "AGE_16_17",
+          "expires_at": "2026-03-15T08:00:00Z",
+          "client_ip": "(visible pero no parte del protocolo)"
+        },
+        "im_cannot_observe": [
+          "nonce",
+          "identidad del DA",
+          "plataforma de destino"
+        ],
+        "inputs": {
+          "derived_private_key": "sk' (de step_3)",
+          "blinded_msg": "(de step_2)"
+        },
+        "outputs": {
+          "blind_sig": "TO_BE_COMPUTED"
+        }
+      },
+      "step_5_finalize": {
+        "description": "El DA desciega la firma para obtener el authenticator valido.",
+        "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
+        "inputs": {
+          "derived_public_key": "pk' (de step_3)",
+          "blind_sig": "(de step_4)",
+          "blinding_inverse": "inv (de step_2)",
+          "original_message": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
+          "metadata": "020000000069b66700"
+        },
+        "outputs": {
+          "authenticator": "TO_BE_COMPUTED",
+          "authenticator_size": 256
+        }
+      },
+      "step_6_verify": {
+        "description": "El VG verifica la firma del token completo.",
+        "function": "Verify(pk', msg, metadata, authenticator)",
+        "vg_procedure": [
+          "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
+          "2. Extraer metadata del token: age_bracket (offset 66) y expires_at (offset 67)",
+          "3. Derivar pk' = DerivePublicKey(pk, metadata)",
+          "4. Extraer msg = token[0:75] (todo excepto authenticator)",
+          "5. Extraer authenticator = token[75:331]",
+          "6. Verificar: Verify(pk', msg, metadata, authenticator)"
+        ],
+        "expected_result": "valid"
+      },
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "TO_BE_COMPUTED",
+        "token_size": 331
+      }
+    }
+  ]
+}

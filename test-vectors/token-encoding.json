@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AAVP Token Encoding Test Vectors",
+  "description": "Vectores de codificacion/decodificacion del formato binario del token AAVP (331 bytes). Verifican que las implementaciones construyen y parsean correctamente la estructura definida en PROTOCOL.md seccion 2.",
+  "reference": "PROTOCOL.md seccion 2 (Estructura del Token AAVP)",
+  "token_size_bytes": 331,
+  "field_layout": {
+    "token_type": {
+      "offset": 0,
+      "size": 2,
+      "encoding": "uint16 big-endian"
+    },
+    "nonce": {
+      "offset": 2,
+      "size": 32,
+      "encoding": "raw bytes"
+    },
+    "token_key_id": {
+      "offset": 34,
+      "size": 32,
+      "encoding": "raw bytes"
+    },
+    "age_bracket": {
+      "offset": 66,
+      "size": 1,
+      "encoding": "uint8"
+    },
+    "expires_at": {
+      "offset": 67,
+      "size": 8,
+      "encoding": "uint64 big-endian"
+    },
+    "authenticator": {
+      "offset": 75,
+      "size": 256,
+      "encoding": "raw bytes (RSAPBSSA-SHA384 signature)"
+    }
+  },
+  "age_bracket_values": {
+    "UNDER_13": 0,
+    "AGE_13_15": 1,
+    "AGE_16_17": 2,
+    "OVER_18": 3
+  },
+  "nonce_derivation": "SHA-256 de cadenas descriptivas (solo para test; en produccion usar CSPRNG del SO)",
+  "authenticator_note": "Valor placeholder determinístico (SHA-256 de 'aavp-test-authenticator-placeholder' repetido 8 veces). No es una firma valida. La validacion criptografica se cubre en issuance-protocol.json.",
+  "vectors": [
+    {
+      "name": "OVER_18 — Token basico con franja adulta",
+      "description": "Token para usuario mayor de 18 años. Caso base del protocolo.",
+      "fields": {
+        "token_type": 1,
+        "token_type_hex": "0001",
+        "nonce": "d3d577cdf7df60ad6cf14b43e43c7b059f43f273015eec86c226815896903dcc",
+        "nonce_derivation": "SHA-256('aavp-test-vector-nonce-over18')",
+        "token_key_id": "68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf",
+        "token_key_id_derivation": "SHA-256('aavp-test-im-public-key-1')",
+        "age_bracket": "OVER_18",
+        "age_bracket_value": 3,
+        "age_bracket_hex": "03",
+        "expires_at": 1772323200,
+        "expires_at_iso": "2026-03-01T00:00:00Z",
+        "expires_at_hex": "0000000069a38180",
+        "authenticator": "57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef"
+      },
+      "expected_token_hex": "0001d3d577cdf7df60ad6cf14b43e43c7b059f43f273015eec86c226815896903dcc68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf030000000069a3818057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "expected_size": 331
+    },
+    {
+      "name": "UNDER_13 — Token infantil",
+      "description": "Token para usuario menor de 13 años. Franja mas restrictiva.",
+      "fields": {
+        "token_type": 1,
+        "token_type_hex": "0001",
+        "nonce": "5b029dc5fdf3e9f64f9d7f3c960291775290fcbbed83e107ecfa57b03aa80bee",
+        "nonce_derivation": "SHA-256('aavp-test-vector-nonce-under13')",
+        "token_key_id": "68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf",
+        "token_key_id_derivation": "SHA-256('aavp-test-im-public-key-1')",
+        "age_bracket": "UNDER_13",
+        "age_bracket_value": 0,
+        "age_bracket_hex": "00",
+        "expires_at": 1772337600,
+        "expires_at_iso": "2026-03-01T04:00:00Z",
+        "expires_at_hex": "0000000069a3b9c0",
+        "authenticator": "57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef"
+      },
+      "expected_token_hex": "00015b029dc5fdf3e9f64f9d7f3c960291775290fcbbed83e107ecfa57b03aa80bee68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf000000000069a3b9c057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "expected_size": 331
+    },
+    {
+      "name": "AGE_13_15 — Token adolescente temprano",
+      "description": "Token para usuario entre 13 y 15 años.",
+      "fields": {
+        "token_type": 1,
+        "token_type_hex": "0001",
+        "nonce": "b4f70c848c8924ca44b81ed32961b001710f7010673a61f40812cac85619b697",
+        "nonce_derivation": "SHA-256('aavp-test-vector-nonce-age1315')",
+        "token_key_id": "68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf",
+        "token_key_id_derivation": "SHA-256('aavp-test-im-public-key-1')",
+        "age_bracket": "AGE_13_15",
+        "age_bracket_value": 1,
+        "age_bracket_hex": "01",
+        "expires_at": 1775001600,
+        "expires_at_iso": "2026-04-01T00:00:00Z",
+        "expires_at_hex": "0000000069cc6000",
+        "authenticator": "57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef"
+      },
+      "expected_token_hex": "0001b4f70c848c8924ca44b81ed32961b001710f7010673a61f40812cac85619b69768865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf010000000069cc600057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "expected_size": 331
+    },
+    {
+      "name": "AGE_16_17 — Token adolescente tardio",
+      "description": "Token para usuario entre 16 y 17 años.",
+      "fields": {
+        "token_type": 1,
+        "token_type_hex": "0001",
+        "nonce": "15dac3b569693b0cd60f9777d7798c88c209bfb9f4fd7cbf53776c785fc73ad8",
+        "nonce_derivation": "SHA-256('aavp-test-vector-nonce-age1617')",
+        "token_key_id": "68865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf",
+        "token_key_id_derivation": "SHA-256('aavp-test-im-public-key-1')",
+        "age_bracket": "AGE_16_17",
+        "age_bracket_value": 2,
+        "age_bracket_hex": "02",
+        "expires_at": 1781524800,
+        "expires_at_iso": "2026-06-15T12:00:00Z",
+        "expires_at_hex": "000000006a2fe940",
+        "authenticator": "57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef"
+      },
+      "expected_token_hex": "000115dac3b569693b0cd60f9777d7798c88c209bfb9f4fd7cbf53776c785fc73ad868865db8ff531d8de1e3b6bea30169a6d89517a4464484e985c8b8b02d0b0cdf02000000006a2fe94057e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef57e5c10d0bff03d107583ec160b3dbf4880ff0b45743957ac60e616cb90b17ef",
+      "expected_size": 331
+    }
+  ]
+}

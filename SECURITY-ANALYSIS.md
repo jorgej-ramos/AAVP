@@ -1379,7 +1379,7 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 
 | # | Especificación | Descripción |
 |---|----------------|-------------|
-| E1 | Test vectors completos | Conjunto de entradas y salidas para validar implementaciones de DA, VG e IM |
+| E1 | ~~Test vectors completos~~ | **Parcialmente resuelta**: Vectores estructurales (codificación y validación) completos en `test-vectors/`. Vectores criptográficos (firma parcialmente ciega) con estructura definida, pendientes de computar valores con implementación de referencia RSAPBSSA-SHA384 |
 | E2 | Protocolo de auditoría formal | Framework verificable para auditar las tres partes del protocolo |
 | E3 | ~~Mecanismo de revocación de IMs~~ | **Resuelta**: Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs |
 | E4 | ~~Especificación de `.well-known/aavp`~~ | **Resuelta**: Endpoints `.well-known/aavp` (VG) y `.well-known/aavp-issuer` (IM) especificados en PROTOCOL.md secciones 5.3 y 5.2.3 |

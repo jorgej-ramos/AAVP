@@ -7,6 +7,14 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Directorio `test-vectors/` con vectores de test para validación de implementaciones (E1 de SECURITY-ANALYSIS.md).
+- `test-vectors/token-encoding.json`: 4 vectores de codificación/decodificación del formato binario de 331 bytes, uno por cada franja de edad.
+- `test-vectors/token-validation.json`: 14 vectores de lógica de validación del VG (clock skew, expiración, campos inválidos, tamaño incorrecto, authenticator manipulado).
+- `test-vectors/issuance-protocol.json`: 4 vectores del flujo completo de emisión con firma parcialmente ciega RSAPBSSA-SHA384, incluyendo clave RSA-2048 de test, valores intermedios del protocolo y ejemplo de `.well-known/aavp-issuer`.
+- `test-vectors/README.md`: documentación del formato, convenciones, metodología de generación y fuentes de referencia (RFC 9474, RFC 9578, draft-irtf-cfrg-cryptography-specification, NIST ACVP).
+
 ## [0.9.0] - 2026-02-11
 
 ### Added

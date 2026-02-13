@@ -23,6 +23,7 @@ VERSION                            Fuente de verdad para la version (semver)
 .github/workflows/formal-verification.yml Workflow de verificacion formal (Tamarin Prover)
 scripts/check-spec-consistency.sh  Script de verificacion de coherencia entre documentos
 formal/                            Modelo formal del protocolo (Tamarin Prover)
+test-vectors/                      Vectores de test para validacion de implementaciones
 site/                              Sitio web publico (Astro, desplegado en GitHub Pages)
 ```
 
@@ -432,7 +433,10 @@ reference/
   da/                                  Implementacion de referencia del DA (futuro)
   vg/                                  Implementacion de referencia del VG (futuro)
 test-vectors/
-  tokens/                              Vectores de test para validacion (futuro)
+  README.md                            Documentacion del formato y convenciones
+  token-encoding.json                  Vectores de codificacion binaria del token
+  token-validation.json                Vectores de logica de validacion del VG
+  issuance-protocol.json               Vectores del flujo de firma parcialmente ciega
 docs/
   threat-model.md                      Modelo de amenazas extendido (futuro)
   governance.md                        Modelo de gobernanza (futuro)
