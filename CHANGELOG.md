@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-14
+
 ### Added
 
 - Directorio `test-vectors/` con vectores de test para validación de implementaciones (E1 de SECURITY-ANALYSIS.md).
@@ -208,7 +210,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/jorgej-ramos/AAVP/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.7.0...v0.8.0
