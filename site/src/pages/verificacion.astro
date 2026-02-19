@@ -216,29 +216,56 @@ const verifications = [
   },
   {
     id: 'test-vectors',
-    name: 'Vectores de test',
-    status: 'planned',
-    description: 'Suite de vectores de prueba con entradas y salidas conocidas para validar que cualquier implementación de AAVP produce resultados correctos. Requiere la implementación de referencia del protocolo.',
+    name: 'Vectores de test e implementación de referencia',
+    status: 'active',
+    badgeUrl: `${repoUrl}/actions/workflows/go-tests.yml/badge.svg`,
+    workflowUrl: `${repoUrl}/actions/workflows/go-tests.yml`,
+    scriptUrl: `${repoUrl}/tree/main/reference/go`,
+    description: 'Implementación de referencia en Go del protocolo AAVP con verificación completa contra vectores de test. Cubre codificación binaria del token, lógica de validación del VG y el flujo criptográfico de emisión (RSAPBSSA-SHA384) en sus 6 pasos: preparación, cegamiento, derivación de clave, firma ciega, finalización y verificación.',
+    references: [
+      {
+        text: 'RFC 9474 — RSA Blind Signatures. Amjad, Celi, Davidson, Wood, Armando. IRTF, 2023.',
+        url: 'https://www.rfc-editor.org/rfc/rfc9474',
+      },
+      {
+        text: 'Partially Blind RSA Signatures — draft-amjad-cfrg-partially-blind-rsa. Amjad, Celi, Davidson, Wood.',
+        url: 'https://datatracker.ietf.org/doc/draft-amjad-cfrg-partially-blind-rsa/',
+      },
+    ],
     checks: [
       {
-        category: 'Generación de tokens',
+        category: 'Codificación binaria del token (4 vectores)',
         items: [
-          'Token generado con nonce conocido produce la estructura esperada de 331 bytes',
+          'Encode produce la estructura esperada de 331 bytes para cada franja de edad',
           'Los offsets y tamaños de cada campo son correctos',
+          'Decode invierte correctamente la codificación (round-trip)',
         ],
       },
       {
-        category: 'Validación',
+        category: 'Validación del VG (14 vectores)',
         items: [
-          'Tokens expirados se rechazan',
-          'Tokens con age_bracket manipulado se detectan',
-          'Tokens con authenticator inválido se rechazan',
+          'Tokens válidos con diferentes franjas se aceptan',
+          'Tokens expirados se rechazan (con y sin tolerancia de clock skew)',
+          'expires_at excesivamente futuro se rechaza (TTL máximo)',
+          'age_bracket fuera de rango, token_type inválido y tamaño incorrecto se rechazan',
+          'Authenticator manipulado se detecta',
         ],
       },
       {
-        category: 'Interoperabilidad',
+        category: 'Flujo de emisión — preparación y cegamiento (4 vectores)',
         items: [
-          'Tokens generados por diferentes implementaciones son mutuamente verificables',
+          'Step 1: message_to_sign y public_metadata coinciden con el vector',
+          'Step 2: Blind con r determinista produce blinded_msg e inv correctos',
+        ],
+      },
+      {
+        category: 'Flujo de emisión — firma y verificación (4 vectores)',
+        items: [
+          'Step 3: DeriveKeyPair produce sk\u2019 y pk\u2019 correctos via HKDF-SHA384',
+          'Step 4: BlindSign produce blind_sig correcto',
+          'Step 5: Finalize produce authenticator correcto',
+          'Step 6: Verify confirma firma válida',
+          'Token completo ensamblado coincide con expected_token',
         ],
       },
     ],
@@ -326,12 +353,14 @@ const plannedVerifications = verifications.filter(v => v.status === 'planned');
   ))}
 
   <!-- Planned verifications -->
+  {plannedVerifications.length > 0 && (
   <section class="section">
     <h2 class="section-title">Verificaciones en desarrollo</h2>
     <p class="section-subtitle">
       Las siguientes verificaciones están planificadas y se incorporarán progresivamente a la suite de CI. Cuando estén activas, sus badges aparecerán junto al de consistencia de la especificación.
     </p>
   </section>
+  )}
 
   {plannedVerifications.map((v) => (
     <section class="section verification-section verification-planned" id={v.id}>
