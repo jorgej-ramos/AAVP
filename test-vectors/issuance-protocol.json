@@ -1,150 +1,158 @@
 {
-  "title": "AAVP Issuance Protocol Test Vectors",
-  "description": "Vectores del flujo completo de emision de tokens AAVP mediante firma parcialmente ciega RSAPBSSA-SHA384. Cada vector documenta los seis pasos del protocolo: preparacion, cegamiento, derivacion de clave, firma ciega, finalizacion y verificacion.",
-  "reference": "PROTOCOL.md seccion 4.1 (Firmas Parcialmente Ciegas)",
   "cryptographic_scheme": {
-    "name": "RSAPBSSA-SHA384",
     "base_rfc": "RFC 9474 (RSA Blind Signatures)",
     "extension": "draft-irtf-cfrg-partially-blind-rsa",
     "hash_function": "SHA-384",
-    "mgf": "MGF1-SHA384",
-    "salt_length": 0,
-    "variant": "RSABSSA-SHA384-PSSZERO-Deterministic",
     "key_derivation": "HKDF-SHA384 desde clave maestra con metadatos publicos",
-    "signature_size_bytes": 256,
+    "mgf": "MGF1-SHA384",
+    "name": "RSAPBSSA-SHA384",
     "references": [
       "https://www.rfc-editor.org/rfc/rfc9474.html",
       "https://datatracker.ietf.org/doc/draft-irtf-cfrg-partially-blind-rsa/"
-    ]
+    ],
+    "salt_length": 0,
+    "signature_size_bytes": 256,
+    "variant": "RSABSSA-SHA384-PSSZERO-Deterministic"
   },
+  "description": "Vectores del flujo completo de emision de tokens AAVP mediante firma parcialmente ciega RSAPBSSA-SHA384. Cada vector documenta los seis pasos del protocolo: preparacion, cegamiento, derivacion de clave, firma ciega, finalizacion y verificacion.",
+  "generation_status": {
+    "cryptographic_values": "complete",
+    "generated_by": "github.com/aavp-protocol/aavp-go vectors/generate",
+    "note": "Todos los valores criptograficos han sido computados por la implementacion de referencia Go. La clave de test usa safe primes como requiere el draft PBRSA.",
+    "structural_fields": "complete"
+  },
+  "reference": "PROTOCOL.md seccion 4.1 (Firmas Parcialmente Ciegas)",
   "test_im_key": {
-    "description": "Clave RSA-2048 de test del Implementador. Generada exclusivamente para estos vectores de test. No usar en produccion.",
     "algorithm": "RSA",
+    "d": "5cfc10867f7663fba8e29b9e1cbac204007b12b518a66c9d10f95f43e99b64ac0594fc20e3ff8e01bc8600f15cd7c725bbf7490412f816caacc9c2c36e342c99e7692ef395f899351e4f0a1c97d30fe5855e6e7877069e413361ae4496d588674f3bdecf5244697a085adea5ff9d04472a9c142c214925000ae5561e077da87c2344c573ac767d0b51a1263bb33b9d843e5c82a717c1ceb37a64dd43e08e93e6ec2531856cdf1327b695a4fbeb01d79541a7cb64820d4b668db258ae4780e04b520ad4435099843b7f3e3a4d34767ba46d8207aa48d8bf9ba40385f54fc1fa2445cdfe5f5fe755b7c284e6e138f4575c97a49d677cb6bd63b3a133797fee9ed1",
+    "description": "Clave RSA-2048 de test del Implementador con safe primes. Generada por la implementacion de referencia Go. No usar en produccion.",
+    "e": "010001",
     "key_size_bits": 2048,
-    "n": "deeb38cfa184281eee07142527e4bc39f7d5aba3b9b4acfc5202a1f3e2f02c5f41677ba9fa8c2345cb3ebf7b80c48626b3a6f191909cbcfafd64b5ca92ad5c5c2b32b57660abc2783f5d9093a9a7d1057330fe09a992324dffca3a6469bae4817573e6ad419f926c5074cb1fa6818c95ce376b339056a6a0800bd5b4f7ff2be0981df5c558842d054a61c9c180bfd02abe5cec6e07e05160739fd64734186b8f01b6489f4d33177100bb5c12c629f3f4f4bcb3a39abd776834491101ff554aabddc9abea1820b6039c4aca86141a9d2295e113d8203a976ee0cc210b7912a917b4ab4366b6c4c787672c5e9d6f29a97ea184111b3893b0403e8a0fbf155b4545",
-    "e": "10001",
-    "d": "24196980ce422d911cb0cec559998415cb19b20af886d6c0a1b34570ce5e608128814e986f37847ac7f8286022b1309c51d98623318d005990f15f3327dfa52653e489585b3d5567cdb324379570d4bb9234ebdebab42f2b4c71fe54c67e7a84b0758d749f3ced24573f22a9c47814412a3cf5424b6c8cdd4eff1ba38bc9a9dc0eb0303ac02074ebc70d88c1ad0df5ae6e82ccc2c2e461d8b9281835fbbe411e77d41878cb02cdca7494bde3eb5ba51f6e751f464ad2671f501703520b9c7cf7f6f971303b4d29903213f58290146e1eeeea49944b44b265a9d622ec09f0824d7f03d8ecaa4374ca90776b2bf6e4d72b6c915bfbf82286ce62014f639aa833bd",
-    "p": "faaa76e6b37407e625d4c023fa90e23b4dc35a285adff2ff31181ad47b94acd4fe74f63042dff2cf590f0097284fabff96daf8562c23ace0a239f73f2fcf967e1059fb672084654221d23004f6e6925c8f75ae618adfa5017c271328165c2eb17293e01c25283bfdb9eadb316a6c1d669323855700f7a4e0816ea384c479fe8b",
-    "q": "e3a99a0e52f91ba2e4ef751227ce23045932534d484a9280ee600b3103e98a5da73e217856eb79696b4af1a58269be4bc79176545a3fea91d127113ea6be8b3bea34088ffb1f7143428dd71bd69fd5ea34ccb0a2ae5232f179e059b28b0dfc0d37f3bce9f54d5a7349336f6a857b17637116435275407500ec142d45eacd956f",
-    "spki_der_hex": "30820122300d06092a864886f70d01010105000382010f003082010a0282010100deeb38cfa184281eee07142527e4bc39f7d5aba3b9b4acfc5202a1f3e2f02c5f41677ba9fa8c2345cb3ebf7b80c48626b3a6f191909cbcfafd64b5ca92ad5c5c2b32b57660abc2783f5d9093a9a7d1057330fe09a992324dffca3a6469bae4817573e6ad419f926c5074cb1fa6818c95ce376b339056a6a0800bd5b4f7ff2be0981df5c558842d054a61c9c180bfd02abe5cec6e07e05160739fd64734186b8f01b6489f4d33177100bb5c12c629f3f4f4bcb3a39abd776834491101ff554aabddc9abea1820b6039c4aca86141a9d2295e113d8203a976ee0cc210b7912a917b4ab4366b6c4c787672c5e9d6f29a97ea184111b3893b0403e8a0fbf155b45450203010001",
-    "token_key_id_hex": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
-    "token_key_id_base64url": "__6pup76c1CAzxr3NGJZlO0FbBxPlKjYL0Z2oBerLHw",
-    "public_key_base64url": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3us4z6GEKB7uBxQlJ-S8OffVq6O5tKz8UgKh8-LwLF9BZ3up-owjRcs-v3uAxIYms6bxkZCcvPr9ZLXKkq1cXCsytXZgq8J4P12Qk6mn0QVzMP4JqZIyTf_KOmRpuuSBdXPmrUGfkmxQdMsfpoGMlc43azOQVqaggAvVtPf_K-CYHfXFWIQtBUphycGAv9AqvlzsbgfgUWBzn9ZHNBhrjwG2SJ9NMxdxALtcEsYp8_T0vLOjmr13aDRJEQH_VUqr3cmr6hggtgOcSsqGFBqdIpXhE9ggOpdu4MwhC3kSqRe0q0NmtsTHh2csXp1vKal-oYQRGziTsEA-ig-_FVtFRQIDAQAB",
+    "n": "a084cc41991ab30f616335b53bc03a40ce485ce558af092ad7fd16aa798909ade8dd30828cbf69d2cf795586e06c226692715fb2133b9855b0acf28585c18cb46c0538c19743f072bd52f1cf4cca2219032eb74cefd648120768f67786422fb884f1aa0827309a7d8b5923877927dd80bbf81d9e20068411431061200dff30cff3ad5bc83e88ea7e08a2c359298edde97f85e5ea1e3315feaef8a959bf8899e4e5bfcb41abb003e1f0253dc3dd181730b106130a7a1b0f08df7dc01c8dd78ad82bd2121b9202e8eb8a208b221184eb0c530824966cf648c7345e502d6bdad464939b769465c50c0b66b23c449c95b0f75ca488a5132861fdf0295a276d71495d",
+    "p": "cb078dea38f06cd31df6e33152678b622be3667d4239d8e1dd453d30c24886d257524b1dfe354fb9865767db0df374f82cee52bcb19a0b48eaae996b2f71b55578d0e34d2c2c48ba5926a75d02edea202d6efd435ac01c88aaf03ad5e591f634be52bed0fc75a089b29de16c46cc66c124a04251396d9c611b01f54c22a8fff3",
+    "public_key_base64url": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoITMQZkasw9hYzW1O8A6QM5IXOVYrwkq1_0WqnmJCa3o3TCCjL9p0s95VYbgbCJmknFfshM7mFWwrPKFhcGMtGwFOMGXQ_ByvVLxz0zKIhkDLrdM79ZIEgdo9neGQi-4hPGqCCcwmn2LWSOHeSfdgLv4HZ4gBoQRQxBhIA3_MM_zrVvIPojqfgiiw1kpjt3pf4Xl6h4zFf6u-KlZv4iZ5OW_y0GrsAPh8CU9w90YFzCxBhMKehsPCN99wByN14rYK9ISG5IC6OuKIIsiEYTrDFMIJJZs9kjHNF5QLWva1GSTm3aUZcUMC2ayPESclbD3XKSIpRMoYf3wKVonbXFJXQIDAQAB",
+    "q": "ca65ed6c2ee75294673aabd28acc41b9b6832ce4094f1a9b049f99860896dec9f1e730ede0a4c11cf025a2a67b98998aa3e303163591ff6f6861d0592a81f0f0d05d174c61ebf4aa1d4d1e249a79398bc3ce0a233ea47d2ff958a7504fab554fa273a85359ba84bb813b28d2ac0217bd399996f9d3dc87207b0800e75a5f356f",
+    "safe_primes": true,
+    "spki_der_hex": "30820122300d06092a864886f70d01010105000382010f003082010a0282010100a084cc41991ab30f616335b53bc03a40ce485ce558af092ad7fd16aa798909ade8dd30828cbf69d2cf795586e06c226692715fb2133b9855b0acf28585c18cb46c0538c19743f072bd52f1cf4cca2219032eb74cefd648120768f67786422fb884f1aa0827309a7d8b5923877927dd80bbf81d9e20068411431061200dff30cff3ad5bc83e88ea7e08a2c359298edde97f85e5ea1e3315feaef8a959bf8899e4e5bfcb41abb003e1f0253dc3dd181730b106130a7a1b0f08df7dc01c8dd78ad82bd2121b9202e8eb8a208b221184eb0c530824966cf648c7345e502d6bdad464939b769465c50c0b66b23c449c95b0f75ca488a5132861fdf0295a276d71495d0203010001",
+    "token_key_id_base64url": "XP7SkHjcL_XroVfhuxTPkBYwRk18MqplMKOfqp4bfh4",
+    "token_key_id_hex": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
     "well_known_aavp_issuer_example": {
-      "note": "Ejemplo de como apareceria esta clave en el endpoint .well-known/aavp-issuer del IM (PROTOCOL.md seccion 5.2.3).",
+      "aavp_version": "0.10",
       "issuer": "test-im.example",
-      "aavp_version": "0.9",
-      "signing_endpoint": "https://test-im.example/aavp/v1/sign",
       "keys": [
         {
-          "token_key_id": "__6pup76c1CAzxr3NGJZlO0FbBxPlKjYL0Z2oBerLHw",
-          "token_type": 1,
-          "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3us4z6GEKB7uBxQlJ-S8OffVq6O5tKz8UgKh8-LwLF9BZ3up-owjRcs-v3uAxIYms6bxkZCcvPr9ZLXKkq1cXCsytXZgq8J4P12Qk6mn0QVzMP4JqZIyTf_KOmRpuuSBdXPmrUGfkmxQdMsfpoGMlc43azOQVqaggAvVtPf_K-CYHfXFWIQtBUphycGAv9AqvlzsbgfgUWBzn9ZHNBhrjwG2SJ9NMxdxALtcEsYp8_T0vLOjmr13aDRJEQH_VUqr3cmr6hggtgOcSsqGFBqdIpXhE9ggOpdu4MwhC3kSqRe0q0NmtsTHh2csXp1vKal-oYQRGziTsEA-ig-_FVtFRQIDAQAB",
+          "not_after": "2026-06-30T00:00:00Z",
           "not_before": "2026-01-01T00:00:00Z",
-          "not_after": "2026-06-30T00:00:00Z"
+          "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoITMQZkasw9hYzW1O8A6QM5IXOVYrwkq1_0WqnmJCa3o3TCCjL9p0s95VYbgbCJmknFfshM7mFWwrPKFhcGMtGwFOMGXQ_ByvVLxz0zKIhkDLrdM79ZIEgdo9neGQi-4hPGqCCcwmn2LWSOHeSfdgLv4HZ4gBoQRQxBhIA3_MM_zrVvIPojqfgiiw1kpjt3pf4Xl6h4zFf6u-KlZv4iZ5OW_y0GrsAPh8CU9w90YFzCxBhMKehsPCN99wByN14rYK9ISG5IC6OuKIIsiEYTrDFMIJJZs9kjHNF5QLWva1GSTm3aUZcUMC2ayPESclbD3XKSIpRMoYf3wKVonbXFJXQIDAQAB",
+          "token_key_id": "XP7SkHjcL_XroVfhuxTPkBYwRk18MqplMKOfqp4bfh4",
+          "token_type": 1
         }
-      ]
+      ],
+      "note": "Ejemplo de como apareceria esta clave en el endpoint .well-known/aavp-issuer del IM (PROTOCOL.md seccion 5.2.3).",
+      "signing_endpoint": "https://test-im.example/aavp/v1/sign"
     }
   },
-  "generation_status": {
-    "structural_fields": "complete",
-    "cryptographic_values": "awaiting_reference_implementation",
-    "note": "Los campos marcados como TO_BE_COMPUTED requieren una implementacion conforme de RSAPBSSA-SHA384 con soporte de partially blind signatures. Las implementaciones de referencia listadas en README.md pueden usarse para computar estos valores."
-  },
+  "title": "AAVP Issuance Protocol Test Vectors",
   "vectors": [
     {
-      "name": "Emision de token OVER_18",
       "description": "Flujo completo de emision de un token con franja OVER_18 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
-      "status": "awaiting_reference_implementation",
-      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e030000000069a39da0297baff56a63337ee87bb35858246039bbceab0155028da62d73d3db13edda964bbfda681247ae09de5887bc5330c7f47024ecc9637296a38ca2201bb2c65d8e732addec9d4d532af363e915a42ac15756cac9d45e33c39c7081e0f3288a386541c83981f4869c7e9ee5161235026baff177e2be60aeaf6ec0645df127de5e4d1502f2e655448d4b370127f563e24ff66e21200c06cf94a360d69ed2912fc73b10469a40892c886e0482dc6e526256003cb44e1f878ff5953a0f1c7a3dd70a6418156f5adf71a1093545ec719017227102f66de805bf54f2dfe1b7e820050528fcca87aeb5ed1c543ec1b5940f37daa54a6fc181e41acbe0067d1e7219ddfff8",
+        "token_size": 331
+      },
+      "name": "Emision de token OVER_18",
+      "status": "computed",
+      "status_note": "Valores criptograficos generados por la implementacion de referencia Go (github.com/aavp-protocol/aavp-go). Clave RSA-2048 con safe primes.",
       "step_1_prepare": {
-        "description": "El DA construye los campos del token y los metadatos publicos.",
-        "token_type": 1,
-        "nonce": "a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8",
-        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-over18')",
-        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
         "age_bracket": "OVER_18",
         "age_bracket_value": 3,
+        "description": "El DA construye los campos del token y los metadatos publicos.",
         "expires_at": 1772330400,
         "expires_at_iso": "2026-03-01T02:00:00Z",
-        "message_to_sign": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
+        "message_to_sign": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e030000000069a39da0",
         "message_to_sign_size": 75,
+        "nonce": "a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-over18')",
         "public_metadata": "030000000069a39da0",
-        "public_metadata_size": 9,
         "public_metadata_fields": {
           "age_bracket": "03",
           "expires_at": "0000000069a39da0"
-        }
+        },
+        "public_metadata_size": 9,
+        "token_key_id": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
+        "token_type": 1
       },
       "step_2_blind": {
         "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
         "function": "Blind(pk', prepared_msg, metadata)",
         "inputs": {
-          "public_key": "pk' (derivada en step_3)",
-          "prepared_msg": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
-          "metadata": "030000000069a39da0"
+          "metadata": "030000000069a39da0",
+          "prepared_msg": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e030000000069a39da0",
+          "public_key": "pk' (derivada en step_3)"
         },
         "outputs": {
-          "blinded_msg": "TO_BE_COMPUTED",
-          "blinding_inverse_inv": "TO_BE_COMPUTED"
+          "blinded_msg": "4b632437bde48ae593940332c325525136eb0d427ecfbd1131e1556d41cd61b9e221eb5ed04767eeea8e35fc36942dad5d619a472248efe7b5760529904c07954171834387cec4e16fd172449034cacd713f57e14f991af9cf76d726c30517040c3639b8beff8aa36a5f02d91aaa7ef94b3d28c49c7a64f194d7b147ddf117c500486e7fcbcba1f1c7491c2bc03188c5757ba57b999ab724ae9b87e64157ae208d95243e46d07e227606dadf4468835b48dff9563e2a1bde1d40f6afc00aa0318a001d47528b2f8dca45bcd1c748854886514356ce2c276cc610140afd3f8fb669a7e465d1f05e0fdaf11addca5366062deca48a3f598fd89f2786b1602a65ad",
+          "blinding_inverse_inv": "2de0d5a97df15aa1d7e4e55c38a3c187c4c2d83f18827b6bdc4b2a96a8190ba341d5c91470bd7b5b27a4b5ae51f068f0d4865f9b306e953932f9743f6631e20ef19e8c8ac8001697205d81cf09dab5710bf0f3a406bf3ee79f8534630a6fd0a16f349cf01cf8875d090f2ea7f688889edd19b7b65ad4579df6c23569b80ec968e6afc353986200027637eeb6cab43ab259efa0507ed9c8c5aaa8ea98e1ab2c24362c95b7b2d83309d9faeb45c7c1830de1a34960594e8e59c5035d7af5a527b653c6832fb617e861fd78f061adebd2677459903d86e59591fe12b1a334a831299025fe73c676834d4ba65aeccedf1a5985e7372bdd18823c6af843a34e48e9e0"
         },
         "randomness": {
-          "blinding_factor_r": "TO_BE_COMPUTED",
-          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+          "blinding_factor_r": "135e05bad5b021ae9f7aa4246b1665ca3ecccdef0eb9cedc7067ed89615ce72194db2cd8cdbb0678998c7507337c708854ef2b7c54a19c20de7cca6b9d525727aad1034340c01607f991b298f444a994fb321ac0599b6865320a3b8d0d3212fd4ed61ce8604e11650210f145e40fde6925b23a0ca96668c90c46febf7b327236aa3cfd6ce3e00eface1a17938dccd05d129cc10ccee6a1d0b01db5de9b3a312edd763c7bab7fc0a3fb3511f586841d1566ba7390381c8d9571ee73dc9621f36afb76c9f735b16f36919bf2580283d1fbcde29a286548f9ba3495729c76360484c4bc3c47cfa92c0ba8fbddb74c4de77d4748a42a931c9904fb394957eea9d02d",
+          "note": "r derivado deterministicamente de SHA-256('aavp-test-blinding-factor-over18') para reproducibilidad."
         }
       },
       "step_3_derive_key": {
         "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
         "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
         "inputs": {
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-030000000069a39da0",
           "master_secret_key": "sk (del test_im_key)",
-          "metadata": "030000000069a39da0",
-          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-030000000069a39da0"
+          "metadata": "030000000069a39da0"
         },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma.",
         "outputs": {
-          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
-          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
-        },
-        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+          "derived_private_key_sk_prime": "139a416fb8d8c3f73b417b3bebc86c5437fc6378f9c6510923322692fa8347d058202a5fb38105a58ecb0207299ff8bf5c33d40dd71592cb14dc480f76ad5bec0c3ec147e32afab8d2e8ef1011d52204ce40ddf4bf3d05dc83f48562e009d3ee1cff3c80659c2b360e357b21912522b04023b254d89f0f389d81aa40902f26610c83b4fa053051cca1061b394e0be2889276e7c19db7970485689f5cb476d9091bd057242e2cf7271b2c47e06ab6834b7ca4b800faf6deab5a598ea71ad0aecdb12da64d99d89b4d9b158f95bc63fd6ab0b49a49e71ab1c4d909042a6de49efb3bd041882df046fae9cd8a43c778a2117de26649080940026b3ef908a65d1b2d",
+          "derived_public_key_pk_prime": "0a5df1e2ee00626edea5e14bcf446230ab59437e0df63f1738cd255de8b94278eeccb8ccaac80feeabe7cb6d51ee766f442a17c54b61a05b444738756cb9f17d1ef5ac7d1db5f3a01373eadc073ee5a4e48b2388af0c7e43f4af9a0483fdda05eee1fe4b0eab82ccf7055a14b34868e62490389ec3ed61cb9f75d1d2e0974e49"
+        }
       },
       "step_4_blind_sign": {
         "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
         "function": "BlindSign(sk', blinded_msg, metadata)",
-        "im_observes": {
-          "age_bracket": "OVER_18",
-          "expires_at": "2026-03-01T02:00:00Z",
-          "client_ip": "(visible pero no parte del protocolo)"
-        },
         "im_cannot_observe": [
           "nonce",
           "identidad del DA",
           "plataforma de destino"
         ],
+        "im_observes": {
+          "age_bracket": "OVER_18",
+          "client_ip": "(visible pero no parte del protocolo)",
+          "expires_at": "2026-03-01T02:00:00Z"
+        },
         "inputs": {
-          "derived_private_key": "sk' (de step_3)",
-          "blinded_msg": "(de step_2)"
+          "blinded_msg": "(de step_2)",
+          "derived_private_key": "sk' (de step_3)"
         },
         "outputs": {
-          "blind_sig": "TO_BE_COMPUTED"
+          "blind_sig": "6ed6ad608b9ca92087e3882b4602b4e4df71c3eb5a8c4c8d43dd7122f6104b2764f70c73dd58c94a4150e0f3aceb93368ab82d1ddcb08498d9c665ceabd3d6f8b5ccbd8da51259084d0f975308d11c221030612168799402cc8e0d6ec7cc192155222920eb41747bf0207dbfb96150087d01dc5173a40eabfde64ad5476d35db2170704678953670c369be8c023cffbd7b081b9fa0479622fce49cd7bc9f5e58ba1d9850defce52b63340448c41e6cf901a443614047a24f8521ca4b0d8e79583a4a969ac957191c456640f5cdbc921212c66884d7e8643885c4bbf6a1fea0234fc133c01b7a0464b6c8826995b99fee147cd99d0bd2f49132daa60b324bf7f2"
         }
       },
       "step_5_finalize": {
         "description": "El DA desciega la firma para obtener el authenticator valido.",
         "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
         "inputs": {
-          "derived_public_key": "pk' (de step_3)",
           "blind_sig": "(de step_4)",
           "blinding_inverse": "inv (de step_2)",
-          "original_message": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c030000000069a39da0",
-          "metadata": "030000000069a39da0"
+          "derived_public_key": "pk' (de step_3)",
+          "metadata": "030000000069a39da0",
+          "original_message": "0001a6d9e1762e690e1e01f5a9c5df7b45ffa4850e59cec9ef0942319916cba412d85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e030000000069a39da0"
         },
         "outputs": {
-          "authenticator": "TO_BE_COMPUTED",
+          "authenticator": "297baff56a63337ee87bb35858246039bbceab0155028da62d73d3db13edda964bbfda681247ae09de5887bc5330c7f47024ecc9637296a38ca2201bb2c65d8e732addec9d4d532af363e915a42ac15756cac9d45e33c39c7081e0f3288a386541c83981f4869c7e9ee5161235026baff177e2be60aeaf6ec0645df127de5e4d1502f2e655448d4b370127f563e24ff66e21200c06cf94a360d69ed2912fc73b10469a40892c886e0482dc6e526256003cb44e1f878ff5953a0f1c7a3dd70a6418156f5adf71a1093545ec719017227102f66de805bf54f2dfe1b7e820050528fcca87aeb5ed1c543ec1b5940f37daa54a6fc181e41acbe0067d1e7219ddfff8",
           "authenticator_size": 256
         }
       },
       "step_6_verify": {
         "description": "El VG verifica la firma del token completo.",
+        "expected_result": "valid",
         "function": "Verify(pk', msg, metadata, authenticator)",
         "vg_procedure": [
           "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
@@ -153,108 +161,108 @@
           "4. Extraer msg = token[0:75] (todo excepto authenticator)",
           "5. Extraer authenticator = token[75:331]",
           "6. Verificar: Verify(pk', msg, metadata, authenticator)"
-        ],
-        "expected_result": "valid"
-      },
-      "expected_token": {
-        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
-        "token_hex": "TO_BE_COMPUTED",
-        "token_size": 331
+        ]
       }
     },
     {
-      "name": "Emision de token UNDER_13",
       "description": "Flujo completo de emision de un token con franja UNDER_13 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
-      "status": "awaiting_reference_implementation",
-      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e000000000069cc60003540024cf8e6765a968370fb3f15985c4c3b170f44771ea046555a1109486f4fad9b10d0d7dbf6b459094e7bfa6e9d96870ea70eb65e4a6b311b2cce868781682e8a2addbf95b03175b9f5046f268563f9d309620fc078c2f207626fc947c219e95d7baf787cedc3a759eaae5b5dbdcce9cb8a0102fbc28f03ae21d4734aaa31210f752ff93b12042861da97c5fd4ee9238a9a2c61fb40733485d7111553557baa8002e93dc8d35fbd7203f938e2cd7f3f3fe5393ec91f9decb115168f49e1a9482a27440f5ddd10d15e667ac9df51da034249008a1ef8c459ef5ee15e66a4aedabc9cd33bc17546422768d1664cca148aa1460de4f030dfd19b5e0ac774a750",
+        "token_size": 331
+      },
+      "name": "Emision de token UNDER_13",
+      "status": "computed",
+      "status_note": "Valores criptograficos generados por la implementacion de referencia Go (github.com/aavp-protocol/aavp-go). Clave RSA-2048 con safe primes.",
       "step_1_prepare": {
-        "description": "El DA construye los campos del token y los metadatos publicos.",
-        "token_type": 1,
-        "nonce": "e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8",
-        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-under13')",
-        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
         "age_bracket": "UNDER_13",
         "age_bracket_value": 0,
+        "description": "El DA construye los campos del token y los metadatos publicos.",
         "expires_at": 1775001600,
         "expires_at_iso": "2026-04-01T00:00:00Z",
-        "message_to_sign": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
+        "message_to_sign": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e000000000069cc6000",
         "message_to_sign_size": 75,
+        "nonce": "e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-under13')",
         "public_metadata": "000000000069cc6000",
-        "public_metadata_size": 9,
         "public_metadata_fields": {
           "age_bracket": "00",
           "expires_at": "0000000069cc6000"
-        }
+        },
+        "public_metadata_size": 9,
+        "token_key_id": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
+        "token_type": 1
       },
       "step_2_blind": {
         "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
         "function": "Blind(pk', prepared_msg, metadata)",
         "inputs": {
-          "public_key": "pk' (derivada en step_3)",
-          "prepared_msg": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
-          "metadata": "000000000069cc6000"
+          "metadata": "000000000069cc6000",
+          "prepared_msg": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e000000000069cc6000",
+          "public_key": "pk' (derivada en step_3)"
         },
         "outputs": {
-          "blinded_msg": "TO_BE_COMPUTED",
-          "blinding_inverse_inv": "TO_BE_COMPUTED"
+          "blinded_msg": "0610a14a7e79e935ea1c821e373e4f82151eb37516b193c5ec0294862dafde51e3e69f14f36e6b2174fc7bc8831efe5f1c81219c287235e93c8c810989861b09a7b404567377d02f104828e88f6f6bc63cbbd13e0117521c2b2ae793146dc88b2ecfd1ba51148880e14e6336e78b5aa7ffadf54e7cdc75af6d5f52c7b3f4c3335fe30c79414b22721cb9b90dba7430c8baef8251c1af76bced90db3f0ab53f11d5e8308e4da743b2462fedb9999916da4470d17fe36953d103bec353edfc6f712cb19d6b37606810a01aae78c75ffc4d2ce721ec050d8cc6b31529f2475c3b02dcd122a70e1bf03f15964b3ea7bc5df4a14e5c381167bcd76d91d83a775ccc9b",
+          "blinding_inverse_inv": "18e21bfe607a8d3d37d29c232253dd8d0b965c801d1a02d179728ec23bc9be8c315de4a401fa56edb3cfe20712d1509014eb50a42006f19199eea1f4f8dfead1ba56f2b5bc53395e619622997adace8d803ed190d8747749705dde172a9fd29809a4cec74e79bedde580e7b4936a23d065209485abf344164d3d3861f997d76104dd090f6bab4a22d4818912419a141c8ee7ec2960b815403211a9bb6501d6d70d665a5e364d6c898cea8be6014ff37ebaee609535e49c3a910cc07e13e1804ff7401e40b7f10c49c3d560f0d13e29c4533d43c3a03f566e939b6799ed55435a074f38a645a14e985360ad59ce215e73e8f0403e275df0840d78217bb33c967c"
         },
         "randomness": {
-          "blinding_factor_r": "TO_BE_COMPUTED",
-          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+          "blinding_factor_r": "3b78100005936b0137c65e4193d5f8dee6756d48ecddc14fb5c9de965a4d51c88c2b603b098fb846f168178698a7649b5d49881afc6582e561cca317fd046f88c51088ef302dfc4f379ef0741b8c6c4d2063a663eae1a3b5fa059a242a2743c0904844ef7e61e59e4eb218f378088fa24cc5958fdf9e7837486c670f5f02d71d66871dfe4a9ac9556fa579fe217e6f26e40f89f030afef3959750993e70542a30475f3ce58130e9c5dcfcaa68747636a0bbfa0913db5cd6cd0c4122700f525bde9127efb2532fd28c5903486965328b8fd18edc103071b0ae1e9b44d563c18764abb656bb6a4afa0b914966c0716f43a4ab12ceedea83615c3abf5bcffb6590b",
+          "note": "r derivado deterministicamente de SHA-256('aavp-test-blinding-factor-under13') para reproducibilidad."
         }
       },
       "step_3_derive_key": {
         "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
         "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
         "inputs": {
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-000000000069cc6000",
           "master_secret_key": "sk (del test_im_key)",
-          "metadata": "000000000069cc6000",
-          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-000000000069cc6000"
+          "metadata": "000000000069cc6000"
         },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma.",
         "outputs": {
-          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
-          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
-        },
-        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+          "derived_private_key_sk_prime": "4ab744c3a76124db02cda439851a2e0eb3455f4a531f127dac966e9c8ed6ec57d217d84f92dfa6abfe77c0eefc5c68c5d210413ea856af4c4ac8364595a2cab20ea9b339fad7b232085894a1675a507086ba8cf8f4eff0ea92fb004155fe550f8ad8d827e8ae1a30e41c954d64b92b06cce9ce928c1237ad109744779be8b08d7401703ef4e77512e1cdc27908220d793ee1d4e1e32a89a6493104b267851b171e528505e7b3c2ee648608d352edc84a8728bac80ecc58f62f1e972ba891099f088aff18d57e08c86d09a760a8c48c19bcb8d76c5ff02a283a27afc1abcf6c373088469c6bf98bfb59cfcf36f7c4a71ddd7ad80d798054003604cb3a8bd228ed",
+          "derived_public_key_pk_prime": "3f4cbb70603f61867220e186d84f82be291d8821cbc82e9aedfa6fcd65f3072ec8fab9552a52509dec05efa8fe19be051c56f506d0cfc67ed936e4f423405d8925e7dae3a96adf134701d07b0b67cf0642c9004a0e77d44a8854feb67331d811a9b1881c4ec6c7a528c526a6c13de0a3e96ff0a6f7682b858d9136bd0b556ced"
+        }
       },
       "step_4_blind_sign": {
         "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
         "function": "BlindSign(sk', blinded_msg, metadata)",
-        "im_observes": {
-          "age_bracket": "UNDER_13",
-          "expires_at": "2026-04-01T00:00:00Z",
-          "client_ip": "(visible pero no parte del protocolo)"
-        },
         "im_cannot_observe": [
           "nonce",
           "identidad del DA",
           "plataforma de destino"
         ],
+        "im_observes": {
+          "age_bracket": "UNDER_13",
+          "client_ip": "(visible pero no parte del protocolo)",
+          "expires_at": "2026-04-01T00:00:00Z"
+        },
         "inputs": {
-          "derived_private_key": "sk' (de step_3)",
-          "blinded_msg": "(de step_2)"
+          "blinded_msg": "(de step_2)",
+          "derived_private_key": "sk' (de step_3)"
         },
         "outputs": {
-          "blind_sig": "TO_BE_COMPUTED"
+          "blind_sig": "98d895d60b74aeaffbf45b7ec63543772340bc45991e8a92c22f8e1a4a7dc5f24e62f52ba4159c273bb32088521407a5f1929a0718f4e4ab48b1ea0f8b487723bc6eeda757fe5df639174e296c0ab01e1ea71553983cbb1df5db586e03129caa8c0e6935057eb3a36143f1381b8e874e6e615d8ee822d784a74ecae87cd0c3c448e7d9475bf08e7ff90efea9d73f330f3d2cd5d982a796f212aeff6a431f17f910cf706755098914d21104c4c42a1ea8fdd5bd852e258272640d6aaeb7595fd4e0304a10f8595826a0eefd2b1adca0a07be7a08cd506d812885f5438a97cebdcedddcd1c7a87a29478770f9c5ebd12874bdd26d99fa617e8d25b682d56ccdc12"
         }
       },
       "step_5_finalize": {
         "description": "El DA desciega la firma para obtener el authenticator valido.",
         "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
         "inputs": {
-          "derived_public_key": "pk' (de step_3)",
           "blind_sig": "(de step_4)",
           "blinding_inverse": "inv (de step_2)",
-          "original_message": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c8fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c000000000069cc6000",
-          "metadata": "000000000069cc6000"
+          "derived_public_key": "pk' (de step_3)",
+          "metadata": "000000000069cc6000",
+          "original_message": "0001e88410c598a85412b786bf16c8c19040e5d1cc6549e01f540f8da0b607ad94c85cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e000000000069cc6000"
         },
         "outputs": {
-          "authenticator": "TO_BE_COMPUTED",
+          "authenticator": "3540024cf8e6765a968370fb3f15985c4c3b170f44771ea046555a1109486f4fad9b10d0d7dbf6b459094e7bfa6e9d96870ea70eb65e4a6b311b2cce868781682e8a2addbf95b03175b9f5046f268563f9d309620fc078c2f207626fc947c219e95d7baf787cedc3a759eaae5b5dbdcce9cb8a0102fbc28f03ae21d4734aaa31210f752ff93b12042861da97c5fd4ee9238a9a2c61fb40733485d7111553557baa8002e93dc8d35fbd7203f938e2cd7f3f3fe5393ec91f9decb115168f49e1a9482a27440f5ddd10d15e667ac9df51da034249008a1ef8c459ef5ee15e66a4aedabc9cd33bc17546422768d1664cca148aa1460de4f030dfd19b5e0ac774a750",
           "authenticator_size": 256
         }
       },
       "step_6_verify": {
         "description": "El VG verifica la firma del token completo.",
+        "expected_result": "valid",
         "function": "Verify(pk', msg, metadata, authenticator)",
         "vg_procedure": [
           "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
@@ -263,108 +271,108 @@
           "4. Extraer msg = token[0:75] (todo excepto authenticator)",
           "5. Extraer authenticator = token[75:331]",
           "6. Verificar: Verify(pk', msg, metadata, authenticator)"
-        ],
-        "expected_result": "valid"
-      },
-      "expected_token": {
-        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
-        "token_hex": "TO_BE_COMPUTED",
-        "token_size": 331
+        ]
       }
     },
     {
-      "name": "Emision de token AGE_13_15",
       "description": "Flujo completo de emision de un token con franja AGE_13_15 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
-      "status": "awaiting_reference_implementation",
-      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc365cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e01000000006a2fe94003a66a19b9eff687590842e7d76d06e0440637aaa0ec4974fe4541414741a4073da481b3847a245ec188a9649e7f7cbb359be64a4ef0bf63baf812bb5a6253f12e9c8a413dc9e3fa93c62e57f5f9aeae3ba444660feb6ac5b238721d5ddb78e5b7bae48b5cee50e65f6a18388869cff481963fb4924b94a4465d9b01bd0b1dc2c70a7c7879b725281d437901de0d49cb6571173aa687604be34df91e8e4c5b1ca9f72737ab2ab1cec9698a861b61c665b2c08990d76c63f0cd569ea03aa35c262ab2c4fc4e296114ba39a3cb921bf953fc5acb9377b309d98e2c26a5b01c142eecfbf7787da88596f77a15c73ab78ea2094b3527154e4d7493587c851876f178",
+        "token_size": 331
+      },
+      "name": "Emision de token AGE_13_15",
+      "status": "computed",
+      "status_note": "Valores criptograficos generados por la implementacion de referencia Go (github.com/aavp-protocol/aavp-go). Clave RSA-2048 con safe primes.",
       "step_1_prepare": {
-        "description": "El DA construye los campos del token y los metadatos publicos.",
-        "token_type": 1,
-        "nonce": "df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36",
-        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1315')",
-        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
         "age_bracket": "AGE_13_15",
         "age_bracket_value": 1,
+        "description": "El DA construye los campos del token y los metadatos publicos.",
         "expires_at": 1781524800,
         "expires_at_iso": "2026-06-15T12:00:00Z",
-        "message_to_sign": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
+        "message_to_sign": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc365cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e01000000006a2fe940",
         "message_to_sign_size": 75,
+        "nonce": "df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1315')",
         "public_metadata": "01000000006a2fe940",
-        "public_metadata_size": 9,
         "public_metadata_fields": {
           "age_bracket": "01",
           "expires_at": "000000006a2fe940"
-        }
+        },
+        "public_metadata_size": 9,
+        "token_key_id": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
+        "token_type": 1
       },
       "step_2_blind": {
         "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
         "function": "Blind(pk', prepared_msg, metadata)",
         "inputs": {
-          "public_key": "pk' (derivada en step_3)",
-          "prepared_msg": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
-          "metadata": "01000000006a2fe940"
+          "metadata": "01000000006a2fe940",
+          "prepared_msg": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc365cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e01000000006a2fe940",
+          "public_key": "pk' (derivada en step_3)"
         },
         "outputs": {
-          "blinded_msg": "TO_BE_COMPUTED",
-          "blinding_inverse_inv": "TO_BE_COMPUTED"
+          "blinded_msg": "0f269eed59dea0f58f6313c3fd9ced1bc55eadc498e87da701e8eaf95bd01449c2d119de45c44c64fb3d8e4e8b426c342d6ff525818839248ab44c58811d29c53d6cfd6864927c865c310cfb8d4deb0d91e4979097664b970edce622cfa6a70210991898e521452d9e8f2fc4418157ff2976a3dcf8cf02de3f2194c1a9d7b9685247dc3aca9cc94436dd624a108251ce8b546177794bceb09b7f11924f2d0488a1bd27a8396ae8908684c5c257aeba4e673b759bb8f5743713066c577a5fa2fec5669446c4e84f9f10023d9452361f6edd5109beccdbb60ae46d5e6b2aa2c86fd5d8866d0f99c99ed939a8adc478b50aba61e785d24601400f41630f5257d200",
+          "blinding_inverse_inv": "3e6b1532e2ceda6b76e68aed03ccff163af934445377d13477e0da8c3c0a522e60c74d2de31463dc9f30cf77eacec03e3417242b0d68ad8b9703b3e48dc81b1ec75acdaa448677cff6575330a956d0e1c57164ddbfef8eded7d8f77cb356a47ee6d0654b49c25c1ae7ec341f4839d3f392fd5b738883f0fcb10533d40f3088ddbbab908e4c4ea438641e4c44582807bda9bea2f165bfadac0d0b42ca0758acea768521693dfbb9aa506ff85801e22c08662ac6f90e7d34b553dced4d3699a4287e16b4aa7850874e03343dfff3ca15c511f1228c3fa599c1b9d6f4c97efaf553062a814a305be0f0857d6c6a8c7739480e8f79cea488c98960a5292c89054af0"
         },
         "randomness": {
-          "blinding_factor_r": "TO_BE_COMPUTED",
-          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+          "blinding_factor_r": "5e2fe74b61eef060670cb9743e92b19dcc891cb5998b5e5efd152e4f43705a432c3eca79a5ec6e84223d410ce9ecbd2486da769c720a1031cde0212845b5ad766f55f0a54d392c4c44e48c5f595a1a5db3789f481872b8dc24a182c1b3ee6aceaeb1dc8a6e207429b3d59f8cb58c6ca5ce7aa0c0516c4275e7907c5cc44f021c82e057fc4b97d1ea0dc1fc23e2d491df805342187d841fb824296cf913d80b61e8d8182764a0635810d26854f31a6ab3eda98bdcae276c64a6c4a743d5d9138ffe3eb57d1989f1f40211d49da0b02936713513574ed2db234ebb39f04840d4601f13bdd42be9d6ffaded30c4c0ffff21bfb544a50b1a69b29bf0898013f54a50",
+          "note": "r derivado deterministicamente de SHA-256('aavp-test-blinding-factor-age1315') para reproducibilidad."
         }
       },
       "step_3_derive_key": {
         "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
         "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
         "inputs": {
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-01000000006a2fe940",
           "master_secret_key": "sk (del test_im_key)",
-          "metadata": "01000000006a2fe940",
-          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-01000000006a2fe940"
+          "metadata": "01000000006a2fe940"
         },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma.",
         "outputs": {
-          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
-          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
-        },
-        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+          "derived_private_key_sk_prime": "4d663ab51e017325c1b8111572560566897693b7be96d53665b54d0a2ec47ba8b16607a7a52a3943e60d22c12952f1d07c89dfff1af09841a93d22f615905a1f7278db03f6d6ce9ef5c2dee485d6ed426f740f6dda270ef25433fe1c5e50c6844e37568d1a9656d62fbf864e23851e6dadc115be2ee963d3669b6b68890dfb84c52a947a936708e601e6cc35d47b4727171afe07a347c31faaf1c16f44e90ecc6902eb50670581deb66cf769dcfecceccd4470cf0724a22892f7bba9548f8f3440e810f9b12047bd44fa1423b58e0fcd6f168906bb3b93e8c91398b7556eea3f3bffe1ef5c4b73581b1816b8acc40239d75fb1f46efa21732b43d74b16464983",
+          "derived_public_key_pk_prime": "2283e4e5cc890ae126dcbcad9bc76ec4eb5a88e85a3aa75cec93e8397bcb1217a28ea786c081f5abef0bad8e7670062ac67d6f71e0fd50959d95f873a47005c1735f7237a8fd414c7ac546a83f2bb2f8f85841c681abfd89df71110792aeeb35b56d070bc1d556c9fc84c90408e29fa7056c0da0c7cf8acaa6f7b90e834d5b97"
+        }
       },
       "step_4_blind_sign": {
         "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
         "function": "BlindSign(sk', blinded_msg, metadata)",
-        "im_observes": {
-          "age_bracket": "AGE_13_15",
-          "expires_at": "2026-06-15T12:00:00Z",
-          "client_ip": "(visible pero no parte del protocolo)"
-        },
         "im_cannot_observe": [
           "nonce",
           "identidad del DA",
           "plataforma de destino"
         ],
+        "im_observes": {
+          "age_bracket": "AGE_13_15",
+          "client_ip": "(visible pero no parte del protocolo)",
+          "expires_at": "2026-06-15T12:00:00Z"
+        },
         "inputs": {
-          "derived_private_key": "sk' (de step_3)",
-          "blinded_msg": "(de step_2)"
+          "blinded_msg": "(de step_2)",
+          "derived_private_key": "sk' (de step_3)"
         },
         "outputs": {
-          "blind_sig": "TO_BE_COMPUTED"
+          "blind_sig": "5511ec0f71dcfaf4e5ba7717875a89b5b5470751e5fe0abbae800d18b5de6cdc7181d5fa30266e4d6e10394d460c65d4da7cb9008f7932b1b0d3f13595fcaab605ef57fceaaa46e38e6fb441c13318b2479fafe07f76c85b889953733a14c5529ec96cf1ca9b188420f334ce491a34c4249a650bb97de0ef1c61007479ce9013ec1393d31984450071f511425b11ebdc3fb8a3c617c768bd2a5afbed42f9f76f15479180ce72ce073e920682e4bbee41ee0e659d9181cac1bfcde29563d487026e4c280bf19cfbe907ebf77e3ba531fc1a39192b3e835ab7e89f88dacdf8e5ac9ec4f2d1b26da1325f5c5c438d1b5b40ca4d66825e197dadb0c77e111d0675b9"
         }
       },
       "step_5_finalize": {
         "description": "El DA desciega la firma para obtener el authenticator valido.",
         "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
         "inputs": {
-          "derived_public_key": "pk' (de step_3)",
           "blind_sig": "(de step_4)",
           "blinding_inverse": "inv (de step_2)",
-          "original_message": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc36fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c01000000006a2fe940",
-          "metadata": "01000000006a2fe940"
+          "derived_public_key": "pk' (de step_3)",
+          "metadata": "01000000006a2fe940",
+          "original_message": "0001df3136cd88066a6123b9a0545738c918bd6d0e38eb6b3fe89f1c1f102059fc365cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e01000000006a2fe940"
         },
         "outputs": {
-          "authenticator": "TO_BE_COMPUTED",
+          "authenticator": "03a66a19b9eff687590842e7d76d06e0440637aaa0ec4974fe4541414741a4073da481b3847a245ec188a9649e7f7cbb359be64a4ef0bf63baf812bb5a6253f12e9c8a413dc9e3fa93c62e57f5f9aeae3ba444660feb6ac5b238721d5ddb78e5b7bae48b5cee50e65f6a18388869cff481963fb4924b94a4465d9b01bd0b1dc2c70a7c7879b725281d437901de0d49cb6571173aa687604be34df91e8e4c5b1ca9f72737ab2ab1cec9698a861b61c665b2c08990d76c63f0cd569ea03aa35c262ab2c4fc4e296114ba39a3cb921bf953fc5acb9377b309d98e2c26a5b01c142eecfbf7787da88596f77a15c73ab78ea2094b3527154e4d7493587c851876f178",
           "authenticator_size": 256
         }
       },
       "step_6_verify": {
         "description": "El VG verifica la firma del token completo.",
+        "expected_result": "valid",
         "function": "Verify(pk', msg, metadata, authenticator)",
         "vg_procedure": [
           "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
@@ -373,108 +381,108 @@
           "4. Extraer msg = token[0:75] (todo excepto authenticator)",
           "5. Extraer authenticator = token[75:331]",
           "6. Verificar: Verify(pk', msg, metadata, authenticator)"
-        ],
-        "expected_result": "valid"
-      },
-      "expected_token": {
-        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
-        "token_hex": "TO_BE_COMPUTED",
-        "token_size": 331
+        ]
       }
     },
     {
-      "name": "Emision de token AGE_16_17",
       "description": "Flujo completo de emision de un token con franja AGE_16_17 mediante firma parcialmente ciega RSAPBSSA-SHA384.",
-      "status": "awaiting_reference_implementation",
-      "status_note": "La estructura del vector es definitiva. Los valores criptograficos (blinded_msg, blind_sig, authenticator) requieren una implementacion conforme de RSAPBSSA-SHA384 para ser computados. Ver README.md seccion 'Generacion de los vectores criptograficos'.",
+      "expected_token": {
+        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
+        "token_hex": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e020000000069b667006eb6538c769015bd79eeefde02338a1ff5ca996c187fa0d1a59de321c3d0777e4168af70e0d23ad8b6f5fde4665177cdd466cc2b76d28441a4c5da48820e7ee6bb8ecead429241c399ac37a4b60418e58ab28836d6f7116f169438e188f62349aa6f776d1c61307432ab13580822e6c773c9e4d923af48ff56913406fc65a688ee5f53e635c544a3d5b30f9b94e758253ddaa67a0bdcc6838b29cfa0bf81ff43636b67722913586cba66b9af9eac42b327988c1b38507ad7d9601a198e6053b96392db5ff7560aee27514a27beec94aa9cec0729433f9c5c026e53b31e313992d58104ecb74e143d26bc0513289028922ac26420d84028504c2ad31e31698b48",
+        "token_size": 331
+      },
+      "name": "Emision de token AGE_16_17",
+      "status": "computed",
+      "status_note": "Valores criptograficos generados por la implementacion de referencia Go (github.com/aavp-protocol/aavp-go). Clave RSA-2048 con safe primes.",
       "step_1_prepare": {
-        "description": "El DA construye los campos del token y los metadatos publicos.",
-        "token_type": 1,
-        "nonce": "23ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc",
-        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1617')",
-        "token_key_id": "fffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c",
         "age_bracket": "AGE_16_17",
         "age_bracket_value": 2,
+        "description": "El DA construye los campos del token y los metadatos publicos.",
         "expires_at": 1773561600,
         "expires_at_iso": "2026-03-15T08:00:00Z",
-        "message_to_sign": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
+        "message_to_sign": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e020000000069b66700",
         "message_to_sign_size": 75,
+        "nonce": "23ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc",
+        "nonce_derivation": "SHA-256('aavp-test-issuance-nonce-age1617')",
         "public_metadata": "020000000069b66700",
-        "public_metadata_size": 9,
         "public_metadata_fields": {
           "age_bracket": "02",
           "expires_at": "0000000069b66700"
-        }
+        },
+        "public_metadata_size": 9,
+        "token_key_id": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
+        "token_type": 1
       },
       "step_2_blind": {
         "description": "El DA ciega el mensaje con un factor aleatorio r. El IM recibira el mensaje cegado pero no podra recuperar el nonce.",
         "function": "Blind(pk', prepared_msg, metadata)",
         "inputs": {
-          "public_key": "pk' (derivada en step_3)",
-          "prepared_msg": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
-          "metadata": "020000000069b66700"
+          "metadata": "020000000069b66700",
+          "prepared_msg": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e020000000069b66700",
+          "public_key": "pk' (derivada en step_3)"
         },
         "outputs": {
-          "blinded_msg": "TO_BE_COMPUTED",
-          "blinding_inverse_inv": "TO_BE_COMPUTED"
+          "blinded_msg": "95983ef5fbc963e7fc224e7c676cda30671100423f5b99757584028c25b402ba63fc2a013eadd5d63670d796b423d910f1e01eb024942c0ac2c37f4911e0ba7d65d255d7e4336422542fb0720b5ff1afa96de25e6393f14f75b36272a3fa197829cdfd1e2abf104519c0a3807834bd72d61c2be311c8f39c6ec10859f766533f2be04a32abf12d868779550ce6ab5d9499e57d21db97e79a6f279547438d52c52b5eef16cda0771fac89f4cb11ec582e0b6df26ad45d71d44b4e2373f0f2aef4b11777a803fdc7219050e9b0ae3d6e084d6e8052d1c22b061fc3c400cd9aa681bd20c8c4bfeef0311d0a840d8ebe3801541b1d3166cf71b484fe7faa3ab24847",
+          "blinding_inverse_inv": "231250b6d4363b6c1268cf56ee938e1994a05a7e0e090ae2c5bfb448dc5f5b8cc814c6b76a1180ac912a128c2fa5c8daa7c14dbd9c382f8f4c90da4c13033ad54a00e4c288bc4ab81fbd90dacd28de444fdbb80fbc8740cbc005e03c749f0ba69769371d490f8a9dab90190a293212b03f00baa08b0f81fb37046d432ac5eb99367d8e8a5ae8332c6bb96970e4ea7203c7963bbdd658f17187f3484a7a161d684b394e1b4bf015f64cdac61f7658494a521ffb912da2af6dad4133dbf70b7793f8a70ba74e9a91dcd4f66f30be8d17d66f4576f99f2e4cd548652d7fcb85ed355a86fdbdfd8f4b314d521b08b028d9555df83c5de8a97442aa1cc14fd5af6f0c"
         },
         "randomness": {
-          "blinding_factor_r": "TO_BE_COMPUTED",
-          "note": "r es un factor aleatorio que el DA genera con CSPRNG. Para test vectors, se fija un valor determinístico para reproducibilidad."
+          "blinding_factor_r": "43175261a7859b11c32e32f250c92d67c0a4234b064b5e5b0555fde8bc7b7a6cd8ae15fced0a85d4fab8d34567764f9e89d72e2a5db26319e3165ea9409ebf42e84389c5eca537e8c42579060c90b6fb42f95c8494046b5cddc76b0c8a0aab87f9ed94771b9efa1cbc4dc7407231c6251fc958e4b5e32affbc2fb1bcc502c934aa0ba83867ed15409110038dde51f40cc29284cefe8587b38d0219152a5f614fb482b4e1d5e001b0d43789499dc55ecf544fd14c0d9d74a80cf271cc51d2a71266efc696703fa466b389cecb63889d344c3af6e29f88231fc9e80d3cce48c7b4dc63460a759bf9a096d85eea3c38987072a55e6af699643d5ae16427d4a94ebb",
+          "note": "r derivado deterministicamente de SHA-256('aavp-test-blinding-factor-age1617') para reproducibilidad."
         }
       },
       "step_3_derive_key": {
         "description": "El IM (y despues el VG) derivan un par de claves especifico para esta combinacion de metadatos publicos.",
         "function": "DeriveKeyPair(sk, metadata) via HKDF-SHA384",
         "inputs": {
+          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-020000000069b66700",
           "master_secret_key": "sk (del test_im_key)",
-          "metadata": "020000000069b66700",
-          "hkdf_info": "AAVP-RSAPBSSA-SHA384-metadata-020000000069b66700"
+          "metadata": "020000000069b66700"
         },
+        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma.",
         "outputs": {
-          "derived_private_key_sk_prime": "TO_BE_COMPUTED",
-          "derived_public_key_pk_prime": "TO_BE_COMPUTED"
-        },
-        "note": "El VG realiza la misma derivacion con pk y metadata para obtener pk' y verificar la firma."
+          "derived_private_key_sk_prime": "7957aa682d4275030c29e587633ae8fa29faf1eafb6e3c99c166617e120c110e8dd833a859898166a12880b231490b8eff9deec3b29fa066b29ce84cf0ce8fbdf5800a7168c552b70e2d85fa66fdb68773d60bd9827b7f5ef6a081ece80b307591ecdc19448e582477dc5b2815b6c3489a045d4a9ca182bdbd8b536e1604b6341eb1634d1ebe4d8c4a74122b28980e7411fede5ba98acc9341cab1ba72929ee2e68febd939ee5e6fd019214d5b8f4a97048052cece93ce958899abaefae1ee8cd01beabd4af591e78f5a55b6c38cc397c6c44f2369a7064af75fd902aee8ff1bcd3aaee2ab5c59e668f82a27f9088625a132fe0436c523e08905f0bf0be6b773",
+          "derived_public_key_pk_prime": "02abfcfdafbfb4e3114f0e07f16b6bbed1a94910b08b5abfe921b8c27a46b94f04260b5fdd2a541a9bdb8e9340f598b459eb15493b3d0f87c621cf8e152a2c16902a5792de2990cb579ff4d4f9bf5c76d0a31afeac4768149a92b49aa52bf1addb1fdbdf79bb269b06a3efababb9fff81110a58ae32f45737770fb65cf80bd57"
+        }
       },
       "step_4_blind_sign": {
         "description": "El IM firma el mensaje cegado con la clave derivada. El IM ve los metadatos publicos pero no el nonce.",
         "function": "BlindSign(sk', blinded_msg, metadata)",
-        "im_observes": {
-          "age_bracket": "AGE_16_17",
-          "expires_at": "2026-03-15T08:00:00Z",
-          "client_ip": "(visible pero no parte del protocolo)"
-        },
         "im_cannot_observe": [
           "nonce",
           "identidad del DA",
           "plataforma de destino"
         ],
+        "im_observes": {
+          "age_bracket": "AGE_16_17",
+          "client_ip": "(visible pero no parte del protocolo)",
+          "expires_at": "2026-03-15T08:00:00Z"
+        },
         "inputs": {
-          "derived_private_key": "sk' (de step_3)",
-          "blinded_msg": "(de step_2)"
+          "blinded_msg": "(de step_2)",
+          "derived_private_key": "sk' (de step_3)"
         },
         "outputs": {
-          "blind_sig": "TO_BE_COMPUTED"
+          "blind_sig": "77e174e9f1d388027847ca84dc456fe39257dd747b25cd14fc94adec1bda16cc2db87c4e418cd10fc500f707a1d0e4ba01597c6ec94e8ed24646278d7484cc55e6ea983d7c2dc7603a3c839916a3b89f6871e2889a0b4164cd469177dbfd882f33b85280f19465683aa2264935ba66b4e95b035db3e59fc085672479ea2c63098fbbe3cfe7c2c8b6c682677bd0a25b577e51e63642025c2e3370a3e3017a4eecfe54876ed0e2f7c2fd5ccea10894a91101b3fcca78d51d98d14954366ac7e03ab9b662c096dbf5c12193f94f384ffd9e109a1eea89054e4787f416ead8f1499dff0afc5e787ef9cd84754ffb23684913452ea92b2c94a158deb0a8ebec7750d1"
         }
       },
       "step_5_finalize": {
         "description": "El DA desciega la firma para obtener el authenticator valido.",
         "function": "Finalize(pk', blind_sig, inv, msg, metadata)",
         "inputs": {
-          "derived_public_key": "pk' (de step_3)",
           "blind_sig": "(de step_4)",
           "blinding_inverse": "inv (de step_2)",
-          "original_message": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0ccfffea9ba9efa735080cf1af734625994ed056c1c4f94a8d82f4676a017ab2c7c020000000069b66700",
-          "metadata": "020000000069b66700"
+          "derived_public_key": "pk' (de step_3)",
+          "metadata": "020000000069b66700",
+          "original_message": "000123ec4e6d03eedeca17938f88bb119dd595935e010835da757aafff662ee0e0cc5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e020000000069b66700"
         },
         "outputs": {
-          "authenticator": "TO_BE_COMPUTED",
+          "authenticator": "6eb6538c769015bd79eeefde02338a1ff5ca996c187fa0d1a59de321c3d0777e4168af70e0d23ad8b6f5fde4665177cdd466cc2b76d28441a4c5da48820e7ee6bb8ecead429241c399ac37a4b60418e58ab28836d6f7116f169438e188f62349aa6f776d1c61307432ab13580822e6c773c9e4d923af48ff56913406fc65a688ee5f53e635c544a3d5b30f9b94e758253ddaa67a0bdcc6838b29cfa0bf81ff43636b67722913586cba66b9af9eac42b327988c1b38507ad7d9601a198e6053b96392db5ff7560aee27514a27beec94aa9cec0729433f9c5c026e53b31e313992d58104ecb74e143d26bc0513289028922ac26420d84028504c2ad31e31698b48",
           "authenticator_size": 256
         }
       },
       "step_6_verify": {
         "description": "El VG verifica la firma del token completo.",
+        "expected_result": "valid",
         "function": "Verify(pk', msg, metadata, authenticator)",
         "vg_procedure": [
           "1. Obtener clave publica maestra del IM desde .well-known/aavp-issuer",
@@ -483,13 +491,7 @@
           "4. Extraer msg = token[0:75] (todo excepto authenticator)",
           "5. Extraer authenticator = token[75:331]",
           "6. Verificar: Verify(pk', msg, metadata, authenticator)"
-        ],
-        "expected_result": "valid"
-      },
-      "expected_token": {
-        "description": "Token completo = message_to_sign (75 bytes) || authenticator (256 bytes) = 331 bytes",
-        "token_hex": "TO_BE_COMPUTED",
-        "token_size": 331
+        ]
       }
     }
   ]

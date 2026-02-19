@@ -7,6 +7,19 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Implementacion de referencia en Go (`reference/go/`) cubriendo los tres roles del protocolo (DA, IM, VG) y el esquema criptografico RSAPBSSA-SHA384-PSSZERO-Deterministic.
+- Paquete `token/`: codificacion/decodificacion del formato binario de 331 bytes, verificado contra `token-encoding.json`.
+- Paquete `validation/`: logica de validacion del VG (clock skew, TTL, campos), verificado contra `token-validation.json`.
+- Paquete `pbrsa/`: implementacion completa de firmas parcialmente ciegas RSA (draft-amjad-cfrg-partially-blind-rsa) incluyendo DerivePublicKey, DeriveKeyPair, Blind, BlindSign, Finalize, Verify, EMSA-PSS-ENCODE/VERIFY con salt_length=0, MGF1-SHA384 y generacion de claves RSA-2048 con safe primes.
+- Paquetes `da/`, `im/`, `vg/`: implementacion de los roles Device Agent, Implementador y Verification Gate con flujo completo de emision y verificacion de tokens.
+- Herramienta CLI `vectors/generate/` para computar los valores criptograficos pendientes de `issuance-protocol.json`.
+
+### Changed
+
+- `test-vectors/issuance-protocol.json`: regenerada la clave RSA-2048 de test con safe primes (requisito de draft-amjad-cfrg-partially-blind-rsa). Computados todos los valores criptograficos previamente marcados como `TO_BE_COMPUTED`: `blinded_msg`, `blinding_inverse_inv`, `blinding_factor_r`, `blind_sig`, `authenticator` y `token_hex` para los 4 vectores de emision. Estado actualizado de `awaiting_reference_implementation` a `computed`.
+
 ## [0.10.0] - 2026-02-14
 
 ### Added
