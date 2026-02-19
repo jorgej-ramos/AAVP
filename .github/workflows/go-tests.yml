@@ -1,0 +1,63 @@
+name: Go Reference Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'reference/go/**'
+      - 'test-vectors/**'
+  pull_request:
+    paths:
+      - 'reference/go/**'
+      - 'test-vectors/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Run tests
+        run: go test ./... -short -v
+        working-directory: reference/go
+
+  badge:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && always()
+    permissions:
+      contents: read
+    env:
+      GIST_ID: ${{ secrets.GO_TESTS_GIST_ID }}
+    steps:
+      - name: Determine badge status
+        id: badge
+        run: |
+          if [[ "${{ needs.test.result }}" == "success" ]]; then
+            echo "message=passing" >> "$GITHUB_OUTPUT"
+            echo "color=brightgreen" >> "$GITHUB_OUTPUT"
+          else
+            echo "message=failing" >> "$GITHUB_OUTPUT"
+            echo "color=red" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update badge via gist
+        if: env.GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GO_TESTS_GIST_TOKEN }}
+          gistID: ${{ secrets.GO_TESTS_GIST_ID }}
+          filename: go-tests.json
+          label: go tests
+          message: ${{ steps.badge.outputs.message }}
+          color: ${{ steps.badge.outputs.color }}
