@@ -29,7 +29,7 @@ if (frontMatterMatch) {
   if (titleMatch) title = titleMatch[1];
   const docnameMatch = fm.match(/^docname:\s*(.+)/m);
   if (docnameMatch) docname = docnameMatch[1].trim();
-  const authorNameMatch = fm.match(/name:\s*(.+)/m);
+  const authorNameMatch = fm.match(/^\s+-?\s*name:\s*(.+)/m);
   if (authorNameMatch) author = authorNameMatch[1].trim();
   const categoryMatch = fm.match(/^category:\s*(.+)/m);
   if (categoryMatch) category = categoryMatch[1].trim() === 'std' ? 'Standards Track' : categoryMatch[1].trim();

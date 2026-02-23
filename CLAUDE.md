@@ -174,8 +174,8 @@ El proyecto tiene como objetivo final una especificación formal en formato RFC.
 
 ### Estructura progresiva
 
-1. **Fase actual (white paper):** README.md + PROTOCOL.md. Lenguaje natural con rigor técnico.
-2. **Fase siguiente (Internet-Draft):** Se creará un directorio `spec/` con la especificación en formato I-D (Internet-Draft) siguiendo las convenciones de la IETF.
+1. **Fase white paper:** README.md + PROTOCOL.md. Lenguaje natural con rigor técnico.
+2. **Fase actual (Internet-Draft):** `spec/draft-aavp-protocol.md` contiene la especificación formal en formato kramdown-rfc2629, publicada en el sitio web en `/internet-draft/`.
 3. **Fase final (RFC):** Sometimiento formal al proceso de estandarización.
 
 ### Preparación para el I-D
@@ -365,6 +365,7 @@ site/
       index.astro            Landing page
       white-paper.astro      Renderiza README.md
       protocolo.astro        Renderiza PROTOCOL.md
+      internet-draft.astro   Renderiza spec/draft-aavp-protocol.md (kramdown preprocesado)
       seguridad.astro        Renderiza SECURITY-ANALYSIS.md
       verificacion.astro     Pagina de verificacion automatizada
       changelog.astro        Renderiza CHANGELOG.md
@@ -381,6 +382,7 @@ site/
 | `/` | Landing page con hero, principios y CTA | `site/src/pages/index.astro` |
 | `/white-paper/` | White paper divulgativo | `README.md` (renderizado) |
 | `/protocolo/` | Especificación técnica | `PROTOCOL.md` (renderizado) |
+| `/internet-draft/` | Internet-Draft (IETF) | `spec/draft-aavp-protocol.md` (kramdown preprocesado) |
 | `/seguridad/` | Análisis de seguridad | `SECURITY-ANALYSIS.md` (renderizado) |
 | `/verificacion/` | Verificación automatizada de la especificación | `site/src/pages/verificacion.astro` |
 | `/changelog/` | Registro de cambios | `CHANGELOG.md` (renderizado) |

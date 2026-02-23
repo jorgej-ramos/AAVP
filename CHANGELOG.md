@@ -7,6 +7,21 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Pagina `/internet-draft/` en el sitio web que renderiza `spec/draft-aavp-protocol.md` con preprocesamiento kramdown-to-GFM (referencias RFC como links, definiciones, ASCII art, boilerplate BCP 14).
+- Banner de hito en la landing page anunciando la fase de especificacion formal.
+- Boton "Internet-Draft (IETF)" en la seccion de documentacion de la landing page.
+- Link "Internet-Draft" en la navegacion del sitio (entre Protocolo y Seguridad).
+- Trigger `spec/**` en el workflow de deploy del sitio web.
+
+### Changed
+
+- Badge del hero de la landing page actualizado de "Borrador" a "Especificacion formal".
+- CTA principal del hero cambiado de "Especificacion Tecnica" a "Internet-Draft (IETF)".
+- Gap de navegacion reducido de 1.5rem a 1.25rem para acomodar el nuevo enlace.
+- Seccion "Trayectoria hacia RFC" de CLAUDE.md actualizada para reflejar la fase actual (Internet-Draft).
+
 ## [0.12.0] - 2026-02-23
 
 ### Added
