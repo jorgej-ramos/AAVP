@@ -95,7 +95,7 @@ body {
 
 .nav-links {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   list-style: none;
   align-items: center;
 }
