@@ -651,7 +651,7 @@ El endpoint se sirve sobre TLS 1.3, con integridad de certificados respaldada po
 ```json
 {
   "issuer": "im-provider.example",
-  "aavp_version": "0.6",
+  "aavp_version": "0.11",
   "signing_endpoint": "https://im-provider.example/aavp/v1/sign",
   "keys": [
     {
@@ -697,7 +697,7 @@ v=aavp1; url=https://im.example/.well-known/aavp-issuer
 ```json
 {
   "issuer": "im-provider.example",
-  "aavp_version": "0.6",
+  "aavp_version": "0.11",
   "signing_endpoint": "https://im-provider.example/aavp/v1/sign",
   "keys": [
     {
@@ -791,7 +791,7 @@ Las plataformas que soportan AAVP lo anuncian mediante un endpoint de descubrimi
 
 ```json
 {
-  "aavp_version": "0.6",
+  "aavp_version": "0.11",
   "vg_endpoint": "https://platform.example/aavp/verify",
   "accepted_ims": [
     {
