@@ -10,6 +10,7 @@ on:
       - 'SECURITY-ANALYSIS.md'
       - 'CHANGELOG.md'
       - 'VERSION'
+      - 'spec/**'
   workflow_dispatch:
 
 permissions:
