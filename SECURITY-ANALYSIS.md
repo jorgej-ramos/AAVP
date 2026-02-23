@@ -1382,13 +1382,13 @@ Estas son especificaciones que faltan en PROTOCOL.md y que deben definirse antes
 
 | # | Especificación | Descripción |
 |---|----------------|-------------|
-| E1 | ~~Test vectors completos~~ | **Parcialmente resuelta**: Vectores estructurales (codificación y validación) completos en `test-vectors/`. Vectores criptográficos (firma parcialmente ciega) con estructura definida, pendientes de computar valores con implementación de referencia RSAPBSSA-SHA384 |
+| E1 | ~~Test vectors completos~~ | **Resuelta**: Tres conjuntos de vectores completos en `test-vectors/`: codificación binaria (`token-encoding.json`), validación (`token-validation.json`) y flujo de firma parcialmente ciega (`issuance-protocol.json`) con valores criptográficos reales computados por la implementación de referencia en Go (`reference/go/`) |
 | E2 | ~~Protocolo de auditoría formal~~ | **Resuelta**: Marco de conformidad y auditoría definido en PROTOCOL.md sección 9 con requisitos numerados por rol (DA-01 a DA-12, VG-01 a VG-14, IM-01 a IM-11), tres niveles de conformidad (Funcional, Verificado, Auditado), test de ceguera, informes agregados y verificación operacional continua |
 | E3 | ~~Mecanismo de revocación de IMs~~ | **Resuelta**: Claves de vida limitada (≤ 6 meses) + revocación bilateral por VGs |
 | E4 | ~~Especificación de `.well-known/aavp`~~ | **Resuelta**: Endpoints `.well-known/aavp` (VG) y `.well-known/aavp-issuer` (IM) especificados en PROTOCOL.md secciones 5.3 y 5.2.3 |
 | E5 | ~~Recomendación de esquema criptográfico~~ | **Resuelta**: RSAPBSSA-SHA384 (RFC 9474 + draft-irtf-cfrg-partially-blind-rsa) adoptado como esquema principal |
 | E6 | ~~Política de migración de algoritmos~~ | **Resuelta**: Registro de `token_type` con metadatos completos (sección 5.4), política de agilidad criptográfica y migración de cinco fases (sección 5.5), protección contra ataques de degradación (5.5.5) y consideraciones post-cuánticas (5.5.6) en PROTOCOL.md |
-| E7 | Análisis formal con ProVerif/Tamarin | Verificación formal de las propiedades de privacidad (*unlinkability*, *blindness*) |
+| E7 | ~~Análisis formal con ProVerif/Tamarin~~ | **Resuelta**: Tres modelos Tamarin Prover en `formal/`: `aavp.spthy` (unforgeability, nonce uniqueness, metadata binding, executability), `aavp-unlinkability.spthy` (unlinkability vía equivalencia observacional con `--diff`) y `aavp-saf.spthy` (7 propiedades del SAF) |
 
 ### 9.3 Líneas de investigación abiertas (largo plazo)
 
