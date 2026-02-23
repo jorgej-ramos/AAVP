@@ -17,7 +17,7 @@ const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
     <p class="hero-subtitle">
       Que las plataformas sepan si un usuario es menor de edad, sin necesidad de saber quién es.
     </p>
-    <span class="hero-version">v{version} — Borrador</span>
+    <span class="hero-version">v{version} — Especificación formal</span>
     <div class="hero-badges">
       <a href={`${base}verificacion/`}>
         <img src="https://github.com/jorgej-ramos/AAVP/actions/workflows/spec-consistency.yml/badge.svg" alt="Spec Consistency" />
@@ -28,8 +28,15 @@ const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
     </div>
     <div class="hero-cta">
       <a href={`${base}white-paper/`} class="btn btn-primary">Leer el White Paper</a>
-      <a href={`${base}protocolo/`} class="btn btn-secondary">Especificación Técnica</a>
+      <a href={`${base}internet-draft/`} class="btn btn-secondary">Internet-Draft (IETF)</a>
     </div>
+  </section>
+
+  <section class="milestone-banner">
+    <p class="milestone-text">
+      AAVP ha alcanzado la fase de <strong>especificación formal</strong>: el protocolo está documentado como
+      <a href={`${base}internet-draft/`}>Internet-Draft</a> siguiendo el formato IETF, listo para revisión pública.
+    </p>
   </section>
 
   <section class="section">
@@ -143,11 +150,12 @@ const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
   <section class="section" style="text-align: center; padding-bottom: 5rem;">
     <h2 class="section-title">Consulta la documentación completa</h2>
     <p class="section-subtitle">
-      El white paper explica qué es AAVP y por qué es necesario. La especificación técnica detalla cómo implementarlo. El análisis de seguridad evalúa sus posibles vulnerabilidades.
+      El white paper explica qué es AAVP y por qué es necesario. La especificación técnica detalla cómo implementarlo. El Internet-Draft formaliza el protocolo en formato IETF. El análisis de seguridad evalúa sus posibles vulnerabilidades.
     </p>
     <div class="hero-cta">
       <a href={`${base}white-paper/`} class="btn btn-primary">White Paper</a>
       <a href={`${base}protocolo/`} class="btn btn-secondary">Especificación Técnica</a>
+      <a href={`${base}internet-draft/`} class="btn btn-secondary">Internet-Draft (IETF)</a>
       <a href={`${base}seguridad/`} class="btn btn-secondary">Análisis de Seguridad</a>
       <a href={`${base}verificacion/`} class="btn btn-secondary">Verificación</a>
       <a href="https://github.com/jorgej-ramos/AAVP/tree/main/reference/go" class="btn btn-secondary" target="_blank" rel="noopener">Implementación de referencia</a>
