@@ -1,0 +1,192 @@
+---
+import Doc from '../layouts/Doc.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+
+const processor = await createMarkdownProcessor({
+  syntaxHighlight: {
+    type: 'shiki',
+    excludeLangs: [],
+  },
+});
+
+const mdPath = resolve(process.cwd(), '..', 'spec', 'draft-aavp-protocol.md');
+const rawContent = readFileSync(mdPath, 'utf-8');
+
+// --- Extract YAML front matter metadata ---
+const frontMatterMatch = rawContent.match(/^---\n([\s\S]*?)\n---/);
+let title = 'Anonymous Age Verification Protocol (AAVP)';
+let docname = 'draft-ramos-aavp-protocol-00';
+let author = 'Jorge Juan Ramos Garnero';
+let category = 'Standards Track';
+let area = 'Security';
+let workgroup = 'Independent Submission';
+
+if (frontMatterMatch) {
+  const fm = frontMatterMatch[1];
+  const titleMatch = fm.match(/^title:\s*"(.+)"/m);
+  if (titleMatch) title = titleMatch[1];
+  const docnameMatch = fm.match(/^docname:\s*(.+)/m);
+  if (docnameMatch) docname = docnameMatch[1].trim();
+  const authorNameMatch = fm.match(/name:\s*(.+)/m);
+  if (authorNameMatch) author = authorNameMatch[1].trim();
+  const categoryMatch = fm.match(/^category:\s*(.+)/m);
+  if (categoryMatch) category = categoryMatch[1].trim() === 'std' ? 'Standards Track' : categoryMatch[1].trim();
+  const areaMatch = fm.match(/^area:\s*(.+)/m);
+  if (areaMatch) area = areaMatch[1].trim();
+  const workgroupMatch = fm.match(/^workgroup:\s*(.+)/m);
+  if (workgroupMatch) workgroup = workgroupMatch[1].trim();
+}
+
+// --- Strip YAML front matter ---
+let content = rawContent.replace(/^---\n[\s\S]*?\n---\n*/, '');
+
+// --- Kramdown-to-GFM preprocessing ---
+
+// 1. Section markers: --- abstract, --- middle, --- back → ---
+content = content.replace(/^--- (?:abstract|middle|back)\s*$/gm, '\n---\n');
+
+// 2. BCP 14 boilerplate
+content = content.replace(
+  /\{::boilerplate bcp14-tagged\}/g,
+  `> The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+> "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+> "OPTIONAL" in this document are to be interpreted as described in
+> BCP 14 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119)
+> [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174) when, and only when,
+> they appear in ALL CAPITALS, as shown here.`
+);
+
+// 3. RFC references: {{RFC9474}} → [RFC 9474](url)
+content = content.replace(/\{\{RFC(\d+)\}\}/g, (_match, num) => {
+  const spaced = num.replace(/^(\d)/, 'RFC $1').replace(/^RFC /, '');
+  return `[RFC ${spaced}](https://www.rfc-editor.org/rfc/rfc${num.toLowerCase()})`;
+});
+
+// 4. I-D references: {{I-D.irtf-cfrg-partially-blind-rsa}} → link
+content = content.replace(
+  /\{\{I-D\.irtf-cfrg-partially-blind-rsa\}\}/g,
+  '[I-D.irtf-cfrg-partially-blind-rsa](https://datatracker.ietf.org/doc/draft-irtf-cfrg-partially-blind-rsa/)'
+);
+
+// 5. Internal anchor references: {{anchor-name}} → [anchor-name](#anchor-name)
+content = content.replace(/\{\{([a-z][a-z0-9-]*)\}\}/g, (_match, anchor) => {
+  const label = anchor.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+  return `[${label}](#${anchor})`;
+});
+
+// 6. Heading anchors: # Title {#anchor} → <a id="anchor"></a>\n# Title
+content = content.replace(/^(#{1,6})\s+(.+?)\s+\{#([a-z0-9-]+)\}\s*$/gm, (_match, hashes, text, anchor) => {
+  return `<a id="${anchor}"></a>\n\n${hashes} ${text}`;
+});
+
+// 7. Remove {:numbered="false"}
+content = content.replace(/^\{:numbered="false"\}\s*$/gm, '');
+
+// 8. ASCII art fenced blocks: ~~~ ascii-art → ```text
+content = content.replace(/^~~~ ascii-art\s*$/gm, '```text');
+content = content.replace(/^~~~\s*$/gm, '```');
+
+// 9. Definition lists: "Term:\n: Definition" → "**Term:** Definition"
+content = content.replace(
+  /^([A-Z][^\n]*?):\s*\n:\s+/gm,
+  '**$1:** '
+);
+
+// 10. Continuation lines of definition lists: lines starting with "  " after a definition
+// These are handled naturally by markdown paragraph continuation.
+
+const { code: html } = await processor.render(content);
+
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
+---
+
+<Doc title="Internet-Draft — AAVP" currentPage="internet-draft">
+  <div class="id-hero">
+    <h1 class="id-title">{title}</h1>
+    <div class="id-meta">
+      <div class="id-meta-item">
+        <span class="id-meta-label">Document</span>
+        <span class="id-meta-value">{docname}</span>
+      </div>
+      <div class="id-meta-item">
+        <span class="id-meta-label">Category</span>
+        <span class="id-meta-value">{category}</span>
+      </div>
+      <div class="id-meta-item">
+        <span class="id-meta-label">Area</span>
+        <span class="id-meta-value">{area}</span>
+      </div>
+      <div class="id-meta-item">
+        <span class="id-meta-label">Workgroup</span>
+        <span class="id-meta-value">{workgroup}</span>
+      </div>
+      <div class="id-meta-item">
+        <span class="id-meta-label">Author</span>
+        <span class="id-meta-value">{author}</span>
+      </div>
+    </div>
+    <a href="https://github.com/jorgej-ramos/AAVP/blob/main/spec/draft-aavp-protocol.md" class="btn btn-secondary" target="_blank" rel="noopener">
+      View source on GitHub
+    </a>
+  </div>
+  <Fragment set:html={html} />
+</Doc>
+
+<style>
+  .id-hero {
+    text-align: center;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .id-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .id-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .id-meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .id-meta-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+  }
+
+  .id-meta-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  @media (max-width: 768px) {
+    .id-meta {
+      gap: 1rem;
+    }
+
+    .id-title {
+      font-size: 1.3rem;
+    }
+  }
+</style>
