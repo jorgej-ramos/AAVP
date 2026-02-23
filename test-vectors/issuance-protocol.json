@@ -37,7 +37,7 @@
     "token_key_id_base64url": "XP7SkHjcL_XroVfhuxTPkBYwRk18MqplMKOfqp4bfh4",
     "token_key_id_hex": "5cfed29078dc2ff5eba157e1bb14cf901630464d7c32aa6530a39faa9e1b7e1e",
     "well_known_aavp_issuer_example": {
-      "aavp_version": "0.10",
+      "aavp_version": "0.11",
       "issuer": "test-im.example",
       "keys": [
         {

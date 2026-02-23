@@ -78,7 +78,7 @@ func main() {
 		"well_known_aavp_issuer_example": map[string]any{
 			"note":             "Ejemplo de como apareceria esta clave en el endpoint .well-known/aavp-issuer del IM (PROTOCOL.md seccion 5.2.3).",
 			"issuer":           "test-im.example",
-			"aavp_version":     "0.10",
+			"aavp_version":     "0.11",
 			"signing_endpoint": "https://test-im.example/aavp/v1/sign",
 			"keys": []map[string]any{
 				{

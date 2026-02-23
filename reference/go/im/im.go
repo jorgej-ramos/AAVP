@@ -63,7 +63,7 @@ func (im *Implementor) WellKnownResponse(notBefore, notAfter time.Time) *WellKno
 
 	return &WellKnownIssuer{
 		Issuer:          im.Domain,
-		AAVPVersion:     "0.10",
+		AAVPVersion:     "0.11",
 		SigningEndpoint: "https://" + im.Domain + "/aavp/v1/sign",
 		Keys: []WellKnownKey{
 			{
