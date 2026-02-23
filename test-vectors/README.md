@@ -145,9 +145,6 @@ Requieren una implementación conforme de:
 - [blindrsa-go](https://github.com/cloudflare/pat-go) — Go (Cloudflare). Incluye variante parcialmente ciega.
 - [rust-blind-rsa-signatures](https://github.com/nicbh/rust-blind-rsa-signatures) — Rust.
 
-> [!NOTE]
-> Hasta que se disponga de una implementación de referencia de AAVP, los vectores criptográficos de `issuance-protocol.json` se marcan con `"status": "awaiting_reference_implementation"`. La estructura del JSON es definitiva; los valores hexadecimales de los campos criptográficos (`blinded_msg`, `blind_sig`, `authenticator`) se completarán cuando se genere la implementación de referencia del DA.
-
 ---
 
 ## Cómo utilizar estos vectores
