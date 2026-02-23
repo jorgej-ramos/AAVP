@@ -7,6 +7,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-02-23
+
 ### Added
 
 - Pagina `/internet-draft/` en el sitio web que renderiza `spec/draft-aavp-protocol.md` con preprocesamiento kramdown-to-GFM (referencias RFC como links, definiciones, ASCII art, boilerplate BCP 14).
@@ -265,7 +267,8 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Hoja de ruta en tres fases (2026-2029+).
 - Diagramas Mermaid de arquitectura, flujos, ciclo de vida del token y hoja de ruta.
 
-[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/jorgej-ramos/AAVP/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/jorgej-ramos/AAVP/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/jorgej-ramos/AAVP/compare/v0.9.0...v0.10.0
