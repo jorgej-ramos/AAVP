@@ -7,6 +7,23 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ## [Unreleased]
 
+### Added
+
+- Primer borrador del Internet-Draft (`spec/draft-aavp-protocol.md`) en formato kramdown-rfc2629 con estructura completa, Abstract, Introduction, Terminology y secciones pendientes de traduccion.
+- Makefile para compilar el I-D a XML/TXT/HTML (`spec/Makefile`).
+
+### Changed
+
+- Actualizada `aavp_version` de `"0.6"` a `"0.11"` en los tres ejemplos JSON de PROTOCOL.md.
+- Actualizada `aavp_version` de `"0.10"` a `"0.11"` en la implementacion de referencia (`reference/go/im/im.go`, `reference/go/vectors/generate/main.go`) y en `test-vectors/issuance-protocol.json`.
+- Completado el indice de PROTOCOL.md con todas las subsecciones existentes en el documento (~40 entradas anadidas).
+- Marcada E1 (test vectors) como resuelta en SECURITY-ANALYSIS.md (previamente parcialmente resuelta).
+- Marcada E7 (verificacion formal) como resuelta en SECURITY-ANALYSIS.md con referencia a los tres modelos Tamarin.
+
+### Removed
+
+- Eliminada nota obsoleta sobre `awaiting_reference_implementation` en `test-vectors/README.md`.
+
 ## [0.11.0] - 2026-02-19
 
 ### Added
