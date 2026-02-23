@@ -37,6 +37,7 @@ informative:
   RFC6781:
   RFC6962:
   RFC7489:
+  RFC7518:
   RFC7519:
   RFC7696:
   RFC8126:
@@ -45,6 +46,7 @@ informative:
   RFC9458:
   RFC9578:
   RFC9614:
+  RFC9700:
   RFC9794:
   I-D.irtf-cfrg-partially-blind-rsa:
     title: "Partially Blind RSA Signatures"
@@ -1220,7 +1222,7 @@ Design principle: Each token_type completely defines the cryptographic
 scheme, hash function, key size, signature size, and the metadata-based
 key derivation procedure. There is no optionality within a single
 token_type. This avoids the class of algorithm confusion attacks
-documented in JWT/JWS (RFC 7518), where parameter flexibility within
+documented in JWT/JWS ({{RFC7518}}), where parameter flexibility within
 a single algorithm identifier has produced vulnerabilities such as
 acceptance of the "none" algorithm or confusion between symmetric and
 asymmetric keys.
@@ -1730,6 +1732,15 @@ HTTP requirements:
 - Cache-Control: public, max-age=86400 (24 hours).
 - Access-Control-Allow-Origin: *.
 - Content-Type: application/json.
+
+Response codes:
+
+| Code | Meaning | DA Behavior |
+|------|---------|-------------|
+| 200 | SPD available | Parse, verify signature, and process |
+| 404 | No SPD published | The platform does not publish a verifiable segmentation policy |
+| 429 | Rate limiting | Retry with exponential backoff |
+| 5xx | Server error | Retry once; use cache if available |
 
 ### SPD JSON Schema
 
@@ -2287,7 +2298,7 @@ Privacy properties of the report:
 | {{RFC9578}} (Privacy Pass) | Specification test vectors, interoperability by independent implementations | Test vectors + interoperability tests |
 | PCI DSS | Tiered self-assessment (SAQ) vs. external audit (QSA) | Level 1 = self-assessment, Level 3 = audit |
 | ISO/IEC 17065 | Certification lifecycle: assessment - decision - surveillance | Continuous operational verification |
-| OAuth Security BCP | MUST/SHOULD/MAY requirements per role | Numbered per-role requirements by category |
+| OAuth Security BCP ({{RFC9700}}) | MUST/SHOULD/MAY requirements per role | Numbered per-role requirements by category |
 | CA/Browser Forum | Platforms as decentralized trust gatekeepers | VGs decide what conformance evidence to require |
 
 # Security Considerations {#security}

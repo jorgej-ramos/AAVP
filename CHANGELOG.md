@@ -9,7 +9,7 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 
 ### Added
 
-- Primer borrador del Internet-Draft (`spec/draft-aavp-protocol.md`) en formato kramdown-rfc2629 con estructura completa, Abstract, Introduction, Terminology y secciones pendientes de traduccion.
+- Primer borrador del Internet-Draft (`spec/draft-aavp-protocol.md`) en formato kramdown-rfc2629 con traduccion completa al ingles de todas las secciones de PROTOCOL.md, terminologia RFC 2119, diagramas ASCII art, y 2 apendices (test vectors y verificacion formal).
 - Makefile para compilar el I-D a XML/TXT/HTML (`spec/Makefile`).
 
 ### Changed
@@ -19,6 +19,12 @@ y este proyecto se adhiere a [Semantic Versioning 2.0.0](https://semver.org/spec
 - Completado el indice de PROTOCOL.md con todas las subsecciones existentes en el documento (~40 entradas anadidas).
 - Marcada E1 (test vectors) como resuelta en SECURITY-ANALYSIS.md (previamente parcialmente resuelta).
 - Marcada E7 (verificacion formal) como resuelta en SECURITY-ANALYSIS.md con referencia a los tres modelos Tamarin.
+
+### Fixed
+
+- Anadidos RFC 7518 y RFC 9700 al front matter YAML del Internet-Draft (faltaban como informative references).
+- Anadida tabla de codigos de respuesta del endpoint SPD al Internet-Draft (omitida en la traduccion inicial).
+- Corregidas citas de RFC 7518 y RFC 9700 en el cuerpo del I-D para usar el formato `{{RFCxxxx}}` de kramdown-rfc2629.
 
 ### Removed
 
